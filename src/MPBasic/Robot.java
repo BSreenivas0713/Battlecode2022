@@ -9,6 +9,8 @@ public class Robot {
     static RobotController rc; 
     static int turnCount;
     static MapLocation home;
+    static RobotInfo[] EnemySensable;
+    static RobotInfo[] FriendlySensable;
 
     public Robot(RobotController r) {
         rc = r;
@@ -34,6 +36,8 @@ public class Robot {
     public void takeTurn() throws GameActionException {
         AnomalyScheduleEntry[] AnomolySchedule = rc.getAnomalySchedule();
         turnCount += 1;
+        EnemySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent());
+        FriendlySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam());
         // initializeGlobals();
         // turnCount += 1;
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
