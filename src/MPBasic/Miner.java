@@ -81,16 +81,16 @@ public class Miner extends Robot {
         String str = "";
         for(RobotInfo robot: FriendlySensable) {
             if(robot.getType() == RobotType.ARCHON && rc.getRoundNum() == roundNumBorn + 1) {
-                dir = Util.getInOrderDirectios(rc.getLocation().directionTo(robot.getLocation()).opposite());
+                dir = Util.getInOrderDirections(rc.getLocation().directionTo(robot.getLocation()).opposite());
                 str = "going away from AR";
             }
         }
         if(leadSource!= null) {
-            dir = Util.getInOrderDirectios(rc.getLocation().directionTo(leadSource));
+            dir = Util.getInOrderDirections(rc.getLocation().directionTo(leadSource));
             str = "going towards lead";
         }
         if(goldSource!= null) {
-            dir = Util.getInOrderDirectios(rc.getLocation().directionTo(goldSource));
+            dir = Util.getInOrderDirections(rc.getLocation().directionTo(goldSource));
             str = "going toward gold";
         }
         if (tryMoveDest(dir)) {

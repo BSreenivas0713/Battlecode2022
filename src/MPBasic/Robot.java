@@ -74,7 +74,7 @@ public class Robot {
             MapLocation robotLoc = robot.getLocation();
             //report enemy archon if not found yet
             if (robot.getType() == RobotType.ARCHON) {
-                reportEnemyArchon(robotLoc, robot.health);
+                reportEnemyArchon(robotLoc, robot.ID, robot.health);
             }
         }
     }
@@ -85,24 +85,26 @@ public class Robot {
      * old one. However, it could be the case that the 3rd unique location we see is actually just
      * the first one moved. Consider this.
      *  */ 
-    static void reportEnemyArchon(MapLocation enemyLoc, int health) throws GameActionException {
+    static void reportEnemyArchon(MapLocation enemyLoc, int enemyID, int health) throws GameActionException {
         int healthBucket = health / Comms.HEALTH_BUCKET_SIZE;
         int encodedEnemyLoc = Comms.encodeLocation(enemyLoc, healthBucket);
         int theirArchons = Comms.enemyArchonCount();
-        if (theirArchons < rc.getArchonCount()) {
-            boolean shouldInsert = true;
-            //only insert archon if not already in list
-            for (int i = Comms.firstEnemy; i < Comms.firstEnemy + theirArchons; i++) {
-                int testFlag = rc.readSharedArray(i);
-                if (enemyLoc.equals(Comms.locationFromFlag(testFlag))) {
-                    shouldInsert = false;
-                    break;
+        boolean shouldInsert = true;
+        int[] ids = Comms.getIDs();
+        //only insert archon if not already in list
+        for (int i = 0; i < theirArchons; i++) {
+            if (enemyID == ids[i]) {
+                shouldInsert = false;
+                int testFlag = rc.readSharedArray(Comms.firstEnemy + i);
+                if (testFlag != encodedEnemyLoc) {
+                    rc.writeSharedArray(Comms.firstEnemy + i, encodedEnemyLoc);
                 }
+                break;
             }
-            if (shouldInsert) {
-                rc.writeSharedArray(Comms.firstEnemy + theirArchons, encodedEnemyLoc);
-                Comms.incrementEnemy();
-            }
+        }
+        if (shouldInsert) {
+            rc.writeSharedArray(Comms.firstEnemy + theirArchons, encodedEnemyLoc);
+            Comms.incrementEnemy(enemyID);
         }
     }
 }

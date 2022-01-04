@@ -35,10 +35,8 @@ public class Soldier extends Robot{
                     bestLoc = Comms.locationFromFlag(currFlag);
                 }
             }
-            dir = rc.getLocation().directionTo(bestLoc);
-            if (rc.canMove(dir)) {
-                rc.move(dir);
-            }
+            Nav.setDest(bestLoc);
+            tryMoveDest(Util.getInOrderDirections(Nav.gradientDescent()));
         // Then try to move randomly.
         } else {
             tryMoveDest(Nav.exploreGreedy(rc));
