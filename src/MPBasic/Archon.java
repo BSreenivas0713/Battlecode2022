@@ -33,8 +33,10 @@ public class Archon extends Robot {
             if (rc.canBuildRobot(toBuild, dir)){
                 rc.buildRobot(toBuild, dir);
                 RobotInfo robot = rc.senseRobotAtLocation(rc.getLocation().add(dir));
-            } else {
-                System.out.println("CRITICAL: EC didn't find the robot it just built");
+                //in future, add info about this new robot to maps
+                if (robot == null) {
+                    System.out.println("CRITICAL: EC didn't find the robot it just built");
+                }
             }
             robotCounter += 1;
             return true;
