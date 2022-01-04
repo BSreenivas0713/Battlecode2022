@@ -10,9 +10,11 @@ public class Miner extends Robot {
         super(r);
         roundNumBorn = r.getRoundNum();
     }
+
     public int getScore(int diff, int leadAmount) {
         return diff + (int)(leadAmount * .3);
     }
+
     public MapLocation[] findLeadAndGold() throws GameActionException {
         MapLocation leadSource = null;
         int bestLeadScore = -1;
@@ -63,8 +65,10 @@ public class Miner extends Robot {
         }
         return new MapLocation[]{leadSource, goldSource};
     }
+
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        Comms.incrementMinerCounter();
         // Try to mine on squares around us.
         boolean amMining = false;
         MapLocation[] LeadGoldList = findLeadAndGold();
