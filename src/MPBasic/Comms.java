@@ -14,8 +14,10 @@ public class Comms {
     static final int lastEnemy = 8;
     static final int idList = 13;
 
+    static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
     static final int HEALTH_MASK = 15;
+    static final int COUNT_OFFSET = 3;
     static final int X_COORD_OFFSET = 0;
     static final int Y_COORD_OFFSET = 6;
     static final int HEALTH_OFFSET = 12;
@@ -37,11 +39,11 @@ public class Comms {
 
     public static int friendlyArchonCount() throws GameActionException {
         int flag = rc.readSharedArray(0);
-        return flag & 3;
+        return flag & COUNT_MASK;
     }
     public static int enemyArchonCount() throws GameActionException {
         int flag = rc.readSharedArray(0);
-        return (flag & 12) >> 2;
+        return (flag >> COUNT_OFFSET) & COUNT_MASK;
     }
     // Returns array index to put current friendly Archon location in
     public static int incrementFriendly() throws GameActionException {
@@ -49,15 +51,16 @@ public class Comms {
         //updating num friendly archons discovered
         int newFlag = oldFlag + 1;
         rc.writeSharedArray(0, newFlag);
-        return 1 + (oldFlag & 3);
+        return firstArchon + (oldFlag & COUNT_MASK);
     }
     // Returns array index to put current enemy Archon location in
-    public static void incrementEnemy(int id) throws GameActionException {
+    public static int incrementEnemy(int id) throws GameActionException {
         int oldFlag = rc.readSharedArray(0);
-        int oldCount = (oldFlag >> 2) & 3;
+        int oldCount = (oldFlag >> COUNT_OFFSET) & COUNT_MASK;
         int newFlag = oldFlag + 4;
         rc.writeSharedArray(0, newFlag);
         storeID(id, oldCount);
+        return firstEnemy + oldCount;
     }
 
     public static int xcoord(int flag) {

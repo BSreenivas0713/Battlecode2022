@@ -12,6 +12,9 @@ public class Soldier extends Robot{
     public RobotInfo getBestEnemy(){
         Team opponent = rc.getTeam().opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(actionRadiusSquared, opponent);
+        if (enemies.length == 0) {
+            return null;
+        }
         for(RobotInfo enemy: enemies) {
             if(enemy.type == RobotType.ARCHON){return enemy;}
             if(enemy.type == RobotType.WATCHTOWER){return enemy;}
@@ -23,9 +26,8 @@ public class Soldier extends Robot{
         super.takeTurn();
         // Try to attack someone
         RobotInfo bestEnemy = getBestEnemy();
-        MapLocation toAttack = bestEnemy.location;
-        if (rc.canAttack(toAttack)) {
-            rc.attack(toAttack);
+        if (bestEnemy != null && rc.canAttack(bestEnemy.location)) {
+            rc.attack(bestEnemy.location);
         }
 
         // First try to move to the Archon with least health

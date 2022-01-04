@@ -97,8 +97,8 @@ public class Robot {
             }
         }
         if (shouldInsert) {
-            rc.writeSharedArray(Comms.firstEnemy + theirArchons, encodedEnemyLoc);
-            Comms.incrementEnemy(enemyID);
+            int newArchon = Comms.incrementEnemy(enemyID);
+            rc.writeSharedArray(newArchon, encodedEnemyLoc);
         }
     }
 
