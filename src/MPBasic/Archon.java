@@ -16,6 +16,8 @@ public class Archon extends Robot {
     static int robotCounter;
     static State currentState;
     static int flagIndex;
+    static double leadToLeave;
+    static int leadToUse;
     static MapLocation leadSource;
     static Direction[] nonWallDirections;
 
@@ -27,6 +29,7 @@ public class Archon extends Robot {
         r.writeSharedArray(nextArchon, myLocFlag);
         flagIndex = nextArchon + Comms.mapLocToFlag;
         currentState = getInitialState();
+        leadToLeave = Util.leadPercentage(rc.getArchonCount(), nextArchon);
         findBestLeadSource();
         nonWallDirections = findnonWallDirections();
         // System.out.println("nonWallDirections: " + nonWallDirections.toString());
@@ -97,6 +100,7 @@ public class Archon extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        leadToUse = (int) ((double)rc.getTeamLeadAmount(rc.getTeam()) * leadToLeave);
         doStateAction();
         if (Comms.enemyArchonCount() > 0) {
             System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
