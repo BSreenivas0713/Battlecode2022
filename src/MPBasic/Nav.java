@@ -577,12 +577,12 @@ public class Nav {
     }
 
     public static Direction[] exploreGreedy(RobotController rc) throws GameActionException {
-        Debug.println(Debug.INFO, "Exploring");
+        // Debug.println(Debug.INFO, "Exploring");
         if(!rc.isMovementReady())
             return new Direction[0];
         
 		if(lastExploreDir == null) {
-            Debug.println(Debug.INFO, "changing last Explore Dir");
+            // Debug.println(Debug.INFO, "changing last Explore Dir");
             Direction oppositeFromHome = Util.randomDirection();
             if (Robot.home != null) {
                 oppositeFromHome = rc.getLocation().directionTo(Robot.home).opposite();

@@ -19,7 +19,8 @@ public class Comms {
     static final int X_COORD_OFFSET = 0;
     static final int Y_COORD_OFFSET = 6;
     static final int HEALTH_OFFSET = 12;
-    static final int HEALTH_BUCKET_SIZE = 40;
+    static final int HEALTH_BUCKET_SIZE = 80;
+    static final int NUM_HEALTH_BUCKETS = 16;
 
     static final int ID_MASK = 15;
     static final int ID_OFFSET_1 = 0;

@@ -103,6 +103,7 @@ public class Robot {
             }
         }
         if (shouldInsert) {
+            Debug.println(encodedEnemyLoc + "");
             rc.writeSharedArray(Comms.firstEnemy + theirArchons, encodedEnemyLoc);
             Comms.incrementEnemy(enemyID);
         }

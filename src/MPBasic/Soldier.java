@@ -21,11 +21,10 @@ public class Soldier extends Robot{
             }
         }
 
-        Direction dir;
         // First try to move to the Archon with least health
         int theirArchons = Comms.enemyArchonCount();
         if (theirArchons > 0) {
-            int leastHealth = 8;
+            int leastHealth = Comms.NUM_HEALTH_BUCKETS;
             MapLocation bestLoc = null;
             for (int i = Comms.firstEnemy; i < Comms.firstEnemy + theirArchons; i++) {
                 int currFlag = rc.readSharedArray(i);
@@ -35,8 +34,9 @@ public class Soldier extends Robot{
                     bestLoc = Comms.locationFromFlag(currFlag);
                 }
             }
-            Nav.setDest(bestLoc);
-            tryMoveDest(Util.getInOrderDirections(Nav.gradientDescent()));
+            // Nav.setDest(bestLoc);
+            Direction bestDir = rc.getLocation().directionTo(bestLoc);
+            tryMoveDest(Util.getInOrderDirections(bestDir));
         // Then try to move randomly.
         } else {
             tryMoveDest(Nav.exploreGreedy(rc));

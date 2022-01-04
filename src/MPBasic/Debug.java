@@ -4,9 +4,9 @@ import battlecode.common.*;
 
 public class Debug {
     static final boolean VERBOSE = true;
-    public static final boolean INFO = false;
-    public static final boolean PATHFINDING = true;
-    private static final boolean INDICATORS = true;
+    public static final boolean INFO = true;
+    public static final boolean PATHFINDING = false;
+    private static final boolean INDICATORS = false;
 
     private static RobotController rc;
 
