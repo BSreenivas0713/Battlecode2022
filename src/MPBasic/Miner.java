@@ -76,7 +76,7 @@ public class Miner extends Robot {
         }
         Direction[] dir = {};
         if (!amMining) { 
-            dir = Nav.exploreGreedy(rc);
+            dir = Nav.exploreGreedy();
         }
         String str = "";
         for(RobotInfo robot: FriendlySensable) {

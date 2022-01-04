@@ -33,20 +33,30 @@ public class Soldier extends Robot{
                     if (currHealth < leastHealth) {
                         leastHealth = currHealth;
                         bestLoc = Comms.locationFromFlag(currFlag);
+                        // Nav.setDest(bestLoc);
                     }
                 }
             }
+
             Direction[] bestDirs = null;
             if (bestLoc != null) {
-                bestDirs = Util.getInOrderDirections(rc.getLocation().directionTo(bestLoc));
+                // Direction bestDir = Nav.gradientDescent();
+                Direction bestDir = Nav.getGreedyDirection(rc.getLocation().directionTo(bestLoc));
+                bestDirs = Util.getInOrderDirections(bestDir);
+    
+                Debug.setIndicatorString("Targeting Archon at: " + bestLoc.toString());
+                Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 255, 0, 0);
+                Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
             }
             else {
-                bestDirs = Nav.exploreGreedy(rc);
+                bestDirs = Nav.exploreGreedy();
             }
             tryMoveDest(bestDirs);
+
         // Then try to move randomly.
         } else {
-            tryMoveDest(Nav.exploreGreedy(rc));
+            Debug.setIndicatorString("Exploring");
+            tryMoveDest(Nav.exploreGreedy());
         }
     }
 }

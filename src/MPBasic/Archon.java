@@ -31,16 +31,18 @@ public class Archon extends Robot {
         nonWallDirections = findnonWallDirections();
         // System.out.println("nonWallDirections: " + nonWallDirections.toString());
     }
+
     public void findBestLeadSource() throws GameActionException{
         leadSource = null;
-        int bestLeadSource = -1;
+        int bestLeadSource = 0;
         for(MapLocation loc: rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), RobotType.ARCHON.visionRadiusSquared)) {
             int lead_amount = rc.senseLead(loc);
-            if (lead_amount != 0 && lead_amount > bestLeadSource){
+            if (lead_amount > bestLeadSource) {
                 leadSource = loc;
             }
         }
     }
+
     public Direction[] findnonWallDirections() throws GameActionException {
         int nonWallCount = 0;
         for (Direction dir: Direction.allDirections()) {

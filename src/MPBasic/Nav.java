@@ -12,8 +12,8 @@ public class Nav {
     static FasterQueue<Integer> q;
 
     static final int MAX = Integer.MAX_VALUE;
-    static final int rows = 4;
-    static final int cols = 4;
+    static final int rows = 5;
+    static final int cols = 5;
     static final int halfRows = rows / 2;
     static final int halfCols = cols / 2;
 
@@ -527,8 +527,17 @@ public class Nav {
 
         return ret;
     }
+
+    public static Direction getGreedyDirection(Direction dir) throws GameActionException {
+        Direction[] bestDirs = greedyDirection(dir);
+        if(bestDirs.length > 0) {
+            return bestDirs[0];
+        } else {
+            return dir;
+        }
+    }
     
-    public static Direction[] greedyDirection(Direction dir, RobotController rc) throws GameActionException {
+    public static Direction[] greedyDirection(Direction dir) throws GameActionException {
         Direction left = dir.rotateLeft();
         Direction right = dir.rotateRight();
 
@@ -576,7 +585,7 @@ public class Nav {
         return dirs;
     }
 
-    public static Direction[] exploreGreedy(RobotController rc) throws GameActionException {
+    public static Direction[] exploreGreedy() throws GameActionException {
         // Debug.println(Debug.INFO, "Exploring");
         if(!rc.isMovementReady())
             return new Direction[0];
@@ -621,6 +630,6 @@ public class Nav {
             }
         }
 
-        return greedyDirection(lastExploreDir, rc);
+        return greedyDirection(lastExploreDir);
     }
 }
