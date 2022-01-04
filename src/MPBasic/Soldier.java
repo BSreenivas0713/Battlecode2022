@@ -21,10 +21,30 @@ public class Soldier extends Robot{
             }
         }
 
-        // Also try to move randomly.
-        Direction dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
-        if (rc.canMove(dir)) {
-            rc.move(dir);
+        Direction dir;
+        // First try to move to the Archon with least health
+        int theirArchons = Comms.enemyArchonCount();
+        if (theirArchons > 0) {
+            int leastHealth = 32;
+            MapLocation bestLoc = null;
+            for (int i = Comms.firstEnemy; i < Comms.firstEnemy + theirArchons; i++) {
+                int currFlag = rc.readSharedArray(i);
+                int currHealth = Comms.getHealth(currFlag);
+                if (currHealth < leastHealth) {
+                    leastHealth = currHealth;
+                    bestLoc = Comms.locationFromFlag(currFlag);
+                }
+            }
+            dir = rc.getLocation().directionTo(bestLoc);
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+            }
+        // Then try to move randomly.
+        } else {
+            dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+            }
         }
     }
 }
