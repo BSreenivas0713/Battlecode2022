@@ -43,6 +43,14 @@ public class Util {
         Direction.NORTHWEST,
     };
     
+    static Direction turnLeft90(Direction dir) {
+        return dir.rotateLeft().rotateLeft();
+    }
+
+    static Direction turnRight90(Direction dir) {
+        return dir.rotateRight().rotateRight();
+    }
+    
     static Direction[] getOrderedDirections(Direction dir) {
         return new Direction[]{dir, dir.rotateLeft(), dir.rotateLeft().rotateLeft(), dir.opposite().rotateRight(), dir.opposite(),
                 dir.opposite().rotateLeft(), dir.rotateRight().rotateRight(), dir.rotateRight()};
