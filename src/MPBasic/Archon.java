@@ -47,8 +47,8 @@ public class Archon extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         doStateAction();
-
     }
+
     public void doStateAction() throws GameActionException {
         switch(currentState) {
             case CHILLING:

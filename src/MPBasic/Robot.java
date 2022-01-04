@@ -9,10 +9,15 @@ public class Robot {
     static RobotController rc; 
     static int turnCount;
     static MapLocation home;
+    static int actionRadiusSquared;
+    static int visionRadiusSquared;
 
     public Robot(RobotController r) {
         rc = r;
         turnCount = 0;
+        actionRadiusSquared = rc.getType().actionRadiusSquared;
+        visionRadiusSquared = rc.getType().visionRadiusSquared;
+
         
         if(rc.getType() == RobotType.ARCHON) {
             home = rc.getLocation();
@@ -34,6 +39,7 @@ public class Robot {
     public void takeTurn() throws GameActionException {
         AnomalyScheduleEntry[] AnomolySchedule = rc.getAnomalySchedule();
         turnCount += 1;
+        tryToReportArchon();
         // initializeGlobals();
         // turnCount += 1;
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
@@ -45,6 +51,18 @@ public class Robot {
             rc.move(dir);
             return true;
         } else return false;
+    }
+
+    static void tryToReportArchon() throws GameActionException {
+        Team opponent = rc.getTeam().opponent();
+        RobotInfo[] enemies = rc.senseNearbyRobots(visionRadiusSquared, opponent);
+        for (RobotInfo robot : enemies) {
+            MapLocation robotLoc = robot.getLocation();
+            //report enemy archon if not found yet
+            if (robot.getType() == RobotType.ARCHON) {
+                reportEnemyArchon(robotLoc, robot.health);
+            }
+        }
     }
 
     /**

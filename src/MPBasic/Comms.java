@@ -14,11 +14,11 @@ public class Comms {
     static final int lastEnemy = 8;
 
     static final int COORD_MASK = 127;
-    static final int HEALTH_MASK = 31;
+    static final int HEALTH_MASK = 7;
     static final int X_COORD_OFFSET = 0;
     static final int Y_COORD_OFFSET = 6;
     static final int HEALTH_OFFSET = 12;
-    static final int HEALTH_BUCKET_SIZE = 40;
+    static final int HEALTH_BUCKET_SIZE = 171;
 
     private static RobotController rc;
 
@@ -71,6 +71,6 @@ public class Comms {
         return robot.getLocation().x + (robot.getLocation().y << Y_COORD_OFFSET);
     }
     public static int encodeLocation(MapLocation loc, int healthBucket) {
-        return loc.x + loc.y << Y_COORD_OFFSET + healthBucket << HEALTH_OFFSET;
+        return loc.x + (loc.y << Y_COORD_OFFSET) + (healthBucket << HEALTH_OFFSET);
     }
 }
