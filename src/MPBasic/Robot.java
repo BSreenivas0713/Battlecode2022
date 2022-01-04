@@ -108,7 +108,7 @@ public class Robot {
             MapLocation loc = enemyArchonLocs[i];
             if (rc.canSenseLocation(loc)) {
                 RobotInfo botAtLoc = rc.senseRobotAtLocation(loc);
-                if (botAtLoc == null || (botAtLoc.team == rc.getTeam().opponent() && botAtLoc.type != RobotType.ARCHON)) {
+                if (botAtLoc == null || (botAtLoc.type != RobotType.ARCHON)) {
                     rc.writeSharedArray(Comms.firstEnemy + i, Comms.DEAD_ARCHON_FLAG);
                 }
             }
