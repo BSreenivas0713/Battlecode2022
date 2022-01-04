@@ -452,7 +452,7 @@ public class Nav {
     }
 
 	public static Direction explorePathfinding() throws GameActionException {
-        Debug.println(Debug.PATHFINDING, "Exploring");
+        // Debug.println(Debug.PATHFINDING, "Exploring");
         if(!rc.isMovementReady())
             return null;
         
@@ -577,7 +577,7 @@ public class Nav {
     }
 
     public static Direction[] exploreGreedy(RobotController rc) throws GameActionException {
-        Debug.println(Debug.PATHFINDING, "Exploring");
+        Debug.println(Debug.INFO, "Exploring");
         if(!rc.isMovementReady())
             return new Direction[0];
         
@@ -593,7 +593,7 @@ public class Nav {
         }
         
 		if(boredom >= EXPLORE_BOREDOM) {
-            Debug.println(Debug.INFO, "changing last Explore Dir because of boredom");
+            // Debug.println(Debug.INFO, "changing last Explore Dir because of boredom");
             boredom = 0;
             Direction[] newDirChoices = {
                 lastExploreDir.rotateLeft(),
@@ -604,7 +604,7 @@ public class Nav {
         boredom++;
         
 		if(!rc.onTheMap(rc.getLocation().add(lastExploreDir))) {
-            Debug.println(Debug.INFO, "changing last Explore Dir because of a wall");
+            // Debug.println(Debug.INFO, "changing last Explore Dir because of a wall");
             Direction tempExploreDir = null;
             if((int) (Math.random() * 2) == 0) {
                 tempExploreDir = Util.turnLeft90(lastExploreDir);

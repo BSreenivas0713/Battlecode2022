@@ -13,33 +13,71 @@ public class Miner extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         // Try to mine on squares around us.
+        boolean amMining = false;
         MapLocation leadSource = null;
-        int bestLeadSource = -1;
+        int bestLeadDistToHome = Integer.MAX_VALUE;
         MapLocation goldSource = null;
         int bestGoldSource = -1;
+        // find the best lead source, prioritizing lead that is within your action radius
         for(MapLocation loc: rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), RobotType.MINER.visionRadiusSquared)) {
+            int leadDistToHome = loc.distanceSquaredTo(home);
             int leadAmount = rc.senseLead(loc);
-            if (leadAmount != 0 && leadAmount > bestLeadSource){
-                leadSource = loc;
+            if (leadAmount > 1){
+                if (leadSource == null) {
+                    leadSource = loc;
+                    bestLeadDistToHome = leadDistToHome;
+                }
+                else if (leadSource.isWithinDistanceSquared(rc.getLocation(), actionRadiusSquared)) {
+                    if (bestLeadDistToHome > leadDistToHome && loc.isWithinDistanceSquared(rc.getLocation(), actionRadiusSquared)) {
+                        leadSource = loc;
+                        bestLeadDistToHome = leadDistToHome;
+                    }
+                }
+                else {
+                    if (bestLeadDistToHome > leadDistToHome || loc.isWithinDistanceSquared(rc.getLocation(), actionRadiusSquared)) {
+                        leadSource = loc;
+                        bestLeadDistToHome = leadDistToHome;
+                    }
+                }
             }
             int goldAmount = rc.senseGold(loc);
-            if (goldAmount != 0 && goldAmount > bestGoldSource){
-                goldSource = loc;
+            if (goldAmount != 0){
+                if (goldSource == null) {
+                    goldSource = loc; 
+                    bestGoldSource = goldAmount;
+                }
+                else if (goldSource.isWithinDistanceSquared(rc.getLocation(), actionRadiusSquared)) {
+                    if (goldAmount > bestGoldSource && loc.isWithinDistanceSquared(rc.getLocation(), actionRadiusSquared)) {
+                        goldSource = loc;
+                        bestGoldSource = goldAmount;
+                    }
+                }
+                else {
+                    if (goldAmount > bestGoldSource || loc.isWithinDistanceSquared(rc.getLocation(), actionRadiusSquared)) {
+                        goldSource = loc;
+                        bestGoldSource = goldAmount;
+                    }
+                }
             }
         }
         if(goldSource != null) {
+            rc.setIndicatorString("Can see Lead!");
             while(rc.canMineGold(goldSource)) {
                 rc.setIndicatorString("Mining Gold!");
                 rc.mineGold(goldSource);
             }
         }
         if(leadSource != null) {
-            while(rc.canMineLead(leadSource)) {
+            rc.setIndicatorString("Can see Lead: " + leadSource.toString());
+            while(rc.canMineLead(leadSource) && rc.senseLead(leadSource) > 1) {
                 rc.setIndicatorString("Mining Lead!");
                 rc.mineLead(leadSource);
             }
         }
-        Direction[] dir = Nav.exploreGreedy(rc);
+        Direction[] dir = {};
+        if (!amMining) { 
+            dir = Nav.exploreGreedy(rc);
+        }
         String str = "";
         for(RobotInfo robot: FriendlySensable) {
             if(robot.getType() == RobotType.ARCHON && rc.getRoundNum() == roundNumBorn + 1) {
