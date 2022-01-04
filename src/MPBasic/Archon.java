@@ -15,11 +15,8 @@ public class Archon extends Robot {
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
-        int oldSetupFlag = r.readSharedArray(0);
-        int newSetupFlag = oldSetupFlag + 1;
-        int nextArchon = 1 + (oldSetupFlag & 3);
+        int nextArchon = Util.incrementFriendly(r);
         int myLocFlag = Util.storeMyLoc(r);
-        r.writeSharedArray(0, newSetupFlag);
         r.writeSharedArray(nextArchon, myLocFlag);
         flagIndex = nextArchon + Util.mapLocToFlag;
         currentState = getInitialState();

@@ -43,7 +43,6 @@ public strictfp class RobotPlayer {
         int setupFlag = rc.readSharedArray(0);
         int dataFlag = 0;
         int ourArchons = Util.friendlyArchonCount(setupFlag);
-        // int theirArchons = Util.enemyArchonCount(setupFlag);
         RobotInfo[] sensableWithin2 = rc.senseNearbyRobots(2, rc.getTeam());
         if (rc.getType() != RobotType.ARCHON) {
             for (RobotInfo robot : sensableWithin2) {
