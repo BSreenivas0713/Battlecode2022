@@ -86,9 +86,9 @@ public class Archon extends Robot {
                 if (robot == null) {
                     System.out.println("CRITICAL: EC didn't find the robot it just built");
                 }
+                robotCounter += 1;
+                return true;
             }
-            robotCounter += 1;
-            return true;
         }
         return false;
     }
@@ -102,9 +102,11 @@ public class Archon extends Robot {
         switch(currentState) {
             case INIT: 
                 firstRounds();
+                Debug.setIndicatorString("INIT state");
                 if (robotCounter == 3) {currentState = State.CHILLING;}
                 break;
             case CHILLING:
+                Debug.setIndicatorString("CHILLING state");
                 // Pick a direction to build in.
                 if (Util.rng.nextBoolean()) {
                     // Let's try to build a miner.
