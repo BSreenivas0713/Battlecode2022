@@ -60,7 +60,7 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode.
             try {
                 bot.takeTurn();
-
+                rc.setIndicatorString("Takking a turn");
                 // if (bot.changeTo != null) {
                 //     bot = bot.changeTo;
                 //     bot.changeTo = null;
