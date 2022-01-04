@@ -33,6 +33,11 @@ public class Util {
         return new Direction[]{dir, dir.rotateLeft(), dir.rotateLeft().rotateLeft(), dir.opposite().rotateRight(), dir.opposite(),
                 dir.opposite().rotateLeft(), dir.rotateRight().rotateRight(), dir.rotateRight()};
     }
+    static Direction[] getInOrderDirectios(Direction target_dir) {
+        return new Direction[]{target_dir, target_dir.rotateRight(), target_dir.rotateLeft(), 
+            target_dir.rotateRight().rotateRight(), target_dir.rotateLeft().rotateLeft()};
+    }
+
     static Direction randomDirection() {
         return directions[Util.rng.nextInt(Util.directions.length)];
     }

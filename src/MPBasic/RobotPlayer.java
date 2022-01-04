@@ -14,6 +14,7 @@ public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         Debug.init(rc);
         Comms.init(rc);
+        Nav.init(rc);
 
         int setupFlag = rc.readSharedArray(0);
         int dataFlag = 0;

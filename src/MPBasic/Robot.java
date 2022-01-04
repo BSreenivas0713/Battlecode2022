@@ -56,6 +56,16 @@ public class Robot {
             return true;
         } else return false;
     }
+    static boolean tryMoveDest(Direction[] target_dir) throws GameActionException {
+        // Debug.println(Debug.info, "Dest direction: " + dir);
+        for(Direction dir : target_dir) {
+            if(rc.canMove(dir)) {
+                rc.move(dir);  
+                return true;
+            }
+        }
+        return false;
+    }
 
     static void tryToReportArchon() throws GameActionException {
         Team opponent = rc.getTeam().opponent();

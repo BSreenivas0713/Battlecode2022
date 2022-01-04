@@ -5,8 +5,10 @@ import MPBasic.Debug.*;
 import MPBasic.Util.*;
 
 public class Miner extends Robot {
+    int roundNumBorn;
     public Miner(RobotController r) throws GameActionException {
         super(r);
+        roundNumBorn = r.getRoundNum();
     }
     public void takeTurn() throws GameActionException {
         super.takeTurn();
@@ -37,25 +39,24 @@ public class Miner extends Robot {
                 rc.mineLead(leadSource);
             }
         }
-        Direction dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
+        Direction[] dir = Nav.exploreGreedy(rc);
         String str = "";
         for(RobotInfo robot: FriendlySensable) {
-            if(robot.getType() == RobotType.ARCHON) {
-                dir = rc.getLocation().directionTo(robot.getLocation()).opposite();
+            if(robot.getType() == RobotType.ARCHON && rc.getRoundNum() == roundNumBorn + 1) {
+                dir = Util.getInOrderDirectios(rc.getLocation().directionTo(robot.getLocation()).opposite());
                 str = "going away from AR";
             }
         }
         if(leadSource!= null) {
-            dir = rc.getLocation().directionTo(leadSource);
+            dir = Util.getInOrderDirectios(rc.getLocation().directionTo(leadSource));
             str = "going towards lead";
         }
         if(goldSource!= null) {
-            dir = rc.getLocation().directionTo(goldSource);
+            dir = Util.getInOrderDirectios(rc.getLocation().directionTo(goldSource));
             str = "going toward gold";
         }
-        if (rc.canMove(dir)) {
+        if (tryMoveDest(dir)) {
             rc.setIndicatorString(str);
-            rc.move(dir);
         }
     }
 }
