@@ -51,9 +51,8 @@ public strictfp class RobotPlayer {
                     MapLocation robotLoc = robot.getLocation();
                     for (int i = Util.firstArchon; i < Util.firstArchon + ourArchons; i++) {
                         int testFlag = rc.readSharedArray(i);
-                        MapLocation testLoc = MapLocation(xcoord(testFlag), ycoord(testFlag));
-                        if (testLoc.equals(robotLoc)) {
-                            dataFlag = rc.readSharedArray(i + mapLocToFLag);
+                        if (robotLoc.x == Util.xcoord(testFlag) && robotLoc.y == Util.ycoord(testFlag)) {
+                            dataFlag = rc.readSharedArray(i + Util.mapLocToFlag);
                             break;
                         }
                     }

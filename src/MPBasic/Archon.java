@@ -11,14 +11,23 @@ public class Archon extends Robot {
     };
     static int robotCounter;
     static State currentState;
+    static int flagIndex;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
+        int oldSetupFlag = r.readSharedArray(0);
+        int newSetupFlag = oldSetupFlag + 1;
+        int nextArchon = 1 + (oldSetupFlag & 3);
+        int myLocFlag = Util.storeMyLoc(r);
+        r.writeSharedArray(0, newSetupFlag);
+        r.writeSharedArray(nextArchon, myLocFlag);
+        flagIndex = nextArchon + Util.mapLocToFlag;
         currentState = getInitialState();
     }
     public State getInitialState() {
         return State.CHILLING;
     }
+
     public boolean buildRobot(RobotType toBuild, Direction mainDir) throws GameActionException {
         Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
         for(Direction dir : orderedDirs) {
