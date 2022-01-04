@@ -41,10 +41,7 @@ public class Soldier extends Robot{
             }
         // Then try to move randomly.
         } else {
-            dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
-            if (rc.canMove(dir)) {
-                rc.move(dir);
-            }
+            tryMoveDest(Nav.exploreGreedy(rc));
         }
     }
 }
