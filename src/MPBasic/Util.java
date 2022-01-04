@@ -5,7 +5,28 @@ import java.util.Random;
 
 
 public class Util {
-    static final Random rng = new Random(6147);
+    static final Random rng = new Random(2001);
+
+    static final int mapLocToFLag = 8;
+
+    static final int numArchons = 4;
+    static final int firstArchon = 1;
+    static final int lastArchon = 4;
+
+    public static void friendlyArchonCount(int flag) {
+        return flag & 3;
+    }
+
+    public static void enemyArchonCount(int flag) {
+        return (flag & 12) >> 2;
+    }
+
+    public static void xcoord(int flag) {
+        return flag & 255;
+    }
+    public static void ycoord(int flag) {
+        return (flag & 65280) >> 8;
+    }
 
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {

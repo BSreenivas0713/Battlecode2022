@@ -40,6 +40,28 @@ public strictfp class RobotPlayer {
 
         // You can also use indicators to save debug notes in replays.
         rc.setIndicatorString("Hello world!");
+        int setupFlag = rc.readSharedArray(0);
+        int dataFlag = 0;
+        int ourArchons = Util.friendlyArchonCount(setupFlag);
+        // int theirArchons = Util.enemyArchonCount(setupFlag);
+        RobotInfo[] sensableWithin2 = rc.senseNearbyRobots(2, rc.getTeam());
+        if (rc.getType() != RobotType.ARCHON) {
+            for (RobotInfo robot : sensableWithin2) {
+                if (robot.getType() == RobotType.ARCHON && robot.getTeam() == rc.getTeam()) {
+                    MapLocation robotLoc = robot.getLocation();
+                    for (int i = Util.firstArchon; i < Util.firstArchon + ourArchons; i++) {
+                        int testFlag = rc.readSharedArray(i);
+                        MapLocation testLoc = MapLocation(xcoord(testFlag), ycoord(testFlag));
+                        if (testLoc.equals(robotLoc)) {
+                            dataFlag = rc.readSharedArray(i + mapLocToFLag);
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
         switch (rc.getType()) {
             case ARCHON:     bot = new Archon(rc);  break;
             case MINER:      bot = new Miner(rc);  break;
