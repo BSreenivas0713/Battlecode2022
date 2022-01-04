@@ -20,6 +20,7 @@ public class Util {
     };
     static final int ArchonStraightVisionRange = 5;
     static final int ArchonDiagVisionRange = 4;
+    static final int MinerDomain = 10;
     
     static Direction turnLeft90(Direction dir) {
         return dir.rotateLeft().rotateLeft();

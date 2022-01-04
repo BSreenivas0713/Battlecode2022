@@ -11,6 +11,7 @@ public class Robot {
     static MapLocation home;
     static RobotInfo[] EnemySensable;
     static RobotInfo[] FriendlySensable;
+    static MapLocation currLoc;
     static int actionRadiusSquared;
     static int visionRadiusSquared;
 
@@ -43,6 +44,7 @@ public class Robot {
         turnCount += 1;
         EnemySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent());
         FriendlySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam());
+        currLoc = rc.getLocation();
         reportKilledArchons();
         tryToReportArchon();
         // initializeGlobals();

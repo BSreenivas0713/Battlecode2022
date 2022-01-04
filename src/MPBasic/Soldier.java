@@ -18,8 +18,9 @@ public class Soldier extends Robot{
         for(RobotInfo enemy: enemies) {
             if(enemy.type == RobotType.ARCHON){return enemy;}
             if(enemy.type == RobotType.WATCHTOWER){return enemy;}
+            if(enemy.type == RobotType.SAGE){return enemy;}
         }
-        return enemies[0];
+        if (enemies.length != 0) {return enemies[0];} else {return null;}
 
     }
     public void takeTurn() throws GameActionException {
