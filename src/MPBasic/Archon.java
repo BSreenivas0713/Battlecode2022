@@ -13,7 +13,11 @@ public class Archon extends Robot {
         CHILLING,
         INIT,
     };
+
+    static int MAX_NUM_MINERS;
+
     static int robotCounter;
+    static int minerCount;
     static State currentState;
     static int flagIndex;
     static double leadToLeave;
@@ -24,6 +28,10 @@ public class Archon extends Robot {
     public Archon(RobotController r) throws GameActionException {
         super(r);
         //writing all Archon locations immediately on round 0
+        MAX_NUM_MINERS = Math.min(Util.MAX_MINERS,
+                                    rc.getMapWidth() * rc.getMapHeight() /
+                                    Util.MAX_MAP_SIZE_TO_MINER_RATIO);
+        Debug.println("Max number of miners: " + MAX_NUM_MINERS);
         int nextArchon = Comms.incrementFriendly();
         int myLocFlag = Comms.encodeLocation();
         r.writeSharedArray(nextArchon, myLocFlag);
@@ -101,11 +109,18 @@ public class Archon extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         leadToUse = (int) ((double)rc.getTeamLeadAmount(rc.getTeam()) * leadToLeave);
+        updateRobotCounts();
         doStateAction();
-        if (Comms.enemyArchonCount() > 0) {
-            System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
-        }
+        // if (Comms.enemyArchonCount() > 0) {
+        //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + 
+        //                         rc.readSharedArray(Comms.firstEnemy + 1) + "; " + 
+        //                         rc.readSharedArray(Comms.firstEnemy + 2) + "; " + 
+        //                         rc.readSharedArray(Comms.firstEnemy + 3));
+        // }
+    }
 
+    public void updateRobotCounts() throws GameActionException {
+        minerCount = Comms.getMinerCount();
     }
 
     public void doStateAction() throws GameActionException {
@@ -118,7 +133,7 @@ public class Archon extends Robot {
             case CHILLING:
                 Debug.setIndicatorString("CHILLING state");
                 // Pick a direction to build in.
-                if (Util.rng.nextBoolean()) {
+                if (minerCount <= MAX_NUM_MINERS && Util.rng.nextBoolean()) {
                     // Let's try to build a miner.
                     Debug.setIndicatorString("Trying to build a miner");
                     buildRobot(RobotType.MINER, Util.randomDirection());

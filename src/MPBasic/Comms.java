@@ -7,12 +7,12 @@ import MPBasic.Util.*;
 public class Comms {
     static final int mapLocToFlag = 8;
 
-    static final int numArchons = 4;
     static final int firstArchon = 1;
     static final int lastArchon = 4;
     static final int firstEnemy = 5;
     static final int lastEnemy = 8;
     static final int idList = 13;
+    static final int MINER_COUNTER_IDX = 14;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
@@ -30,6 +30,8 @@ public class Comms {
     static final int ID_OFFSET_2 = 4;
     static final int ID_OFFSET_3 = 8;
     static final int ID_OFFSET_4 = 12;
+    static final int MINER_COUNTER_OFFSET = 8;
+    static final int MINER_MASK = 0xFF;
 
     private static RobotController rc;
 
@@ -111,5 +113,35 @@ public class Comms {
             res[i - firstEnemy] = locationFromFlag(rc.readSharedArray(i));
         }
         return res;
+    }
+
+    // The upper half of 16 bits hold the robot count for the last turn.
+    // Archons move the lower half into the upper half if the upper is 0.
+    // Archons also zero the lower half.
+    public static int getMinerCount() throws GameActionException {
+        int minerFlag = rc.readSharedArray(MINER_COUNTER_IDX);
+        int lastCount = (minerFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
+        int currCount = minerFlag & MINER_MASK;
+
+        if(lastCount == 0) {
+            rc.writeSharedArray(MINER_COUNTER_IDX, currCount << MINER_COUNTER_OFFSET);
+            return currCount;
+        }
+        
+        return lastCount;
+    }
+
+    // The lower half holds the running count updated by the miners.
+    // Miners zero out the upper half if they see it's not 0.
+    public static void incrementMinerCounter() throws GameActionException {
+        int minerFlag = rc.readSharedArray(MINER_COUNTER_IDX);
+        int lastCount = (minerFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
+        int currCount = minerFlag & MINER_MASK;
+
+        if(lastCount != 0) {
+            rc.writeSharedArray(MINER_COUNTER_IDX, 1);
+        } else {
+            rc.writeSharedArray(MINER_COUNTER_IDX, currCount + 1);
+        }
     }
 }
