@@ -30,7 +30,6 @@ public class Miner extends Robot {
         Direction dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
         if (rc.canMove(dir)) {
             rc.move(dir);
-            System.out.println("I moved!");
         }
     }
 }

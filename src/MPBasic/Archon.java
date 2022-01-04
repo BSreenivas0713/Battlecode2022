@@ -3,6 +3,7 @@ package MPBasic;
 import battlecode.common.*;
 import MPBasic.Debug.*;
 import MPBasic.Util.*;
+import MPBasic.Comms.*;
 
 public class Archon extends Robot {
     static enum State {
@@ -15,10 +16,11 @@ public class Archon extends Robot {
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
-        int nextArchon = Util.incrementFriendly(r);
-        int myLocFlag = Util.storeMyLoc(r);
+        //writing all Archon locations immediately on round 0
+        int nextArchon = Comms.incrementFriendly();
+        int myLocFlag = Comms.encodeLocation();
         r.writeSharedArray(nextArchon, myLocFlag);
-        flagIndex = nextArchon + Util.mapLocToFlag;
+        flagIndex = nextArchon + Comms.mapLocToFlag;
         currentState = getInitialState();
     }
     public State getInitialState() {
@@ -31,12 +33,12 @@ public class Archon extends Robot {
             if (rc.canBuildRobot(toBuild, dir)){
                 rc.buildRobot(toBuild, dir);
                 RobotInfo robot = rc.senseRobotAtLocation(rc.getLocation().add(dir));
-                } else {
-                    System.out.println("CRITICAL: EC didn't find the robot it just built");
-                }
-                robotCounter += 1;
-                return true;
+            } else {
+                System.out.println("CRITICAL: EC didn't find the robot it just built");
             }
+            robotCounter += 1;
+            return true;
+        }
         return false;
     }
 
@@ -51,11 +53,11 @@ public class Archon extends Robot {
                 // Pick a direction to build in.
                 if (Util.rng.nextBoolean()) {
                     // Let's try to build a miner.
-                    rc.setIndicatorString("Trying to build a miner");
+                    Debug.setIndicatorString("Trying to build a miner");
                     buildRobot(RobotType.MINER, Util.randomDirection());
                 } else {
                     // Let's try to build a soldier.
-                    rc.setIndicatorString("Trying to build a soldier");
+                    Debug.setIndicatorString("Trying to build a soldier");
                     buildRobot(RobotType.SOLDIER, Util.randomDirection());
                 }
                 break;
