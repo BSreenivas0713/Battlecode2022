@@ -39,4 +39,12 @@ public class Util {
         Direction.WEST,
         Direction.NORTHWEST,
     };
+    
+    static Direction[] getOrderedDirections(Direction dir) {
+        return new Direction[]{dir, dir.rotateLeft(), dir.rotateLeft().rotateLeft(), dir.opposite().rotateRight(), dir.opposite(),
+                dir.opposite().rotateLeft(), dir.rotateRight().rotateRight(), dir.rotateRight()};
+    }
+    static Direction randomDirection() {
+        return directions[Util.rng.nextInt(Util.directions.length)];
+    }
 }
