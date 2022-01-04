@@ -56,8 +56,11 @@ public class Comms {
         return (flag >> Y_COORD_OFFSET) & COORD_MASK;
     }
     
+    public static int getHealthBucket(int flag) {
+        return (flag >> HEALTH_OFFSET) & HEALTH_MASK;
+    }
     public static int getHealth(int flag) {
-        return ((flag >> HEALTH_OFFSET) & HEALTH_MASK) * HEALTH_BUCKET_SIZE;
+        return getHealthBucket(flag) * HEALTH_BUCKET_SIZE;
     }
 
     public static MapLocation locationFromFlag(int flag) {

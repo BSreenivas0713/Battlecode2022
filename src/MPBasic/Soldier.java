@@ -25,11 +25,11 @@ public class Soldier extends Robot{
         // First try to move to the Archon with least health
         int theirArchons = Comms.enemyArchonCount();
         if (theirArchons > 0) {
-            int leastHealth = Integer.MAX_VALUE;
+            int leastHealth = 8;
             MapLocation bestLoc = null;
             for (int i = Comms.firstEnemy; i < Comms.firstEnemy + theirArchons; i++) {
                 int currFlag = rc.readSharedArray(i);
-                int currHealth = Comms.getHealth(currFlag);
+                int currHealth = Comms.getHealthBucket(currFlag);
                 if (currHealth < leastHealth) {
                     leastHealth = currHealth;
                     bestLoc = Comms.locationFromFlag(currFlag);
