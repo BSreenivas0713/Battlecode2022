@@ -21,6 +21,7 @@ public class Comms {
     static final int HEALTH_OFFSET = 12;
     static final int HEALTH_BUCKET_SIZE = 80;
     static final int NUM_HEALTH_BUCKETS = 16;
+    static final int DEAD_ARCHON_FLAG = 65535;
 
     static final int ID_MASK = 15;
     static final int ID_OFFSET_1 = 0;
@@ -99,5 +100,13 @@ public class Comms {
         int id3 = (idFlag >> ID_OFFSET_3) & ID_MASK;
         int id4 = (idFlag >> ID_OFFSET_4) & ID_MASK;
         return new int[]{id1, id2, id3, id4};
+    }
+
+    public static MapLocation[] getEnemyArchonLocations() throws GameActionException {
+        MapLocation[] res = new MapLocation[enemyArchonCount()];
+        for (int i = firstEnemy; i < firstEnemy + enemyArchonCount(); i++) {
+            res[i - firstEnemy] = locationFromFlag(rc.readSharedArray(i));
+        }
+        return res;
     }
 }

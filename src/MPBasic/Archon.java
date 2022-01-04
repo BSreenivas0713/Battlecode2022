@@ -29,7 +29,7 @@ public class Archon extends Robot {
         currentState = getInitialState();
         findBestLeadSource();
         nonWallDirections = findnonWallDirections();
-        System.out.println("nonWallDirections: " + nonWallDirections.toString());
+        // System.out.println("nonWallDirections: " + nonWallDirections.toString());
     }
     public void findBestLeadSource() throws GameActionException{
         leadSource = null;

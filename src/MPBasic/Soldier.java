@@ -28,15 +28,22 @@ public class Soldier extends Robot{
             MapLocation bestLoc = null;
             for (int i = Comms.firstEnemy; i < Comms.firstEnemy + theirArchons; i++) {
                 int currFlag = rc.readSharedArray(i);
-                int currHealth = Comms.getHealthBucket(currFlag);
-                if (currHealth < leastHealth) {
-                    leastHealth = currHealth;
-                    bestLoc = Comms.locationFromFlag(currFlag);
+                if (currFlag != Comms.DEAD_ARCHON_FLAG) {
+                    int currHealth = Comms.getHealthBucket(currFlag);
+                    if (currHealth < leastHealth) {
+                        leastHealth = currHealth;
+                        bestLoc = Comms.locationFromFlag(currFlag);
+                    }
                 }
             }
-            // Nav.setDest(bestLoc);
-            Direction bestDir = rc.getLocation().directionTo(bestLoc);
-            tryMoveDest(Util.getInOrderDirections(bestDir));
+            Direction[] bestDirs = null;
+            if (bestLoc != null) {
+                bestDirs = Util.getInOrderDirections(rc.getLocation().directionTo(bestLoc));
+            }
+            else {
+                bestDirs = Nav.exploreGreedy(rc);
+            }
+            tryMoveDest(bestDirs);
         // Then try to move randomly.
         } else {
             tryMoveDest(Nav.exploreGreedy(rc));
