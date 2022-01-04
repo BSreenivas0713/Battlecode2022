@@ -12,17 +12,9 @@ public class Soldier extends Robot{
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         // Try to attack someone
-        int radius = rc.getType().actionRadiusSquared;
         Team opponent = rc.getTeam().opponent();
-        RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
+        RobotInfo[] enemies = rc.senseNearbyRobots(actionRadiusSquared, opponent);
         if (enemies.length > 0) {
-            for (RobotInfo robot : enemies) {
-                MapLocation robotLoc = robot.getLocation();
-                //report enemy archon if not found yet
-                if (robot.getType() == RobotType.ARCHON) {
-                    reportEnemyArchon(robotLoc, robot.health);
-                }
-            }
             MapLocation toAttack = enemies[0].location;
             if (rc.canAttack(toAttack)) {
                 rc.attack(toAttack);
@@ -33,7 +25,7 @@ public class Soldier extends Robot{
         // First try to move to the Archon with least health
         int theirArchons = Comms.enemyArchonCount();
         if (theirArchons > 0) {
-            int leastHealth = 32;
+            int leastHealth = Integer.MAX_VALUE;
             MapLocation bestLoc = null;
             for (int i = Comms.firstEnemy; i < Comms.firstEnemy + theirArchons; i++) {
                 int currFlag = rc.readSharedArray(i);

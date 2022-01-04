@@ -11,10 +11,15 @@ public class Robot {
     static MapLocation home;
     static RobotInfo[] EnemySensable;
     static RobotInfo[] FriendlySensable;
+    static int actionRadiusSquared;
+    static int visionRadiusSquared;
 
     public Robot(RobotController r) {
         rc = r;
         turnCount = 0;
+        actionRadiusSquared = rc.getType().actionRadiusSquared;
+        visionRadiusSquared = rc.getType().visionRadiusSquared;
+
         
         if(rc.getType() == RobotType.ARCHON) {
             home = rc.getLocation();
@@ -38,6 +43,7 @@ public class Robot {
         turnCount += 1;
         EnemySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent());
         FriendlySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam());
+        tryToReportArchon();
         // initializeGlobals();
         // turnCount += 1;
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
@@ -49,6 +55,18 @@ public class Robot {
             rc.move(dir);
             return true;
         } else return false;
+    }
+
+    static void tryToReportArchon() throws GameActionException {
+        Team opponent = rc.getTeam().opponent();
+        RobotInfo[] enemies = rc.senseNearbyRobots(visionRadiusSquared, opponent);
+        for (RobotInfo robot : enemies) {
+            MapLocation robotLoc = robot.getLocation();
+            //report enemy archon if not found yet
+            if (robot.getType() == RobotType.ARCHON) {
+                reportEnemyArchon(robotLoc, robot.health);
+            }
+        }
     }
 
     /**

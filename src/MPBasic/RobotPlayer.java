@@ -14,7 +14,6 @@ public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         Debug.init(rc);
         Comms.init(rc);
-        Debug.println("I'm a " + rc.getType() + " and I just got created! I have health " + rc.getHealth());
 
         int setupFlag = rc.readSharedArray(0);
         int dataFlag = 0;
