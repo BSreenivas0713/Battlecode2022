@@ -9,16 +9,23 @@ public class Soldier extends Robot{
     public Soldier(RobotController r) throws GameActionException {
         super(r);
     }
+    public RobotInfo getBestEnemy(){
+        Team opponent = rc.getTeam().opponent();
+        RobotInfo[] enemies = rc.senseNearbyRobots(actionRadiusSquared, opponent);
+        for(RobotInfo enemy: enemies) {
+            if(enemy.type == RobotType.ARCHON){return enemy;}
+            if(enemy.type == RobotType.WATCHTOWER){return enemy;}
+        }
+        return enemies[0];
+
+    }
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         // Try to attack someone
-        Team opponent = rc.getTeam().opponent();
-        RobotInfo[] enemies = rc.senseNearbyRobots(actionRadiusSquared, opponent);
-        if (enemies.length > 0) {
-            MapLocation toAttack = enemies[0].location;
-            if (rc.canAttack(toAttack)) {
-                rc.attack(toAttack);
-            }
+        RobotInfo bestEnemy = getBestEnemy();
+        MapLocation toAttack = bestEnemy.location;
+        if (rc.canAttack(toAttack)) {
+            rc.attack(toAttack);
         }
 
         // First try to move to the Archon with least health

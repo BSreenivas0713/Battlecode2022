@@ -10,33 +10,34 @@ public class Miner extends Robot {
         super(r);
         roundNumBorn = r.getRoundNum();
     }
-    public void takeTurn() throws GameActionException {
-        super.takeTurn();
-        // Try to mine on squares around us.
-        boolean amMining = false;
+    public int getScore(int diff, int leadAmount) {
+        return diff + (int)(leadAmount * .3);
+    }
+    public MapLocation[] findLeadAndGold() throws GameActionException {
         MapLocation leadSource = null;
-        int bestLeadDistToHome = Integer.MAX_VALUE;
+        int bestLeadScore = -1;
         MapLocation goldSource = null;
         int bestGoldSource = -1;
         // find the best lead source, prioritizing lead that is within your action radius
         for(MapLocation loc: rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), RobotType.MINER.visionRadiusSquared)) {
-            int leadDistToHome = loc.distanceSquaredTo(home);
+            int leadDistToHomeDiff = rc.getLocation().distanceSquaredTo(home) - loc.distanceSquaredTo(home);
             int leadAmount = rc.senseLead(loc);
+            int leadScore = getScore(leadDistToHomeDiff, leadAmount);
             if (leadAmount > 1){
                 if (leadSource == null) {
                     leadSource = loc;
-                    bestLeadDistToHome = leadDistToHome;
+                    bestLeadScore = leadScore;
                 }
                 else if (leadSource.isWithinDistanceSquared(rc.getLocation(), actionRadiusSquared)) {
-                    if (bestLeadDistToHome > leadDistToHome && loc.isWithinDistanceSquared(rc.getLocation(), actionRadiusSquared)) {
+                    if (bestLeadScore < leadScore && loc.isWithinDistanceSquared(rc.getLocation(), actionRadiusSquared)) {
                         leadSource = loc;
-                        bestLeadDistToHome = leadDistToHome;
+                        bestLeadScore = leadScore;
                     }
                 }
                 else {
-                    if (bestLeadDistToHome > leadDistToHome || loc.isWithinDistanceSquared(rc.getLocation(), actionRadiusSquared)) {
+                    if (bestLeadScore < leadScore || loc.isWithinDistanceSquared(rc.getLocation(), actionRadiusSquared)) {
                         leadSource = loc;
-                        bestLeadDistToHome = leadDistToHome;
+                        bestLeadScore = leadScore;
                     }
                 }
             }
@@ -60,6 +61,15 @@ public class Miner extends Robot {
                 }
             }
         }
+        return new MapLocation[]{leadSource, goldSource};
+    }
+    public void takeTurn() throws GameActionException {
+        super.takeTurn();
+        // Try to mine on squares around us.
+        boolean amMining = false;
+        MapLocation[] LeadGoldList = findLeadAndGold();
+        MapLocation leadSource = LeadGoldList[0];
+        MapLocation goldSource = LeadGoldList[1];
         if(goldSource != null) {
             rc.setIndicatorString("Can see Lead!");
             while(rc.canMineGold(goldSource)) {

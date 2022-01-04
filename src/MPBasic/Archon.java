@@ -98,6 +98,10 @@ public class Archon extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         doStateAction();
+        if (Comms.enemyArchonCount() > 0) {
+            System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
+        }
+
     }
 
     public void doStateAction() throws GameActionException {
