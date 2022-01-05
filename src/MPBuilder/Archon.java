@@ -54,7 +54,7 @@ public class Archon extends Robot {
         r.writeSharedArray(nextArchon, myLocFlag);
         flagIndex = nextArchon + Comms.mapLocToFlag;
         homeFlagIdx = flagIndex;
-        currentState = getInitialState();
+        currentState = State.INIT;
         Comms.updateState(nextArchon, currentState.ordinal());
         turnNumber = nextArchon;
         leadNeededByBuilders = 0;
@@ -110,9 +110,6 @@ public class Archon extends Robot {
             }
         }
         return validDirections;
-    }
-    public State getInitialState() {
-        return State.INIT;
     }
 
     public boolean buildRobot(RobotType toBuild, Direction mainDir) throws GameActionException {
@@ -243,8 +240,6 @@ public class Archon extends Robot {
         switch(currentState) {
             case INIT: 
                 firstRounds();
-                // Debug.setIndicatorString("INIT state");
-                if (robotCounter == 3) {currentState = State.CHILLING;}
                 break;
             case CHILLING:
                 if (leadToUse < Util.LeadThreshold) {
@@ -282,12 +277,8 @@ public class Archon extends Robot {
         }
     }
     public void firstRounds() throws GameActionException {
-        RobotType toBuild = null;
-        switch(robotCounter) {
-            case 0: case 1: case 2: 
-                toBuild = RobotType.MINER;
-                break;
-        }
+        Debug.setIndicatorString("INIT state");
+        RobotType toBuild = RobotType.MINER;
         Direction dir = null;
         if(leadSource == null) {
             dir = Util.randomDirection(nonWallDirections);
@@ -296,6 +287,10 @@ public class Archon extends Robot {
             dir = rc.getLocation().directionTo(leadSource);
         }
         buildRobot(toBuild,dir);
+        
+        if(robotCounter >= 3 && Comms.foundEnemy) {
+            currentState = State.CHILLING;
+        }
     }
 
     public void updateLead() throws GameActionException {

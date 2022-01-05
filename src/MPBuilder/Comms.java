@@ -20,6 +20,7 @@ public class Comms {
     static final int BUILDER_REQUEST_IDX = 18;
     static final int BUILDER_COUNTER_IDX = 19;
     static final int FIRST_ROUNDS_BUILD_COUNTER_IDX = 20;
+    static final int ARCHON_COMM_IDX = 21;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
@@ -42,6 +43,7 @@ public class Comms {
     static final int MINER_MASK = 0xFF;
 
     private static RobotController rc;
+    public static boolean foundEnemy;
 
     public enum InformationCategory {
         EMPTY,
@@ -49,8 +51,16 @@ public class Comms {
         DEFENSE_SOLDIERS,
     }
 
+    // Categories of information to tell the Archons
+    public enum ArchonInfo {
+        FOUND_ENEMY,
+    }
+
+    static final int FOUND_ENEMY_ARCHON_INFO = (1 << ArchonInfo.FOUND_ENEMY.ordinal());
+
     static void init(RobotController r) {
         rc = r;
+        foundEnemy = false;
     }
     
     public static int encodeArchonFlag(InformationCategory cat) {
@@ -269,5 +279,18 @@ public class Comms {
             }
         }
         return minArchonTurnNum;
+    }
+
+    // Lets Archons know when the first enemy has been found
+    public static void broadcastEnemyFound() throws GameActionException {
+        if(!foundEnemy) {
+            int archonInfo = rc.readSharedArray(ARCHON_COMM_IDX);
+            foundEnemy = (archonInfo & FOUND_ENEMY_ARCHON_INFO) == 1;
+            if(rc.senseNearbyRobots(rc.getType().visionRadiusSquared, 
+                rc.getTeam().opponent()).length > 0) {
+                foundEnemy = true;
+                rc.writeSharedArray(ARCHON_COMM_IDX, archonInfo | FOUND_ENEMY_ARCHON_INFO);
+            }
+        }
     }
 }
