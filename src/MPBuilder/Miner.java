@@ -7,9 +7,16 @@ import MPBuilder.Util.*;
 public class Miner extends Robot {
     int roundNumBorn;
     int minerCount;
+    boolean explorer;
     public Miner(RobotController r) throws GameActionException {
         super(r);
         roundNumBorn = r.getRoundNum();
+        if(Util.rng.nextInt(6) == 0) {
+            explorer = true;
+        }
+        else {
+            explorer = false;
+        }
     }
 
     public int getScore(int diff, int leadAmount) {
@@ -114,7 +121,7 @@ public class Miner extends Robot {
         String str = "";
         String str1 = "domain Size: " + Integer.toString(totalLeadSourcesWithinDomain) + ", ";
 
-        if (!amMining && (totalLeadSourcesWithinDomain < 3 || someoneClaimed == 1)) {
+        if (!amMining && (totalLeadSourcesWithinDomain < 3 || someoneClaimed == 1)  && !explorer) {
             dir = Nav.explore();
             str = "Exploring";
         }

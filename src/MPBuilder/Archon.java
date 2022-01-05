@@ -169,7 +169,87 @@ public class Archon extends Robot {
             lastPayDay = 0;
         }
     }
-
+    public int minerSoldier5050(int counter) throws GameActionException {
+        switch(counter % 2) {
+            case 0: 
+                if (minerCount < MAX_NUM_MINERS) { 
+                    Debug.setIndicatorString("Trying to build a miner");
+                    if(buildRobot(RobotType.MINER, Util.randomDirection())){
+                        counter ++;
+                    }
+                }
+                else {
+                    Debug.setIndicatorString("Trying to build a soldier");
+                    if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                        counter ++;
+                    }                    
+                }
+                break;
+            case 1:
+                Debug.setIndicatorString("Trying to build a soldier");
+                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                    counter ++;
+                }
+                break;
+        }
+        return counter;
+    }
+    public int minerSoldier12Ratio(int counter) throws GameActionException {
+        switch(counter % 3) {
+            case 0:
+                if (minerCount < MAX_NUM_MINERS) { 
+                    Debug.setIndicatorString("Trying to build a miner");
+                    if(buildRobot(RobotType.MINER, Util.randomDirection())){
+                        counter ++;
+                    }
+                }
+                else {
+                    Debug.setIndicatorString("Trying to build a soldier");
+                    if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                        counter ++;
+                    }                    
+                }
+                break;
+            case 1: case 2:
+                Debug.setIndicatorString("Trying to build a soldier");
+                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                    counter ++;
+                }
+                break;
+        }
+        return counter;
+    }
+    public int minerSoldierBuilder112Ratio(int counter) throws GameActionException {
+        switch(counter % 4) {
+            case 0:
+            if (minerCount < MAX_NUM_MINERS) { 
+                Debug.setIndicatorString("Trying to build a miner");
+                if(buildRobot(RobotType.MINER, Util.randomDirection())){
+                    counter ++;
+                }
+            }
+            else {
+                Debug.setIndicatorString("Trying to build a soldier");
+                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                    counter ++;
+                }                    
+            }
+                break;
+            case 1: 
+                Debug.setIndicatorString("Trying to build a soldier");
+                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                    counter++;
+                }
+                break;
+            case 2: case 3:
+                Debug.setIndicatorString("Trying to build a builder, num builders: " + builderCount);
+                if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
+                    counter++;
+                }
+                break;
+        }
+        return counter;
+    }
     public void doStateAction() throws GameActionException {
         switch(currentState) {
             case INIT: 
@@ -182,53 +262,14 @@ public class Archon extends Robot {
                     break;
                 }
                 if(minerCount <= MIN_NUM_MINERS) {
-                    switch(chillingCounter) {
-                        case 0: 
-                            Debug.setIndicatorString("Trying to build a miner");
-                            if(buildRobot(RobotType.MINER, Util.randomDirection())){
-                                chillingCounter ++;
-                            }
-                            break;
-                        case 1:
-                            Debug.setIndicatorString("Trying to build a soldier");
-                            if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                                chillingCounter = 0;
-                            }
-                            break;
-                    }
+                    chillingCounter = minerSoldier5050(chillingCounter);
                 }
                 else {
                     if (lastPayDay <= 30) {
-                        switch(chillingCounter) {
-                            case 0:
-                                Debug.setIndicatorString("Trying to build a miner");
-                                if(buildRobot(RobotType.MINER, Util.randomDirection())){
-                                    chillingCounter ++;
-                                }
-                                break;
-                            case 1:  case 2:
-                                Debug.setIndicatorString("Trying to build a soldier");
-                                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                                    chillingCounter = 0;
-                                }
-                                break;
-                        }
+                        chillingCounter = minerSoldier5050(chillingCounter);
                     }
                     else {
-                        switch(chillingCounter) {
-                            case 0: 
-                                Debug.setIndicatorString("Trying to build a miner");
-                                if(buildRobot(RobotType.MINER, Util.randomDirection())){
-                                    chillingCounter ++;
-                                }
-                                break;
-                            case 1: case 2:
-                                Debug.setIndicatorString("Trying to build a soldier");
-                                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                                    chillingCounter = (chillingCounter + 1) % 3;
-                                }
-                                break;
-                        }
+                        chillingCounter = minerSoldier12Ratio(chillingCounter);
                     }
                 }
                 Debug.setIndicatorString("CHILLING state, last pay day: " + lastPayDay);
@@ -236,47 +277,19 @@ public class Archon extends Robot {
             case OBESITY:
                 int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
                 int watchtowersPossible = leadForBuilders / 180;
-                if (watchtowersPossible > builderCount) {
-                    switch(obesityCounter % 4) {
-                        case 0:
-                            Debug.setIndicatorString("Trying to build a miner");
-                            if(buildRobot(RobotType.MINER, Util.randomDirection())){
-                                obesityCounter++;
-                            }
-                            break;
-                        case 1: 
-                            Debug.setIndicatorString("Trying to build a soldier");
-                            if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                                obesityCounter++;
-                            }
-                            break;
-                        case 2: case 3:
-                            Debug.setIndicatorString("Trying to build a builder");
-                            if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
-                                obesityCounter++;
-                            }
-                            break;
-                    }
+                if (watchtowersPossible > builderCount && builderCount <= MAX_NUM_MINERS) {
+                    obesityCounter = minerSoldierBuilder112Ratio(obesityCounter);
                 } else {
-                    switch(obesityCounter % 3) {
-                        case 0:
-                            Debug.setIndicatorString("Trying to build a miner");
-                            if(buildRobot(RobotType.MINER, Util.randomDirection())){
-                                obesityCounter++;
-                            }
-                            break;
-                        case 1: 
-                            Debug.setIndicatorString("Trying to build a soldier");
-                            if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                                obesityCounter++;
-                            }
-                            break;
-                        case 2:
-                            Debug.setIndicatorString("Trying to build a builder");
-                            if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
-                                obesityCounter++;
-                            }
-                            break;
+                    if(minerCount <= MIN_NUM_MINERS) {
+                        chillingCounter = minerSoldier5050(chillingCounter);
+                    }
+                    else {
+                        if (lastPayDay <= 30) {
+                            chillingCounter = minerSoldier5050(chillingCounter);
+                        }
+                        else {
+                            chillingCounter = minerSoldier12Ratio(chillingCounter);
+                        }
                     }
                 }
                 break;
