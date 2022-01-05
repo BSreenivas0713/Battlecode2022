@@ -10,5 +10,6 @@ public class Watchtower extends Robot {
     }
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        tryAttackBestEnemy();
     }
 }

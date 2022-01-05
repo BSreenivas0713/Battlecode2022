@@ -39,6 +39,13 @@ public class Soldier extends Robot {
      * Prioritizes attacking lower health enemies.
      */
     public RobotInfo getBestEnemy() {
+        maybeArchon = null;
+        maybeWatchtower = null;
+        maybeSage = null;
+        maybeSoldier = null;
+        maybeBuilder = null;
+        maybeMiner = null;
+        maybeLab = null;
         Team opponent = rc.getTeam().opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(actionRadiusSquared, opponent);
         RobotInfo enemy;

@@ -17,6 +17,14 @@ public class Robot {
     static int homeFlagIdx;
     static int nextFlag;
     static int defaultFlag;
+    // This is the order of priorities to attack enemies
+    static RobotInfo maybeArchon = null;
+    static RobotInfo maybeWatchtower = null;
+    static RobotInfo maybeSage = null;
+    static RobotInfo maybeSoldier = null;
+    static RobotInfo maybeBuilder = null;
+    static RobotInfo maybeMiner = null;
+    static RobotInfo maybeLab = null;
 
     public Robot(RobotController r) {
         rc = r;
@@ -62,7 +70,84 @@ public class Robot {
         // turnCount += 1;
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
     }
-
+    /*
+     * Prioritizes attacking enemies in the given order.
+     * Prioritizes attacking lower health enemies.
+     */
+    public RobotInfo getBestEnemy() {
+        maybeArchon = null;
+        maybeWatchtower = null;
+        maybeSage = null;
+        maybeSoldier = null;
+        maybeBuilder = null;
+        maybeMiner = null;
+        maybeLab = null;
+        Team opponent = rc.getTeam().opponent();
+        RobotInfo[] enemies = rc.senseNearbyRobots(actionRadiusSquared, opponent);
+        RobotInfo enemy;
+        for (int i = enemies.length - 1; i >= 0; i--) {
+            enemy = enemies[i];
+            switch(enemy.type) {
+                case ARCHON:
+                    if(maybeArchon == null || maybeArchon.health > enemy.health) {
+                        maybeArchon = enemy;
+                    }
+                    break;
+                case WATCHTOWER:
+                    if(maybeWatchtower == null || maybeWatchtower.health > enemy.health) {
+                        maybeWatchtower = enemy;
+                    }
+                    break;
+                case SAGE:
+                    if(maybeSage == null || maybeSage.health > enemy.health) {
+                        maybeSage = enemy;
+                    }
+                    break;
+                case SOLDIER:
+                    if(maybeSoldier == null || maybeSoldier.health > enemy.health) {
+                        maybeSoldier = enemy;
+                    }
+                    break;
+                case BUILDER:
+                    if(maybeBuilder == null || maybeBuilder.health > enemy.health) {
+                        maybeBuilder = enemy;
+                    }
+                    break;
+                case MINER:
+                    if(maybeMiner == null || maybeMiner.health > enemy.health) {
+                        maybeMiner = enemy;
+                    }
+                    break;
+                case LABORATORY:
+                    if(maybeLab == null || maybeLab.health > enemy.health) {
+                        maybeLab = enemy;
+                    }
+                    break;
+            }
+        }
+        
+        if(maybeArchon != null) return maybeArchon;
+        if(maybeWatchtower != null) return maybeWatchtower;
+        if(maybeSage != null) return maybeSage;
+        if(maybeSoldier != null) return maybeSoldier;
+        if(maybeBuilder != null) return maybeBuilder;
+        if(maybeMiner != null) return maybeMiner;
+        if(maybeLab != null) return maybeLab;
+        return null;
+    }
+    public boolean tryAttackBestEnemy() throws GameActionException {
+        // Try to attack someone
+        RobotInfo bestEnemy = getBestEnemy();
+        if(bestEnemy != null) {
+            rc.setIndicatorString("I got the best enemy: " + bestEnemy.getLocation().toString());
+        }
+        if (bestEnemy != null && rc.canAttack(bestEnemy.getLocation())) {
+            rc.attack(bestEnemy.getLocation());
+            rc.setIndicatorString("I am attacking");
+            return true;
+        }
+        return false;
+    }
     static boolean tryMove(Direction dir) throws GameActionException {
         //Debug.println(Debug.info, "I am trying to move " + dir + "; " + rc.isReady() + " " + rc.getCooldownTurns() + " " + rc.canMove(dir));
         if (rc.canMove(dir)) {

@@ -13,14 +13,7 @@ public class Soldier extends Robot {
     static SoldierState currState;
     static int homeFlagIdx;
     
-    // This is the order of priorities to attack enemies
-    static RobotInfo maybeArchon = null;
-    static RobotInfo maybeWatchtower = null;
-    static RobotInfo maybeSage = null;
-    static RobotInfo maybeSoldier = null;
-    static RobotInfo maybeBuilder = null;
-    static RobotInfo maybeMiner = null;
-    static RobotInfo maybeLab = null;
+
 
     public Soldier(RobotController r) throws GameActionException {
         super(r);
@@ -34,64 +27,7 @@ public class Soldier extends Robot {
         homeFlagIdx = homeFlagIndex;
     } 
 
-    /*
-     * Prioritizes attacking enemies in the given order.
-     * Prioritizes attacking lower health enemies.
-     */
-    public RobotInfo getBestEnemy() {
-        Team opponent = rc.getTeam().opponent();
-        RobotInfo[] enemies = rc.senseNearbyRobots(actionRadiusSquared, opponent);
-        RobotInfo enemy;
-        for (int i = enemies.length - 1; i >= 0; i--) {
-            enemy = enemies[i];
-            switch(enemy.type) {
-                case ARCHON:
-                    if(maybeArchon == null || maybeArchon.health > enemy.health) {
-                        maybeArchon = enemy;
-                    }
-                    break;
-                case WATCHTOWER:
-                    if(maybeWatchtower == null || maybeWatchtower.health > enemy.health) {
-                        maybeWatchtower = enemy;
-                    }
-                    break;
-                case SAGE:
-                    if(maybeSage == null || maybeSage.health > enemy.health) {
-                        maybeSage = enemy;
-                    }
-                    break;
-                case SOLDIER:
-                    if(maybeSoldier == null || maybeSoldier.health > enemy.health) {
-                        maybeSoldier = enemy;
-                    }
-                    break;
-                case BUILDER:
-                    if(maybeBuilder == null || maybeBuilder.health > enemy.health) {
-                        maybeBuilder = enemy;
-                    }
-                    break;
-                case MINER:
-                    if(maybeMiner == null || maybeMiner.health > enemy.health) {
-                        maybeMiner = enemy;
-                    }
-                    break;
-                case LABORATORY:
-                    if(maybeLab == null || maybeLab.health > enemy.health) {
-                        maybeLab = enemy;
-                    }
-                    break;
-            }
-        }
-        
-        if(maybeArchon != null) return maybeArchon;
-        if(maybeWatchtower != null) return maybeWatchtower;
-        if(maybeSage != null) return maybeSage;
-        if(maybeSoldier != null) return maybeSoldier;
-        if(maybeBuilder != null) return maybeBuilder;
-        if(maybeMiner != null) return maybeMiner;
-        if(maybeLab != null) return maybeLab;
-        return null;
-    }
+
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
@@ -126,15 +62,6 @@ public class Soldier extends Robot {
         }
     }
 
-    public boolean tryAttackBestEnemy() throws GameActionException {
-        // Try to attack someone
-        RobotInfo bestEnemy = getBestEnemy();
-        if (bestEnemy != null && rc.canAttack(bestEnemy.getLocation())) {
-            rc.attack(bestEnemy.getLocation());
-            return true;
-        }
-        return false;
-    }
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {
         int minEnemyDistSquared = Integer.MAX_VALUE;
