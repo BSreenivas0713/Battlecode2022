@@ -23,9 +23,11 @@ public class Archon extends Robot {
     static int minerCount;
     static State currentState;
     static int flagIndex;
+    static int turnNumber;
     static double leadToLeave;
     static ArrayDeque<State> stateStack;
     static int leadToUse;
+    static int leadNeededByBuilders;
     static MapLocation leadSource;
     static Direction[] nonWallDirections;
     static int endOfTurnMoney;
@@ -44,7 +46,9 @@ public class Archon extends Robot {
         r.writeSharedArray(nextArchon, myLocFlag);
         flagIndex = nextArchon + Comms.mapLocToFlag;
         currentState = getInitialState();
-        leadToLeave = Util.leadPercentage(rc.getArchonCount(), nextArchon);
+        turnNumber = nextArchon;
+        leadNeededByBuilders = 0;
+        leadToLeave = Util.leadPercentage(rc.getArchonCount(), nextArchon, 0);
         findBestLeadSource();
         nonWallDirections = findnonWallDirections();
         
@@ -116,7 +120,14 @@ public class Archon extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        leadToUse = (int) ((double)rc.getTeamLeadAmount(rc.getTeam()) * leadToLeave);
+        // Update leadNeededByBuilders by reading a comms flag
+        double availableLead = (double) rc.getTeamLeadAmount(rc.getTeam());
+        double builderPercentage = ((double) leadNeededByBuilders) / availableLead;
+        if (builderPercentage > 0.5) {
+            builderPercentage = 0.5;
+        }
+        leadToLeave = Util.leadPercentage(rc.getArchonCount(), turnNumber, builderPercentage);
+        leadToUse = (int) (availableLead * (1.0 - leadToLeave));
         updateRobotCounts();
         doStateAction();
         // if (Comms.enemyArchonCount() > 0) {
