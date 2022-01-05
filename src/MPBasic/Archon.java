@@ -143,7 +143,8 @@ public class Archon extends Robot {
                 soldiersNearby++;
             }
         }
-        if (Comms.getDefenseSoldierCount() >= Util.SOLDIERS_NEEDED_TO_RUSH) {
+        if (Comms.getDefenseSoldierCount() >= Util.SOLDIERS_NEEDED_TO_RUSH &&
+            Comms.enemyArchonCount() > 0) {
             //tell soldiers near me to rush
             int flag = Comms.encodeArchonFlag(Comms.InformationCategory.RUSH_SOLDIERS);
             rc.writeSharedArray(flagIndex, flag);
