@@ -254,7 +254,7 @@ public class Archon extends Robot {
         switch(currentState) {
             case INIT: 
                 firstRounds();
-                Debug.setIndicatorString("INIT state");
+                // Debug.setIndicatorString("INIT state");
                 if (robotCounter == 3) {currentState = State.CHILLING;}
                 break;
             case CHILLING:
@@ -272,7 +272,7 @@ public class Archon extends Robot {
                         chillingCounter = minerSoldier12Ratio(chillingCounter);
                     }
                 }
-                Debug.setIndicatorString("CHILLING state, last pay day: " + lastPayDay);
+                // Debug.setIndicatorString("CHILLING state, last pay day: " + lastPayDay);
                 break;
             case OBESITY:
                 int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
@@ -326,6 +326,7 @@ public class Archon extends Robot {
         double builderPercentage = ((double) leadNeededByBuilders) / availableLead;
         percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), turnNumber, builderPercentage);
         leadToUse = (int) (availableLead * (percentLeadToTake));
+        rc.setIndicatorString("lead To Use: " + leadToUse);
         if (leadToUse < Util.LeadThreshold) {
             if (rc.getRoundNum() % rc.getArchonCount() == turnNumber - 1) {
                 leadToUse = (int) (availableLead * (1.0 - builderPercentage));

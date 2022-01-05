@@ -24,11 +24,12 @@ public class Builder extends Robot{
         int overallDX = 0;
         int overallDY = 0;
         for(RobotInfo robot: FriendlySensable) {
-            if(robot.type == RobotType.WATCHTOWER) {
-                if(robot.health < Util.WatchTowerHealths[robot.level - 1]) {
+            if(robot.type == RobotType.WATCHTOWER && (currLoc.distanceSquaredTo(robot.location) < actionRadiusSquared)) {
+                if(robot.health < robot.getType().getMaxHealth(robot.level)) {
                     if(rc.canRepair(robot.location)) {
                         rc.repair(robot.location);
                     }
+                    rc.setIndicatorString("repairing at " + robot.location.toString() + ", health is " + robot.health + ", max health is " + Util.WatchTowerHealths[robot.level - 1]);
                     repairing = true;
                 }
                 if(rc.canMutate(robot.location)) {
@@ -39,6 +40,9 @@ public class Builder extends Robot{
                 overallDX += currLoc.directionTo(robot.getLocation()).dx * (10000 / (currLoc.distanceSquaredTo(robot.location)));
                 overallDY += currLoc.directionTo(robot.getLocation()).dy * (10000 / (currLoc.distanceSquaredTo(robot.location)));
             }
+        }
+        if(currLoc.distanceSquaredTo(home) <= 4) {
+            tryMoveDest(Util.getInOrderDirections(currLoc.directionTo(home).opposite()));
         }
         if(!repairing) {
             if(overallDX != 0 || overallDY != 0) {
@@ -55,7 +59,7 @@ public class Builder extends Robot{
             }
         }
         else {
-            rc.setIndicatorString("repairing");
+            int a = 0;//rc.setIndicatorString("repairing");
         }
     }
 }
