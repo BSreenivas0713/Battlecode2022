@@ -96,8 +96,8 @@ public class Miner extends Robot {
         String str = "";
         String str1 = "domain Size: " + Integer.toString(totalLeadSourcesWithinDomain) + ", ";
 
-        if (!amMining && (totalLeadSourcesWithinDomain < 3 || someoneClaimed == 1)) { 
-            dir = Nav.exploreGreedy();
+        if (!amMining && (totalLeadSourcesWithinDomain < 3 || someoneClaimed == 1)) {
+            dir = Nav.explore();
             str = "Exploring";
         }
         for(RobotInfo robot: FriendlySensable) {

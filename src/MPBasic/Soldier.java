@@ -50,26 +50,24 @@ public class Soldier extends Robot{
 
             Direction[] bestDirs = {};
             if (bestLoc != null) {
-                // Direction bestDir = Nav.gradientDescent();
                 if(currLoc.distanceSquaredTo(bestLoc) > 2) {
-                Direction bestDir = Nav.getGreedyDirection(rc.getLocation().directionTo(bestLoc));
-                bestDirs = Util.getInOrderDirections(bestDir);
-                Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
+                    Direction bestDir = Nav.getBestDir(bestLoc);
+                    bestDirs = Util.getInOrderDirections(bestDir);
+                    Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
                 }
     
                 Debug.setIndicatorString("Targeting Archon at: " + bestLoc.toString());
                 Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 255, 0, 0);
-
             }
             else {
-                bestDirs = Nav.exploreGreedy();
+                bestDirs = Nav.explore();
             }
             tryMoveDest(bestDirs);
 
         // Then try to move randomly.
         } else {
             Debug.setIndicatorString("Exploring");
-            tryMoveDest(Nav.exploreGreedy());
+            tryMoveDest(Nav.explore());
         }
     }
 }
