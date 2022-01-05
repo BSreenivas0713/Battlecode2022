@@ -43,6 +43,7 @@ public class Comms {
     public enum InformationCategory {
         EMPTY,
         RUSH_SOLDIERS,
+        DEFENSE_SOLDIERS,
     }
 
     static void init(RobotController r) {

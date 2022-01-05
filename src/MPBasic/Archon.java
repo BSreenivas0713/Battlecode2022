@@ -22,6 +22,7 @@ public class Archon extends Robot {
     static int chillingCounter;
     static int minerCount;
     static int minerMiningCount;
+    static int soldierCount;
     static State currentState;
     static int flagIndex;
     static int turnNumber;
@@ -52,6 +53,7 @@ public class Archon extends Robot {
         turnNumber = nextArchon;
         leadNeededByBuilders = 0;
         percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), nextArchon, 0);
+        soldierCount = 0;
         findBestLeadSource();
         nonWallDirections = findnonWallDirections();
         
@@ -106,6 +108,13 @@ public class Archon extends Robot {
 
     public boolean buildRobot(RobotType toBuild, Direction mainDir) throws GameActionException {
         Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
+        if (toBuild == RobotType.SOLDIER) {
+            soldierCount++;
+            if (soldierCount % 3 == 0) {
+                int newFlag = Comms.encodeArchonFlag(InformationCategory.DEFENSE_SOLDIERS);
+                rc.writeSharedArray(flagIndex, newFlag);
+            }
+        }
         for(Direction dir : orderedDirs) {
             if (rc.canBuildRobot(toBuild, dir)){
                 rc.buildRobot(toBuild, dir);

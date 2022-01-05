@@ -42,7 +42,14 @@ public strictfp class RobotPlayer {
         switch (rc.getType()) {
             case ARCHON:     bot = new Archon(rc);  break;
             case MINER:      bot = new Miner(rc);  break;
-            case SOLDIER:    bot = new Soldier(rc, homeFlagIdx);  break;
+            case SOLDIER:
+                InformationCategory ic = Comms.getICFromFlag(dataFlag);
+                if (ic == InformationCategory.DEFENSE_SOLDIERS) {
+                    bot = new DefenseSoldier(rc, homeFlagIdx);
+                } else {
+                    bot = new Soldier(rc, homeFlagIdx);
+                }
+                break;
             case LABORATORY: bot = new Laboratory(rc);  break;
             case WATCHTOWER: bot = new Watchtower(rc);  break;
             case BUILDER:    bot = new Builder(rc);  break;
