@@ -54,9 +54,8 @@ public class Soldier extends Robot {
                 break;
             case RUSHING:
                 Debug.setIndicatorString("in rushing mode");
-                if (!tryAttackBestEnemy()) {
-                    moveTowardsWeakestArchon();
-                }
+                tryAttackBestEnemy();
+                moveTowardsWeakestArchon();
                 break;
             default:
                 break;
