@@ -30,7 +30,6 @@ public class Archon extends Robot {
     static int leadNeededByBuilders;
     static MapLocation leadSource;
     static Direction[] nonWallDirections;
-    static int endOfTurnMoney;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -147,6 +146,22 @@ public class Archon extends Robot {
                 break;
             case CHILLING:
                 if(minerCount <= MIN_NUM_MINERS) {
+                    switch(chillingCounter) {
+                        case 0: 
+                            Debug.setIndicatorString("Trying to build a miner");
+                            if(buildRobot(RobotType.MINER, Util.randomDirection())){
+                                chillingCounter ++;
+                            }
+                            break;
+                        case 1:
+                            Debug.setIndicatorString("Trying to build a soldier");
+                            if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                                chillingCounter = 0;
+                            }
+                            break;
+                    }
+                }
+                else {
                     switch(chillingCounter) {
                         case 0: 
                             Debug.setIndicatorString("Trying to build a miner");

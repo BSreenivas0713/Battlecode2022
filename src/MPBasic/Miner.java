@@ -12,14 +12,13 @@ public class Miner extends Robot {
     }
 
     public int getScore(int diff, int leadAmount) {
-        return diff + (int)(leadAmount * .3);
+        return diff + (int)(leadAmount * .5);
     }
 
     public MapLocation[] findLeadAndGold() throws GameActionException {
         MapLocation leadSource = null;
         int bestLeadScore = -1;
         MapLocation goldSource = null;
-        int bestGoldSource = -1;
         int totalLeadSourcesWithinDomain = 0;
         int someoneClaimed = 0;
         int minerCount = 0;
@@ -48,36 +47,17 @@ public class Miner extends Robot {
                     }
                 }
             }               
-            RobotInfo possibleFriendly = rc.senseRobotAtLocation(loc);
-            if (possibleFriendly != null && possibleFriendly.type == RobotType.MINER && !loc.equals(currLoc) && possibleFriendly.team == rc.getTeam()) {
-                minerCount ++;
-                overallDX += currLoc.directionTo(possibleFriendly.getLocation()).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
-                overallDY += currLoc.directionTo(possibleFriendly.getLocation()).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
-            }
+            
             if (leadAmount > 0 && loc.isWithinDistanceSquared(currLoc, Util.MinerDomain)) {
-                totalLeadSourcesWithinDomain ++;
+                totalLeadSourcesWithinDomain ++;            
+                RobotInfo possibleFriendly = rc.senseRobotAtLocation(loc);
                 if(possibleFriendly != null && possibleFriendly.type == RobotType.MINER && !loc.equals(currLoc)) {
                     someoneClaimed = 1;
                 }
             }
             int goldAmount = rc.senseGold(loc);
             if (goldAmount != 0){
-                if (goldSource == null) {
-                    goldSource = loc; 
-                    bestGoldSource = goldAmount;
-                }
-                else if (goldSource.isWithinDistanceSquared(currLoc, actionRadiusSquared)) {
-                    if (goldAmount > bestGoldSource && loc.isWithinDistanceSquared(currLoc, actionRadiusSquared)) {
-                        goldSource = loc;
-                        bestGoldSource = goldAmount;
-                    }
-                }
-                else {
-                    if (goldAmount > bestGoldSource || loc.isWithinDistanceSquared(currLoc, actionRadiusSquared)) {
-                        goldSource = loc;
-                        bestGoldSource = goldAmount;
-                    }
-                }
+                goldSource = loc; 
             }
         }
         return new MapLocation[]{leadSource, goldSource, 
@@ -96,7 +76,6 @@ public class Miner extends Robot {
         MapLocation goldSource = LeadGoldList[1];
         int totalLeadSourcesWithinDomain = LeadGoldList[2].x;
         int someoneClaimed = LeadGoldList[2].y;
-        Direction DirectionAway = currLoc.directionTo(currLoc.translate(LeadGoldList[3].x, LeadGoldList[3].y)).opposite();
         int minerCount = LeadGoldList[4].x;
         if(goldSource != null) {
             rc.setIndicatorString("Can see Gold!");
@@ -130,10 +109,6 @@ public class Miner extends Robot {
         if(leadSource!= null) {
             dir = Util.getInOrderDirections(currLoc.directionTo(leadSource));
             str = "going towards lead";
-            if(minerCount >= 4 && someoneClaimed == 1) {
-                dir = Util.getInOrderDirections(DirectionAway);
-                str = "going away from other miners: " + DirectionAway.toString() + " " + Integer.toString(LeadGoldList[3].x) + " " + Integer.toString(LeadGoldList[3].y);
-            }
     }
         if(goldSource!= null) {
             dir = Util.getInOrderDirections(currLoc.directionTo(goldSource));

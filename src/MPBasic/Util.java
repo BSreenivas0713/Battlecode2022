@@ -21,7 +21,7 @@ public class Util {
 
     static final int ArchonStraightVisionRange = 5;
     static final int ArchonDiagVisionRange = 4;
-    static final int MinerDomain = 10;
+    static final int MinerDomain = 8;
     static final int MAX_MINERS = 128;
     static final int MAX_MAP_SIZE_TO_MINER_RATIO = 16;
     
