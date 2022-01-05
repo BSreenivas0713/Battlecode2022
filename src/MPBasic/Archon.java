@@ -48,6 +48,7 @@ public class Archon extends Robot {
         r.writeSharedArray(nextArchon, myLocFlag);
         flagIndex = nextArchon + Comms.mapLocToFlag;
         currentState = getInitialState();
+        Comms.updateState(nextArchon, currentState.ordinal());
         turnNumber = nextArchon;
         leadNeededByBuilders = 0;
         leadToLeave = Util.leadPercentage(rc.getArchonCount(), nextArchon, 0);
@@ -126,14 +127,7 @@ public class Archon extends Robot {
         if (rc.readSharedArray(flagIndex) != 0) {
             rc.writeSharedArray(flagIndex, 0);
         }
-        // Update leadNeededByBuilders by reading a comms flag
-        double availableLead = (double) rc.getTeamLeadAmount(rc.getTeam());
-        double builderPercentage = ((double) leadNeededByBuilders) / availableLead;
-        if (builderPercentage > 0.5) {
-            builderPercentage = 0.5;
-        }
-        leadToLeave = Util.leadPercentage(rc.getArchonCount(), turnNumber, builderPercentage);
-        leadToUse = (int) (availableLead * (1.0 - leadToLeave));
+        updateLead();
         updateRobotCounts();
         doStateAction();
         // if (Comms.enemyArchonCount() > 0) {
@@ -244,5 +238,27 @@ public class Archon extends Robot {
         }
         buildRobot(toBuild,dir);
     }
+
+    public void updateLead() throws GameActionException {
+        // TODO: Update leadNeededByBuilders by reading a comms flag
+        double availableLead = (double) rc.getTeamLeadAmount(rc.getTeam());
+        double builderPercentage = ((double) leadNeededByBuilders) / availableLead;
+        if (builderPercentage > 0.5) {
+            builderPercentage = 0.5;
+        }
+        leadToLeave = Util.leadPercentage(rc.getArchonCount(), turnNumber, builderPercentage);
+        leadToUse = (int) (availableLead * (1.0 - leadToLeave));
+        if (leadToUse < Util.LeadThreshold) {
+            if (rc.getRoundNum() % rc.getArchonCount() == turnNumber - 1) {
+                leadToUse = (int) (availableLead * (1.0 - builderPercentage));
+            } else {
+                leadToUse = 0;
+            }
+        }
+    }
     
+    public void changeState(State newState) throws GameActionException {
+        currentState = newState;
+        Comms.updateState(turnNumber, newState.ordinal());
+    }
 }
