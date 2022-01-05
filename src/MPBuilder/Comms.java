@@ -19,6 +19,7 @@ public class Comms {
     static final int SOLDIER_COUNTER_IDX = 17;
     static final int BUILDER_REQUEST_IDX = 18;
     static final int BUILDER_COUNTER_IDX = 19;
+    static final int FIRST_ROUNDS_BUILD_COUNTER_IDX = 20;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
@@ -245,5 +246,28 @@ public class Comms {
         int currCount = builderFlag & MINER_MASK;
 
         rc.writeSharedArray(BUILDER_COUNTER_IDX, currCount + 1);
+    }
+
+    public static void incrementBuiltRobots(int archonTurnNum) throws GameActionException {
+        int currFlag = rc.readSharedArray(FIRST_ROUNDS_BUILD_COUNTER_IDX);
+        int thisArchonsBuilt = (currFlag >> (4 * (archonTurnNum - 1))) & STATE_MASK;
+        if (thisArchonsBuilt < 15) {
+            int newFlag = currFlag + (1 << (4 * (archonTurnNum - 1)));
+            rc.writeSharedArray(FIRST_ROUNDS_BUILD_COUNTER_IDX, newFlag);
+        }
+    }
+
+    public static int getArchonWithLeastFirstRoundBuilt() throws GameActionException {
+        int currFlag = rc.readSharedArray(FIRST_ROUNDS_BUILD_COUNTER_IDX);
+        int minArchonTurnNum = 0;
+        int minTowersBuilt = Integer.MAX_VALUE;
+        for (int i = 0; i < rc.getArchonCount(); i++) {
+            int thisArchonsBuilt = (currFlag >> (4 * i)) & STATE_MASK;
+            if (thisArchonsBuilt < minTowersBuilt) {
+                minTowersBuilt = thisArchonsBuilt;
+                minArchonTurnNum = i + 1;
+            }
+        }
+        return minArchonTurnNum;
     }
 }

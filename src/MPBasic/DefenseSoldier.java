@@ -91,7 +91,7 @@ public class DefenseSoldier extends Robot {
         }
         // move away from this direction
         Direction awayDir = null;
-        if (soldiersFound >= 3 && currLoc.distanceSquaredTo(home) < 1.5*RobotType.ARCHON.visionRadiusSquared) {
+        if (soldiersFound >= 3) {
             awayDir = currLoc.directionTo(currLoc.translate(overallDx, overallDy)).opposite();
         }
         else {

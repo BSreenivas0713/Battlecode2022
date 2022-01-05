@@ -131,6 +131,7 @@ public class Archon extends Robot {
                 if (robot == null) {
                     System.out.println("CRITICAL: EC didn't find the robot it just built");
                 }
+                Comms.incrementBuiltRobots(turnNumber);
                 robotCounter += 1;
                 return true;
             }
@@ -144,6 +145,7 @@ public class Archon extends Robot {
         updateRobotCounts();
         checkForObesity();
         doStateAction();
+        Debug.setIndicatorString(leadToUse + "; " + robotCounter);
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
@@ -327,7 +329,7 @@ public class Archon extends Robot {
         percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), turnNumber, builderPercentage);
         leadToUse = (int) (availableLead * (percentLeadToTake));
         if (leadToUse < Util.LeadThreshold) {
-            if (rc.getRoundNum() % rc.getArchonCount() == turnNumber - 1) {
+            if (Comms.getArchonWithLeastFirstRoundBuilt() == turnNumber) {
                 leadToUse = (int) (availableLead * (1.0 - builderPercentage));
             } else {
                 leadToUse = 0;
