@@ -15,10 +15,12 @@ public class Comms {
     static final int idList = 13;
     static final int MINER_COUNTER_IDX = 14;
     static final int MINER_MINING_COUNTER_IDX = 15;
+    static final int STATE_STORAGE_IDX = 16;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
     static final int HEALTH_MASK = 15;
+    static final int STATE_MASK = 15;
     static final int COUNT_OFFSET = 3;
     static final int X_COORD_OFFSET = 0;
     static final int Y_COORD_OFFSET = 6;
@@ -183,5 +185,13 @@ public class Comms {
         } else {
             rc.writeSharedArray(MINER_MINING_COUNTER_IDX, currCount + 1);
         }
+    }
+
+    public static void updateState(int archonNumber, int newState) throws GameActionException {
+        int oldFlag = rc.readSharedArray(STATE_STORAGE_IDX);
+        int offset = 4 * (archonNumber - 1);
+        int clearedFlag = oldFlag & ~(STATE_MASK << offset);
+        int newFlag = clearedFlag & (newState << offset);
+        rc.writeSharedArray(STATE_STORAGE_IDX, newFlag);
     }
 }

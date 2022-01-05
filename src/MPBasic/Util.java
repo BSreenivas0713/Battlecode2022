@@ -19,6 +19,7 @@ public class Util {
         Direction.NORTHWEST,
     };
 
+    static final int LeadThreshold = 100;
     static final int ArchonStraightVisionRange = 5;
     static final int ArchonDiagVisionRange = 4;
     static final int MinerDomain = 8;
