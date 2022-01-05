@@ -25,7 +25,10 @@ public class Miner extends Robot {
         float overallDX = 0;
         float overallDY = 0;
 // find the best lead source, prioritizing lead that is within your action radius
-        for(MapLocation loc: rc.getAllLocationsWithinRadiusSquared(currLoc, RobotType.MINER.visionRadiusSquared)) {
+        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(currLoc, RobotType.MINER.visionRadiusSquared);
+        MapLocation loc;
+        for(int i = locs.length - 1; i >= 0; i--) {
+            loc = locs[i];
             int leadDistToHomeDiff = currLoc.distanceSquaredTo(home) - loc.distanceSquaredTo(home);
             int leadAmount = rc.senseLead(loc);
             int leadScore = getScore(leadDistToHomeDiff, leadAmount);
@@ -56,20 +59,22 @@ public class Miner extends Robot {
                 goldSource = loc; 
             }
         }
+
         RobotInfo[] sensableWithin8 = rc.senseNearbyRobots(8, rc.getTeam());
-        for (RobotInfo possibleFriendly: sensableWithin8) {
-            MapLocation loc = possibleFriendly.location;
-            if (possibleFriendly != null && 
-                possibleFriendly.type == RobotType.MINER && 
-                !loc.equals(currLoc) && 
-                possibleFriendly.team == rc.getTeam() && 
-                currLoc.distanceSquaredTo(loc) < 3) {
-                minerCount ++;
-                overallDX += currLoc.directionTo(possibleFriendly.getLocation()).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
-                overallDY += currLoc.directionTo(possibleFriendly.getLocation()).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
-            }
-            if(possibleFriendly != null && possibleFriendly.type == RobotType.MINER && !loc.equals(currLoc) && rc.senseLead(loc) > 0) {
-                someoneClaimed = 1;
+        RobotInfo possibleFriendly;
+        for (int i = sensableWithin8.length - 1; i >= 0; i--) {
+            possibleFriendly = sensableWithin8[i];
+            loc = possibleFriendly.location;
+            if (possibleFriendly.type == RobotType.MINER && !loc.equals(currLoc)) {
+                if(currLoc.distanceSquaredTo(loc) < 3) {
+                    minerCount ++;
+                    overallDX += currLoc.directionTo(possibleFriendly.getLocation()).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
+                    overallDY += currLoc.directionTo(possibleFriendly.getLocation()).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
+                }
+
+                if(rc.senseLead(loc) > 0) {
+                    someoneClaimed = 1;
+                }
             }
         }
         return new MapLocation[]{leadSource, goldSource, 
@@ -113,13 +118,17 @@ public class Miner extends Robot {
             dir = Nav.explore();
             str = "Exploring";
         }
-        for(RobotInfo robot: FriendlySensable) {
-            if(robot.getType() == RobotType.ARCHON && rc.getRoundNum() == roundNumBorn + 1) {
-                dir = Util.getInOrderDirections(currLoc.directionTo(robot.getLocation()).opposite());
-                str = "going away from AR";
+
+        if(rc.getRoundNum() == roundNumBorn + 1) {
+            for(RobotInfo robot: FriendlySensable) {
+                if(robot.getType() == RobotType.ARCHON) {
+                    dir = Util.getInOrderDirections(currLoc.directionTo(robot.getLocation()).opposite());
+                    str = "going away from AR";
+                }
             }
         }
-        if(leadSource!= null) {
+
+        if(leadSource != null) {
             dir = Util.getInOrderDirections(currLoc.directionTo(leadSource));
             str = "going towards lead";
             if(minerCount >= 4 && someoneClaimed == 1 && amMining) {
@@ -128,7 +137,7 @@ public class Miner extends Robot {
             }
         }
         
-        if(goldSource!= null) {
+        if(goldSource != null) {
             dir = Util.getInOrderDirections(currLoc.directionTo(goldSource));
             str = "going toward gold";
         }
