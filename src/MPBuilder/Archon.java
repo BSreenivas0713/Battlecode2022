@@ -25,6 +25,7 @@ public class Archon extends Robot {
     static int minerCount;
     static int minerMiningCount;
     static int soldierCount;
+    static int builderCount;
     static State currentState;
     static int flagIndex;
     static int turnNumber;
@@ -37,6 +38,7 @@ public class Archon extends Robot {
     static Direction[] nonWallDirections;
     static int soldiersNearby = 0;
     static int leadObesity;
+    static int maxLeadUsedByArchons;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -58,9 +60,11 @@ public class Archon extends Robot {
         leadNeededByBuilders = 0;
         percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), nextArchon, 0);
         soldierCount = 0;
+        builderCount = 0;
         findBestLeadSource();
         nonWallDirections = findnonWallDirections();
-        leadObesity = rc.getArchonCount() * 180 + 300;
+        maxLeadUsedByArchons = 75 * (5 - turnNumber);
+        leadObesity = rc.getArchonCount() * 180 + maxLeadUsedByArchons;
         
         // System.out.println("nonWallDirections: " + nonWallDirections.toString());
     }
@@ -159,6 +163,7 @@ public class Archon extends Robot {
             nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.RUSH_SOLDIERS);
         }
         minerMiningCount = Comms.getMinerMiningCount();
+        builderCount = Comms.getBuilderCount();
         lastPayDay += 1;
         if (minerCount <= minerMiningCount) {
             lastPayDay = 0;
@@ -229,28 +234,54 @@ public class Archon extends Robot {
                 Debug.setIndicatorString("CHILLING state, last pay day: " + lastPayDay);
                 break;
             case OBESITY:
-                switch(obesityCounter) {
-                    case 0:
-                        Debug.setIndicatorString("Trying to build a miner");
-                        if(buildRobot(RobotType.MINER, Util.randomDirection())){
-                            obesityCounter++;
-                        }
-                        break;
-                    case 1: 
-                        Debug.setIndicatorString("Trying to build a soldier");
-                        if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                            obesityCounter++;
-                        }
-                        break;
-                    case 2:
-                        Debug.setIndicatorString("Trying to build a builder");
-                        if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
-                            obesityCounter = 0;
-                        }
-                        break;
+                int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
+                int watchtowersPossible = leadForBuilders / 180;
+                if (watchtowersPossible > builderCount) {
+                    switch(obesityCounter % 4) {
+                        case 0:
+                            Debug.setIndicatorString("Trying to build a miner");
+                            if(buildRobot(RobotType.MINER, Util.randomDirection())){
+                                obesityCounter++;
+                            }
+                            break;
+                        case 1: 
+                            Debug.setIndicatorString("Trying to build a soldier");
+                            if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                                obesityCounter++;
+                            }
+                            break;
+                        case 2: case 3:
+                            Debug.setIndicatorString("Trying to build a builder");
+                            if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
+                                obesityCounter++;
+                            }
+                            break;
+                    }
+                } else {
+                    switch(obesityCounter % 3) {
+                        case 0:
+                            Debug.setIndicatorString("Trying to build a miner");
+                            if(buildRobot(RobotType.MINER, Util.randomDirection())){
+                                obesityCounter++;
+                            }
+                            break;
+                        case 1: 
+                            Debug.setIndicatorString("Trying to build a soldier");
+                            if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                                obesityCounter++;
+                            }
+                            break;
+                        case 2:
+                            Debug.setIndicatorString("Trying to build a builder");
+                            if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
+                                obesityCounter++;
+                            }
+                            break;
+                    }
                 }
+                break;
             default: 
-                currentState = State.CHILLING;
+                changeState(State.CHILLING);
                 break;
         }
     }
@@ -272,9 +303,8 @@ public class Archon extends Robot {
     }
 
     public void updateLead() throws GameActionException {
-        // TODO: Update leadNeededByBuilders by reading a comms flag
         double availableLead = (double) rc.getTeamLeadAmount(rc.getTeam());
-        leadNeededByBuilders = (int) (availableLead - 75 * (5 - turnNumber));
+        leadNeededByBuilders = (int) (availableLead - maxLeadUsedByArchons);
         if (leadNeededByBuilders <= 0) {leadNeededByBuilders = 0;}
         if (availableLead == 0) {
             leadToUse = 0;

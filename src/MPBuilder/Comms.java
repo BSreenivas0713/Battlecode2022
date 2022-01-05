@@ -18,6 +18,7 @@ public class Comms {
     static final int STATE_STORAGE_IDX = 16;
     static final int SOLDIER_COUNTER_IDX = 17;
     static final int BUILDER_REQUEST_IDX = 18;
+    static final int BUILDER_COUNTER_IDX = 19;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
@@ -227,5 +228,22 @@ public class Comms {
         } else {
             rc.writeSharedArray(SOLDIER_COUNTER_IDX, currCount + 1);
         }
+    }
+
+    public static int getBuilderCount() throws GameActionException {
+        int builderFlag = rc.readSharedArray(BUILDER_COUNTER_IDX);
+        int lastCount = (builderFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
+        int currCount = builderFlag & MINER_MASK;
+        if (lastCount == 0) {
+            rc.writeSharedArray(BUILDER_COUNTER_IDX, currCount << MINER_COUNTER_OFFSET);
+            return currCount;
+        }
+        return lastCount;
+    }
+    public static void incrementBuilderCount() throws GameActionException {
+        int builderFlag = rc.readSharedArray(BUILDER_COUNTER_IDX);
+        int currCount = builderFlag & MINER_MASK;
+
+        rc.writeSharedArray(BUILDER_COUNTER_IDX, currCount + 1);
     }
 }

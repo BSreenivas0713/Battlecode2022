@@ -10,5 +10,6 @@ public class Builder extends Robot{
     }
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        Comms.incrementBuilderCount();
     }
 }
