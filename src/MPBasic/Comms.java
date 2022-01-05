@@ -14,6 +14,7 @@ public class Comms {
     static final int firstArchonFlag = 9;
     static final int idList = 13;
     static final int MINER_COUNTER_IDX = 14;
+    static final int MINER_MINING_COUNTER_IDX = 15;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
@@ -129,6 +130,7 @@ public class Comms {
         return res;
     }
 
+
     // The upper half of 16 bits hold the robot count for the last turn.
     // Archons move the lower half into the upper half if the upper is 0.
     // Archons also zero the lower half.
@@ -156,6 +158,30 @@ public class Comms {
             rc.writeSharedArray(MINER_COUNTER_IDX, 1);
         } else {
             rc.writeSharedArray(MINER_COUNTER_IDX, currCount + 1);
+        }
+    }
+    public static int getMinerMiningCount() throws GameActionException {
+        int minerFlag = rc.readSharedArray(MINER_MINING_COUNTER_IDX);
+        int lastCount = (minerFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
+        int currCount = minerFlag & MINER_MASK;
+
+        if(lastCount == 0) {
+            rc.writeSharedArray(MINER_MINING_COUNTER_IDX, currCount << MINER_COUNTER_OFFSET);
+            return currCount;
+        }
+        
+        return lastCount;
+    }
+
+    public static void incrementMinerMiningCounter() throws GameActionException {
+        int minerFlag = rc.readSharedArray(MINER_MINING_COUNTER_IDX);
+        int lastCount = (minerFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
+        int currCount = minerFlag & MINER_MASK;
+
+        if(lastCount != 0) {
+            rc.writeSharedArray(MINER_MINING_COUNTER_IDX, 1);
+        } else {
+            rc.writeSharedArray(MINER_MINING_COUNTER_IDX, currCount + 1);
         }
     }
 }
