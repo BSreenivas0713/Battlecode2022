@@ -221,21 +221,13 @@ public class Archon extends Robot {
         }
         return counter;
     }
-    public int minerSoldierBuilder112Ratio(int counter) throws GameActionException {
-        switch(counter % 4) {
+    public int SoldierBuilder11Ratio(int counter) throws GameActionException {
+        switch(counter % 2) {
             case 0:
-            if (minerCount < MAX_NUM_MINERS) { 
-                Debug.setIndicatorString("Trying to build a miner");
-                if(buildRobot(RobotType.MINER, Util.randomDirection())){
-                    counter ++;
+                Debug.setIndicatorString("Trying to build a builder, num builders: " + builderCount);
+                if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
+                    counter++;
                 }
-            }
-            else {
-                Debug.setIndicatorString("Trying to build a soldier");
-                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                    counter ++;
-                }                    
-            }
                 break;
             case 1: 
                 Debug.setIndicatorString("Trying to build a soldier");
@@ -243,12 +235,7 @@ public class Archon extends Robot {
                     counter++;
                 }
                 break;
-            case 2: case 3:
-                Debug.setIndicatorString("Trying to build a builder, num builders: " + builderCount);
-                if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
-                    counter++;
-                }
-                break;
+
         }
         return counter;
     }
@@ -279,20 +266,14 @@ public class Archon extends Robot {
             case OBESITY:
                 int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
                 int watchtowersPossible = leadForBuilders / 180;
-                if (watchtowersPossible > builderCount && builderCount <= MAX_NUM_MINERS) {
-                    obesityCounter = minerSoldierBuilder112Ratio(obesityCounter);
+                if (watchtowersPossible > builderCount && builderCount <= rc.getArchonCount()) {
+                    obesityCounter = SoldierBuilder11Ratio(obesityCounter);
                 } else {
-                    if(minerCount <= MIN_NUM_MINERS) {
-                        chillingCounter = minerSoldier5050(chillingCounter);
-                    }
-                    else {
-                        if (lastPayDay <= 30) {
-                            chillingCounter = minerSoldier5050(chillingCounter);
+                        Debug.setIndicatorString("Trying to build a soldier");
+                        if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                            obesityCounter++;
                         }
-                        else {
-                            chillingCounter = minerSoldier12Ratio(chillingCounter);
-                        }
-                    }
+                        break;
                 }
                 break;
             default: 
