@@ -15,12 +15,15 @@ public class Robot {
     static int actionRadiusSquared;
     static int visionRadiusSquared;
     static int homeFlagIdx;
+    static int nextFlag;
+    static int defaultFlag;
 
     public Robot(RobotController r) {
         rc = r;
         turnCount = 0;
         actionRadiusSquared = rc.getType().actionRadiusSquared;
         visionRadiusSquared = rc.getType().visionRadiusSquared;
+        defaultFlag = 0;
 
         
         if(rc.getType() == RobotType.ARCHON) {
@@ -43,6 +46,13 @@ public class Robot {
     public void takeTurn() throws GameActionException {
         AnomalyScheduleEntry[] AnomolySchedule = rc.getAnomalySchedule();
         turnCount += 1;
+        
+        // setting flag on next turn if archon
+        if (rc.getType() == RobotType.ARCHON && rc.readSharedArray(homeFlagIdx) != nextFlag) {
+            rc.writeSharedArray(homeFlagIdx, nextFlag);
+            nextFlag = defaultFlag;
+        }
+
         EnemySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent());
         FriendlySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam());
         currLoc = rc.getLocation();

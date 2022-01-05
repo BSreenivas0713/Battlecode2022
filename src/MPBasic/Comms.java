@@ -201,7 +201,7 @@ public class Comms {
     // The upper half of 16 bits hold the robot count for the last turn.
     // Archons move the lower half into the upper half if the upper is 0.
     // Archons also zero the lower half.
-    public static int getDefenseSoldierCount() throws GameActionException {
+    public static int getRushSoldierCount() throws GameActionException {
         int soldierFlag = rc.readSharedArray(SOLDIER_COUNTER_IDX);
         int lastCount = (soldierFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
         int currCount = soldierFlag & MINER_MASK;
@@ -216,7 +216,7 @@ public class Comms {
 
     // The lower half holds the running count updated by the miners.
     // Miners zero out the upper half if they see it's not 0.
-    public static void incrementDefenseSoldierCounter() throws GameActionException {
+    public static void incrementRushSoldierCounter() throws GameActionException {
         int soldierFlag = rc.readSharedArray(SOLDIER_COUNTER_IDX);
         int lastCount = (soldierFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
         int currCount = soldierFlag & MINER_MASK;

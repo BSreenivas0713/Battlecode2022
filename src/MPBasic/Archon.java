@@ -48,6 +48,7 @@ public class Archon extends Robot {
         int myLocFlag = Comms.encodeLocation();
         r.writeSharedArray(nextArchon, myLocFlag);
         flagIndex = nextArchon + Comms.mapLocToFlag;
+        homeFlagIdx = flagIndex;
         currentState = getInitialState();
         Comms.updateState(nextArchon, currentState.ordinal());
         turnNumber = nextArchon;
@@ -111,8 +112,7 @@ public class Archon extends Robot {
         if (toBuild == RobotType.SOLDIER) {
             soldierCount++;
             if (soldierCount % 3 == 0) {
-                int newFlag = Comms.encodeArchonFlag(InformationCategory.DEFENSE_SOLDIERS);
-                rc.writeSharedArray(flagIndex, newFlag);
+                nextFlag = Comms.encodeArchonFlag(InformationCategory.DEFENSE_SOLDIERS);
             }
         }
         for(Direction dir : orderedDirs) {
@@ -132,10 +132,6 @@ public class Archon extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        // clearing flag if stale
-        if (rc.readSharedArray(flagIndex) != 0) {
-            rc.writeSharedArray(flagIndex, 0);
-        }
         updateLead();
         updateRobotCounts();
         doStateAction();
@@ -152,11 +148,10 @@ public class Archon extends Robot {
                 soldiersNearby++;
             }
         }
-        if (Comms.getDefenseSoldierCount() >= Util.SOLDIERS_NEEDED_TO_RUSH &&
+        if (Comms.getRushSoldierCount() >= Util.SOLDIERS_NEEDED_TO_RUSH &&
             Comms.enemyArchonCount() > 0) {
             //tell soldiers near me to rush
-            int flag = Comms.encodeArchonFlag(Comms.InformationCategory.RUSH_SOLDIERS);
-            rc.writeSharedArray(flagIndex, flag);
+            nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.RUSH_SOLDIERS);
         }
         minerMiningCount = Comms.getMinerMiningCount();
         lastPayDay += 1;

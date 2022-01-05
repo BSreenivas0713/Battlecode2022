@@ -35,7 +35,7 @@ public class DefenseSoldier extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        Debug.setIndicatorString("in defense mode");
+        Debug.setIndicatorString("defense soldier");
         if (!tryAttackBestEnemy()) {
             if (!tryMoveTowardsEnemy()) {
                 latticeAroundHome();

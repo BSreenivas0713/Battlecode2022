@@ -95,6 +95,7 @@ public class Soldier extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        Comms.incrementRushSoldierCounter();
         trySwitchState();
         switch (currState) {
             case DEFENSE:
@@ -122,9 +123,6 @@ public class Soldier extends Robot {
         if (currState != SoldierState.RUSHING && 
             Comms.getICFromFlag(rc.readSharedArray(homeFlagIdx)) == Comms.InformationCategory.RUSH_SOLDIERS) {
             currState = SoldierState.RUSHING;
-        }
-        if (currState == SoldierState.DEFENSE) {
-            Comms.incrementDefenseSoldierCounter();
         }
     }
 
