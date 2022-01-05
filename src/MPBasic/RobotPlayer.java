@@ -5,6 +5,7 @@ import MPBasic.Util.*;
 import MPBasic.Comms.*;
 import MPBasic.Debug.*;
 
+
 public strictfp class RobotPlayer {
 
     static int turnCount = 0;
