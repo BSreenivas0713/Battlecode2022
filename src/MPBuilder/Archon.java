@@ -12,6 +12,7 @@ import java.util.ArrayDeque;
 public class Archon extends Robot {
     static enum State {
         CHILLING,
+        OBESITY,
         INIT,
     };
 
@@ -20,6 +21,7 @@ public class Archon extends Robot {
 
     static int robotCounter;
     static int chillingCounter;
+    static int obesityCounter; 
     static int minerCount;
     static int minerMiningCount;
     static int soldierCount;
@@ -34,6 +36,7 @@ public class Archon extends Robot {
     static MapLocation leadSource;
     static Direction[] nonWallDirections;
     static int soldiersNearby = 0;
+    static int leadObesity;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -57,6 +60,7 @@ public class Archon extends Robot {
         soldierCount = 0;
         findBestLeadSource();
         nonWallDirections = findnonWallDirections();
+        leadObesity = rc.getArchonCount() * 180 + 300;
         
         // System.out.println("nonWallDirections: " + nonWallDirections.toString());
     }
@@ -134,6 +138,7 @@ public class Archon extends Robot {
         super.takeTurn();
         updateLead();
         updateRobotCounts();
+        checkForObesity();
         doStateAction();
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
@@ -220,11 +225,30 @@ public class Archon extends Robot {
                                 break;
                         }
                     }
-                    
                 }
-
                 Debug.setIndicatorString("CHILLING state, last pay day: " + lastPayDay);
                 break;
+            case OBESITY:
+                switch(obesityCounter) {
+                    case 0:
+                        Debug.setIndicatorString("Trying to build a miner");
+                        if(buildRobot(RobotType.MINER, Util.randomDirection())){
+                            obesityCounter++;
+                        }
+                        break;
+                    case 1: 
+                        Debug.setIndicatorString("Trying to build a soldier");
+                        if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                            obesityCounter++;
+                        }
+                        break;
+                    case 2:
+                        Debug.setIndicatorString("Trying to build a builder");
+                        if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
+                            obesityCounter = 0;
+                        }
+                        break;
+                }
             default: 
                 currentState = State.CHILLING;
                 break;
@@ -250,14 +274,13 @@ public class Archon extends Robot {
     public void updateLead() throws GameActionException {
         // TODO: Update leadNeededByBuilders by reading a comms flag
         double availableLead = (double) rc.getTeamLeadAmount(rc.getTeam());
+        leadNeededByBuilders = (int) (availableLead - 75 * (5 - turnNumber));
+        if (leadNeededByBuilders <= 0) {leadNeededByBuilders = 0;}
         if (availableLead == 0) {
             leadToUse = 0;
             return;
         }
         double builderPercentage = ((double) leadNeededByBuilders) / availableLead;
-        if (builderPercentage > 0.5) {
-            builderPercentage = 0.5;
-        }
         percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), turnNumber, builderPercentage);
         leadToUse = (int) (availableLead * (percentLeadToTake));
         if (leadToUse < Util.LeadThreshold) {
@@ -272,5 +295,15 @@ public class Archon extends Robot {
     public void changeState(State newState) throws GameActionException {
         currentState = newState;
         Comms.updateState(turnNumber, newState.ordinal());
+    }
+    public void checkForObesity() throws GameActionException {
+        if(currentState == State.CHILLING && rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
+            stateStack.push(currentState);
+            changeState(State.OBESITY);
+        }
+        else if(currentState == State.OBESITY && rc.getTeamLeadAmount(rc.getTeam()) < 500) {
+            State oldState = stateStack.pop();
+            changeState(oldState);
+        }
     }
 }

@@ -17,6 +17,7 @@ public class Comms {
     static final int MINER_MINING_COUNTER_IDX = 15;
     static final int STATE_STORAGE_IDX = 16;
     static final int SOLDIER_COUNTER_IDX = 17;
+    static final int BUILDER_REQUEST_IDX = 18;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
