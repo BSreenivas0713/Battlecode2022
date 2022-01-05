@@ -21,6 +21,7 @@ public class Archon extends Robot {
     static int robotCounter;
     static int chillingCounter;
     static int minerCount;
+    static int minerMiningCount;
     static State currentState;
     static int flagIndex;
     static int turnNumber;
@@ -28,6 +29,7 @@ public class Archon extends Robot {
     static ArrayDeque<State> stateStack;
     static int leadToUse;
     static int leadNeededByBuilders;
+    static int lastPayDay;
     static MapLocation leadSource;
     static Direction[] nonWallDirections;
 
@@ -135,6 +137,11 @@ public class Archon extends Robot {
     }
     public void updateRobotCounts() throws GameActionException {
         minerCount = Comms.getMinerCount();
+        minerMiningCount = Comms.getMinerMiningCount();
+        lastPayDay += 1;
+        if (minerCount <= minerMiningCount) {
+            lastPayDay = 0;
+        }
     }
 
     public void doStateAction() throws GameActionException {
@@ -162,23 +169,42 @@ public class Archon extends Robot {
                     }
                 }
                 else {
-                    switch(chillingCounter) {
-                        case 0: 
-                            Debug.setIndicatorString("Trying to build a miner");
-                            if(buildRobot(RobotType.MINER, Util.randomDirection())){
-                                chillingCounter ++;
-                            }
-                            break;
-                        case 1:
-                            Debug.setIndicatorString("Trying to build a soldier");
-                            if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                                chillingCounter = 0;
-                            }
-                            break;
+                    if (lastPayDay <= 30) {
+                        switch(chillingCounter) {
+                            case 0:
+                                Debug.setIndicatorString("Trying to build a miner");
+                                if(buildRobot(RobotType.MINER, Util.randomDirection())){
+                                    chillingCounter ++;
+                                }
+                                break;
+                            case 1:  case 2:
+                                Debug.setIndicatorString("Trying to build a soldier");
+                                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                                    chillingCounter = 0;
+                                }
+                                break;
+                        }
                     }
+                    else {
+                        switch(chillingCounter) {
+                            case 0: 
+                                Debug.setIndicatorString("Trying to build a miner");
+                                if(buildRobot(RobotType.MINER, Util.randomDirection())){
+                                    chillingCounter ++;
+                                }
+                                break;
+                            case 1: case 2:
+                                Debug.setIndicatorString("Trying to build a soldier");
+                                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                                    chillingCounter = (chillingCounter + 1) % 3;
+                                }
+                                break;
+                        }
+                    }
+                    
                 }
 
-                Debug.setIndicatorString("CHILLING state");
+                Debug.setIndicatorString("CHILLING state, last pay day: " + lastPayDay);
                 break;
             default: 
                 currentState = State.CHILLING;
