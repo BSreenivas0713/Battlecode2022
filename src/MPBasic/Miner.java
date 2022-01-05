@@ -56,8 +56,8 @@ public class Miner extends Robot {
                 goldSource = loc; 
             }
         }
-        RobotInfo[] sensableWithin2 = rc.senseNearbyRobots(2, rc.getTeam());
-        for (RobotInfo possibleFriendly: sensableWithin2) {
+        RobotInfo[] sensableWithin8 = rc.senseNearbyRobots(8, rc.getTeam());
+        for (RobotInfo possibleFriendly: sensableWithin8) {
             MapLocation loc = possibleFriendly.location;
             if (possibleFriendly != null && 
                 possibleFriendly.type == RobotType.MINER && 
