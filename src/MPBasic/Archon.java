@@ -7,28 +7,47 @@ import javax.tools.DocumentationTool.Location;
 import MPBasic.Debug.*;
 import MPBasic.Util.*;
 import MPBasic.Comms.*;
+import java.util.ArrayDeque;
 
 public class Archon extends Robot {
     static enum State {
         CHILLING,
         INIT,
     };
+
+    static int MAX_NUM_MINERS;
+    static int MIN_NUM_MINERS;
+
     static int robotCounter;
+    static int chillingCounter;
+    static int minerCount;
     static State currentState;
     static int flagIndex;
+    static double leadToLeave;
+    static ArrayDeque<State> stateStack;
+    static int leadToUse;
     static MapLocation leadSource;
     static Direction[] nonWallDirections;
+    static int endOfTurnMoney;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
         //writing all Archon locations immediately on round 0
+        stateStack = new ArrayDeque<State>();
+        MAX_NUM_MINERS = Math.min(Util.MAX_MINERS,
+                                    rc.getMapWidth() * rc.getMapHeight() /
+                                    Util.MAX_MAP_SIZE_TO_MINER_RATIO);
+        MIN_NUM_MINERS = MAX_NUM_MINERS / 4;
+        Debug.println("Max number of miners: " + MAX_NUM_MINERS+ ", Min number of miners: " + MIN_NUM_MINERS);
         int nextArchon = Comms.incrementFriendly();
         int myLocFlag = Comms.encodeLocation();
         r.writeSharedArray(nextArchon, myLocFlag);
         flagIndex = nextArchon + Comms.mapLocToFlag;
         currentState = getInitialState();
+        leadToLeave = Util.leadPercentage(rc.getArchonCount(), nextArchon);
         findBestLeadSource();
         nonWallDirections = findnonWallDirections();
+        
         // System.out.println("nonWallDirections: " + nonWallDirections.toString());
     }
 
@@ -97,11 +116,15 @@ public class Archon extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        leadToUse = (int) ((double)rc.getTeamLeadAmount(rc.getTeam()) * leadToLeave);
+        updateRobotCounts();
         doStateAction();
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
-
+    }
+    public void updateRobotCounts() throws GameActionException {
+        minerCount = Comms.getMinerCount();
     }
 
     public void doStateAction() throws GameActionException {
@@ -112,17 +135,24 @@ public class Archon extends Robot {
                 if (robotCounter == 3) {currentState = State.CHILLING;}
                 break;
             case CHILLING:
-                Debug.setIndicatorString("CHILLING state");
-                // Pick a direction to build in.
-                if (Util.rng.nextBoolean()) {
-                    // Let's try to build a miner.
-                    Debug.setIndicatorString("Trying to build a miner");
-                    buildRobot(RobotType.MINER, Util.randomDirection());
-                } else {
-                    // Let's try to build a soldier.
-                    Debug.setIndicatorString("Trying to build a soldier");
-                    buildRobot(RobotType.SOLDIER, Util.randomDirection());
+                if(minerCount <= MIN_NUM_MINERS) {
+                    switch(chillingCounter) {
+                        case 0: 
+                            Debug.setIndicatorString("Trying to build a miner");
+                            if(buildRobot(RobotType.MINER, Util.randomDirection())){
+                                chillingCounter ++;
+                            }
+                            break;
+                        case 1:
+                            Debug.setIndicatorString("Trying to build a soldier");
+                            if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                                chillingCounter = 0;
+                            }
+                            break;
+                    }
                 }
+
+                Debug.setIndicatorString("CHILLING state");
                 break;
             default: 
                 currentState = State.CHILLING;

@@ -18,9 +18,12 @@ public class Util {
         Direction.WEST,
         Direction.NORTHWEST,
     };
+
     static final int ArchonStraightVisionRange = 5;
     static final int ArchonDiagVisionRange = 4;
     static final int MinerDomain = 10;
+    static final int MAX_MINERS = 128;
+    static final int MAX_MAP_SIZE_TO_MINER_RATIO = 16;
     
     static Direction turnLeft90(Direction dir) {
         return dir.rotateLeft().rotateLeft();
@@ -44,5 +47,47 @@ public class Util {
     }
     static Direction randomDirection(Direction[] newDirections) {
         return newDirections[Util.rng.nextInt(newDirections.length)];
+    }
+
+    static double leadPercentage(int numArchons, int thisArchon) {
+        switch (numArchons) {
+            case 1:
+                return 0.2;
+            case 2:
+                switch(thisArchon) {
+                    case 1:
+                        return 0.6;
+                    case 2:
+                        return 0.33;
+                    default:
+                        return 0;
+                }
+            case 3:
+                switch(thisArchon) {
+                    case 1:
+                        return 0.75;
+                    case 2:
+                        return 0.67;
+                    case 3:
+                        return 0.5;
+                    default:
+                        return 0;
+                }
+            case 4:
+                switch(thisArchon) {
+                    case 1:
+                        return 0.8;
+                    case 2:
+                        return 0.75;
+                    case 3:
+                        return 0.67;
+                    case 4:
+                        return 0.5;
+                    default:
+                        return 0;
+                }
+            default:
+                return 0;
+        }
     }
 }
