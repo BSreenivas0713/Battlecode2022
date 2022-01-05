@@ -14,6 +14,7 @@ public class Robot {
     static MapLocation currLoc;
     static int actionRadiusSquared;
     static int visionRadiusSquared;
+    static int homeFlagIdx;
 
     public Robot(RobotController r) {
         rc = r;

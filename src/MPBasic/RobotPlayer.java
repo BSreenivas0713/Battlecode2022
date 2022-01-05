@@ -20,6 +20,7 @@ public strictfp class RobotPlayer {
         int setupFlag = rc.readSharedArray(0);
         int dataFlag = 0;
         int ourArchons = Comms.friendlyArchonCount();
+        int homeFlagIdx = Comms.firstArchonFlag;
         RobotInfo[] sensableWithin2 = rc.senseNearbyRobots(2, rc.getTeam());
         if (rc.getType() != RobotType.ARCHON) {
             for (RobotInfo robot : sensableWithin2) {
@@ -28,6 +29,7 @@ public strictfp class RobotPlayer {
                     for (int i = Comms.firstArchon; i < Comms.firstArchon + ourArchons; i++) {
                         int testFlag = rc.readSharedArray(i);
                         if (robotLoc.equals(Comms.locationFromFlag(testFlag))) {
+                            homeFlagIdx = i + Comms.mapLocToFlag;
                             dataFlag = rc.readSharedArray(i + Comms.mapLocToFlag);
                             break;
                         }
@@ -40,7 +42,7 @@ public strictfp class RobotPlayer {
         switch (rc.getType()) {
             case ARCHON:     bot = new Archon(rc);  break;
             case MINER:      bot = new Miner(rc);  break;
-            case SOLDIER:    bot = new Soldier(rc);  break;
+            case SOLDIER:    bot = new Soldier(rc, homeFlagIdx);  break;
             case LABORATORY: bot = new Laboratory(rc);  break;
             case WATCHTOWER: bot = new Watchtower(rc);  break;
             case BUILDER:    bot = new Builder(rc);  break;

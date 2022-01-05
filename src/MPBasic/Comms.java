@@ -11,6 +11,7 @@ public class Comms {
     static final int lastArchon = 4;
     static final int firstEnemy = 5;
     static final int lastEnemy = 8;
+    static final int firstArchonFlag = 9;
     static final int idList = 13;
     static final int MINER_COUNTER_IDX = 14;
 
@@ -35,8 +36,21 @@ public class Comms {
 
     private static RobotController rc;
 
+    public enum InformationCategory {
+        EMPTY,
+        RUSH_SOLDIERS,
+    }
+
     static void init(RobotController r) {
         rc = r;
+    }
+    
+    public static int encodeArchonFlag(InformationCategory cat) {
+        return cat.ordinal();
+    }
+
+    public static InformationCategory getICFromFlag(int flag) {
+        return InformationCategory.values()[flag];
     }
 
     public static int friendlyArchonCount() throws GameActionException {

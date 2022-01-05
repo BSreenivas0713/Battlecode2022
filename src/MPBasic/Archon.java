@@ -120,6 +120,10 @@ public class Archon extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        // clearing flag if stale
+        if (rc.readSharedArray(flagIndex) != 0) {
+            rc.writeSharedArray(flagIndex, 0);
+        }
         // Update leadNeededByBuilders by reading a comms flag
         double availableLead = (double) rc.getTeamLeadAmount(rc.getTeam());
         double builderPercentage = ((double) leadNeededByBuilders) / availableLead;
@@ -136,6 +140,18 @@ public class Archon extends Robot {
     }
     public void updateRobotCounts() throws GameActionException {
         minerCount = Comms.getMinerCount();
+        // update soldiers within sensing radius count
+        int friendlySoldiers = 0;
+        for (RobotInfo friend : FriendlySensable) {
+            if (friend.getType() == RobotType.SOLDIER) {
+                friendlySoldiers++;
+            }
+        }
+        if (friendlySoldiers >= 6 && Comms.enemyArchonCount() > 0) {
+            //tell soldiers near me to rush
+            int flag = Comms.encodeArchonFlag(Comms.InformationCategory.RUSH_SOLDIERS);
+            rc.writeSharedArray(flagIndex, flag);
+        }
     }
 
     public void doStateAction() throws GameActionException {
