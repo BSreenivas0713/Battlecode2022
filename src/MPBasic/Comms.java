@@ -76,7 +76,7 @@ public class Comms {
     public static int incrementEnemy(int id) throws GameActionException {
         int oldFlag = rc.readSharedArray(0);
         int oldCount = (oldFlag >> COUNT_OFFSET) & COUNT_MASK;
-        int newFlag = oldFlag + 4;
+        int newFlag = oldFlag + (1 << COUNT_OFFSET);
         rc.writeSharedArray(0, newFlag);
         storeID(id, oldCount);
         return firstEnemy + oldCount;
