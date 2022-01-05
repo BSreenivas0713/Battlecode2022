@@ -19,7 +19,7 @@ public class Util {
         Direction.NORTHWEST,
     };
 
-    static final int LeadThreshold = 100;
+    static final int LeadThreshold = 50;
     static final int ArchonStraightVisionRange = 5;
     static final int ArchonDiagVisionRange = 4;
     static final int MinerDomain = 8;
@@ -52,7 +52,7 @@ public class Util {
 
     static double leadPercentage(int numArchons, int thisArchon, double amountToLeave) {
         double upForGrabs = 1.0 - amountToLeave;
-        double myShare = upForGrabs / numArchons;
+        double myShare = upForGrabs / (double) numArchons;
         double amountLeftForMyTurn = 1.0 - ((double) thisArchon - 1.0) * myShare;
         return myShare / amountLeftForMyTurn;
     }

@@ -25,7 +25,7 @@ public class Archon extends Robot {
     static State currentState;
     static int flagIndex;
     static int turnNumber;
-    static double leadToLeave;
+    static double percentLeadToTake;
     static ArrayDeque<State> stateStack;
     static int leadToUse;
     static int leadNeededByBuilders;
@@ -51,7 +51,7 @@ public class Archon extends Robot {
         Comms.updateState(nextArchon, currentState.ordinal());
         turnNumber = nextArchon;
         leadNeededByBuilders = 0;
-        leadToLeave = Util.leadPercentage(rc.getArchonCount(), nextArchon, 0);
+        percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), nextArchon, 0);
         findBestLeadSource();
         nonWallDirections = findnonWallDirections();
         
@@ -163,6 +163,9 @@ public class Archon extends Robot {
                 if (robotCounter == 3) {currentState = State.CHILLING;}
                 break;
             case CHILLING:
+                if (leadToUse < Util.LeadThreshold) {
+                    break;
+                }
                 if(minerCount <= MIN_NUM_MINERS) {
                     switch(chillingCounter) {
                         case 0: 
@@ -242,12 +245,16 @@ public class Archon extends Robot {
     public void updateLead() throws GameActionException {
         // TODO: Update leadNeededByBuilders by reading a comms flag
         double availableLead = (double) rc.getTeamLeadAmount(rc.getTeam());
+        if (availableLead == 0) {
+            leadToUse = 0;
+            return;
+        }
         double builderPercentage = ((double) leadNeededByBuilders) / availableLead;
         if (builderPercentage > 0.5) {
             builderPercentage = 0.5;
         }
-        leadToLeave = Util.leadPercentage(rc.getArchonCount(), turnNumber, builderPercentage);
-        leadToUse = (int) (availableLead * (1.0 - leadToLeave));
+        percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), turnNumber, builderPercentage);
+        leadToUse = (int) (availableLead * (percentLeadToTake));
         if (leadToUse < Util.LeadThreshold) {
             if (rc.getRoundNum() % rc.getArchonCount() == turnNumber - 1) {
                 leadToUse = (int) (availableLead * (1.0 - builderPercentage));
