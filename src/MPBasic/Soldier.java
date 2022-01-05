@@ -70,6 +70,9 @@ public class Soldier extends Robot {
             Comms.getICFromFlag(rc.readSharedArray(homeFlagIdx)) == Comms.InformationCategory.RUSH_SOLDIERS) {
             currState = SoldierState.RUSHING;
         }
+        if (currState == SoldierState.DEFENSE) {
+            Comms.incrementDefenseSoldierCounter();
+        }
     }
 
     public boolean tryAttackBestEnemy() throws GameActionException {
@@ -118,7 +121,7 @@ public class Soldier extends Robot {
         }
         // move away from this direction
         Direction awayDir = null;
-        if (soldiersFound >= 3 && currLoc.distanceSquaredTo(home) < RobotType.ARCHON.visionRadiusSquared) {
+        if (soldiersFound >= 3) {
             awayDir = currLoc.directionTo(currLoc.translate(overallDx, overallDy)).opposite();
         }
         else {
