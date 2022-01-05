@@ -16,6 +16,7 @@ public class Comms {
     static final int MINER_COUNTER_IDX = 14;
     static final int MINER_MINING_COUNTER_IDX = 15;
     static final int STATE_STORAGE_IDX = 16;
+    static final int SOLDIER_COUNTER_IDX = 17;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
@@ -162,6 +163,7 @@ public class Comms {
             rc.writeSharedArray(MINER_COUNTER_IDX, currCount + 1);
         }
     }
+
     public static int getMinerMiningCount() throws GameActionException {
         int minerFlag = rc.readSharedArray(MINER_MINING_COUNTER_IDX);
         int lastCount = (minerFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
@@ -193,5 +195,35 @@ public class Comms {
         int clearedFlag = oldFlag & ~(STATE_MASK << offset);
         int newFlag = clearedFlag & (newState << offset);
         rc.writeSharedArray(STATE_STORAGE_IDX, newFlag);
+    }
+    
+    // The upper half of 16 bits hold the robot count for the last turn.
+    // Archons move the lower half into the upper half if the upper is 0.
+    // Archons also zero the lower half.
+    public static int getDefenseSoldierCount() throws GameActionException {
+        int soldierFlag = rc.readSharedArray(SOLDIER_COUNTER_IDX);
+        int lastCount = (soldierFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
+        int currCount = soldierFlag & MINER_MASK;
+
+        if(lastCount == 0) {
+            rc.writeSharedArray(SOLDIER_COUNTER_IDX, currCount << MINER_COUNTER_OFFSET);
+            return currCount;
+        }
+        
+        return lastCount;
+    }
+
+    // The lower half holds the running count updated by the miners.
+    // Miners zero out the upper half if they see it's not 0.
+    public static void incrementDefenseSoldierCounter() throws GameActionException {
+        int soldierFlag = rc.readSharedArray(SOLDIER_COUNTER_IDX);
+        int lastCount = (soldierFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
+        int currCount = soldierFlag & MINER_MASK;
+
+        if(lastCount != 0) {
+            rc.writeSharedArray(SOLDIER_COUNTER_IDX, 1);
+        } else {
+            rc.writeSharedArray(SOLDIER_COUNTER_IDX, currCount + 1);
+        }
     }
 }
