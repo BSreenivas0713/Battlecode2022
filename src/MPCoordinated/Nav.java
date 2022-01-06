@@ -54,7 +54,7 @@ public class Nav {
     }
 
     public static Direction navTo(MapLocation dest) throws GameActionException {
-        if(Clock.getBytecodeNum() > 6000) {
+        if(Clock.getBytecodesLeft() > 6000) {
             return bfs.getBestDir(dest);
         } else {
             return getGreedyDirection(rc.getLocation().directionTo(dest));
