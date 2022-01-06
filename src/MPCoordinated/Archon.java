@@ -37,6 +37,7 @@ public class Archon extends Robot {
     static int soldiersNearby = 0;
     static int leadObesity;
     static int maxLeadUsedByArchons;
+    static int distressSemaphore = 0;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -144,8 +145,26 @@ public class Archon extends Robot {
     }
 
     public boolean shouldCallForHelp() throws GameActionException {
-        int numFriendlies = FriendlySensable.length;
-        int numEnemies = EnemySensable.length;
+        int numFriendlies = 0;
+        for (RobotInfo robot : FriendlySensable) {
+            switch (robot.getType()) {
+                case SOLDIER: case WATCHTOWER: case SAGE: 
+                    numFriendlies++;
+                    break;
+                default:
+                    break;
+            }
+        }
+        int numEnemies = 0;
+        for (RobotInfo robot : EnemySensable) {
+            switch (robot.getType()) {
+                case SOLDIER: case WATCHTOWER: case SAGE: 
+                    numEnemies++;
+                    break;
+                default:
+                    break;
+            }
+        }
         if (rc.getHealth() < rc.getType().getMaxHealth(1) * 0.1) {
             if (numEnemies > 2 * numFriendlies) {
                 return false;
@@ -155,17 +174,27 @@ public class Archon extends Robot {
     }
 
     public void broadcastSoldierNear() throws GameActionException {
-        boolean callForHelp = shouldCallForHelp();
-        for(RobotInfo robot: rc.senseNearbyRobots(rc.getType().visionRadiusSquared)) {
-            if (robot.type == RobotType.SOLDIER && robot.team == rc.getTeam().opponent() && callForHelp) {
-                int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.UNDER_ATTACK);
-                rc.writeSharedArray(flagIndex, newFlag);
-                return;
+        if (shouldCallForHelp()) {
+            for(RobotInfo robot: rc.senseNearbyRobots(rc.getType().visionRadiusSquared)) {
+                if (robot.type == RobotType.SOLDIER && robot.team == rc.getTeam().opponent()) {
+                    int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.UNDER_ATTACK);
+                    Comms.writeIfChanged(flagIndex, newFlag);
+                    distressSemaphore = 10;
+                    return;
+                }
             }
-        }
-        if(Comms.getICFromFlag(rc.readSharedArray(flagIndex)) == Comms.InformationCategory.UNDER_ATTACK || !callForHelp) {
+            if (Comms.getICFromFlag(rc.readSharedArray(flagIndex)) == Comms.InformationCategory.UNDER_ATTACK) {
+                if (distressSemaphore == 0) {
+                    int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
+                    rc.writeSharedArray(flagIndex, newFlag);
+                } else {
+                    distressSemaphore--;
+                }
+            }
+        } else {
+            distressSemaphore = 0;
             int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
-            rc.writeSharedArray(flagIndex, newFlag);
+            Comms.writeIfChanged(flagIndex, newFlag);
         }
     }
     public void updateRobotCounts() throws GameActionException {
@@ -357,8 +386,8 @@ public class Archon extends Robot {
     }
 
     public void clearAndResetHelpers() throws GameActionException {
-        rc.writeSharedArray(Comms.FIRST_HELPER_COUNTER, 0);
-        rc.writeSharedArray(Comms.SECOND_HELPER_COUNTER, 0);
+        Comms.writeIfChanged(Comms.FIRST_HELPER_COUNTER, 0);
+        Comms.writeIfChanged(Comms.SECOND_HELPER_COUNTER, 0);
         int count = Comms.getRushSoldierCount();
         int newMax = count / rc.getArchonCount();
         Comms.setMaxHelper(newMax);
