@@ -80,6 +80,18 @@ public class Robot {
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
     }
 
+    public RobotInfo getClosestEnemy() {
+        return getClosestRobot(EnemySensable);
+    }
+
+    public RobotInfo getClosestEnemy(RobotType robotType) {
+        return getClosestRobot(EnemySensable, robotType);
+    }
+
+    /*
+     * Prioritizes attacking enemies in the given order.
+     * Prioritizes attacking lower health enemies.
+     */
     public void loadEnemies() {
         maybeArchon = null;
         maybeWatchtower = null;
@@ -143,13 +155,31 @@ public class Robot {
         for (int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
             currDistance = loc.distanceSquaredTo(currLoc);
-            if(leastDistance < currDistance) {
+            if(leastDistance > currDistance) {
                 leastDistance = currDistance;
                 closest = loc;
             }
         }
 
         return closest;
+    }
+
+    public RobotInfo getClosestRobot(RobotInfo[] robots, RobotType robotType) {
+        RobotInfo robot;
+        RobotInfo closestRobot = null;
+        int leastDistance = Integer.MAX_VALUE;
+        int currDistance;
+
+        for (int i = robots.length - 1; i >= 0; i--) {
+            robot = robots[i];
+            currDistance = robot.getLocation().distanceSquaredTo(currLoc);
+            if(leastDistance > currDistance && robot.type == robotType) {
+                leastDistance = currDistance;
+                closestRobot = robot;
+            }
+        }
+
+        return closestRobot;
     }
 
     public RobotInfo getClosestRobot(RobotInfo[] robots) {
@@ -161,7 +191,7 @@ public class Robot {
         for (int i = robots.length - 1; i >= 0; i--) {
             robot = robots[i];
             currDistance = robot.getLocation().distanceSquaredTo(currLoc);
-            if(leastDistance < currDistance) {
+            if(leastDistance > currDistance) {
                 leastDistance = currDistance;
                 closestRobot = robot;
             }

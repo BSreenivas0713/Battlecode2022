@@ -143,6 +143,12 @@ public class Miner extends Robot {
                 str = "going away from other miners: " + DirectionAway.toString() + " " + Integer.toString(LeadGoldList[3].x) + " " + Integer.toString(LeadGoldList[3].y);
             }
         }
+
+        RobotInfo closestEnemy = getClosestEnemy(RobotType.SOLDIER);
+        if(closestEnemy != null) {
+            dir = Util.getInOrderDirections(currLoc.directionTo(closestEnemy.getLocation()).opposite());
+            str = "going away from enemy";
+        }
         
         if(goldSource != null) {
             dir = Util.getInOrderDirections(currLoc.directionTo(goldSource));

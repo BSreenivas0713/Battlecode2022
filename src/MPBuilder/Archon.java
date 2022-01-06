@@ -276,12 +276,13 @@ public class Archon extends Robot {
         Debug.setIndicatorString("INIT state");
         RobotType toBuild = RobotType.MINER;
         Direction dir = null;
-        if(leadSource == null) {
-            dir = Util.randomDirection(nonWallDirections);
-        }
-        else {
-            dir = rc.getLocation().directionTo(leadSource);
-        }
+        // if(leadSource == null) {
+        //     dir = Util.randomDirection(nonWallDirections);
+        // }
+        // else {
+        //     dir = rc.getLocation().directionTo(leadSource);
+        // }
+        dir = Util.randomDirection(nonWallDirections);
         buildRobot(toBuild,dir);
         
         if(robotCounter >= 3 && Comms.foundEnemy) {

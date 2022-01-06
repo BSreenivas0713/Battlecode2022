@@ -84,16 +84,7 @@ public class Soldier extends Robot {
 
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {
-        int minEnemyDistSquared = Integer.MAX_VALUE;
-        RobotInfo closestEnemy = null;
-        // find closest enemy
-        for (RobotInfo enemy : EnemySensable) {
-            int candidateDist = currLoc.distanceSquaredTo(enemy.getLocation());
-            if (candidateDist < minEnemyDistSquared) {
-                minEnemyDistSquared = candidateDist;
-                closestEnemy = enemy;
-            }
-        }
+        RobotInfo closestEnemy = getClosestEnemy();
         // move towards it if found
         if (closestEnemy != null) {
             Direction[] targets = Util.getInOrderDirections(currLoc.directionTo(closestEnemy.getLocation()));
