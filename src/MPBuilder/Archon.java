@@ -242,6 +242,9 @@ public class Archon extends Robot {
     public void doStateAction() throws GameActionException {
         switch(currentState) {
             case INIT: 
+                if (leadToUse < Util.LeadThreshold) {
+                    break;
+                }
                 firstRounds();
                 // Debug.setIndicatorString("INIT state");
                 if (robotCounter == 3) {currentState = State.CHILLING;}
