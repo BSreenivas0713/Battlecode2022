@@ -89,8 +89,15 @@ public class Soldier extends Robot {
 
     public void trySwitchState() throws GameActionException {
         // if >= 15 latticing soldiers, switch to rushing
-        int maxHelpers = Comms.readMaxHelper();
-        int bestDistance = Util.MAP_MAX_DIST_SQUARED / 4;
+        int maxHelpers;
+        int bestDistance;
+        if (currState != SoldierState.EXPLORING) {
+            maxHelpers = Comms.readMaxHelper();
+            bestDistance = Util.MAP_MAX_DIST_SQUARED / 4;
+        } else {
+            maxHelpers = Util.MAP_AREA;
+            bestDistance = Util.MAP_MAX_DIST_SQUARED;
+        }
         distressLocation = null;
         for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
             int flag = rc.readSharedArray(x);
@@ -120,7 +127,7 @@ public class Soldier extends Robot {
         else if (currState == SoldierState.RUSHING && Comms.isArchonDead(targetId)) {
             target = null;
             targetId = 0;
-            currState = SoldierState.DONE_RUSHING;
+            currState = SoldierState.EXPLORING;
         }
         else if(currState != SoldierState.RUSHING){
             currState = SoldierState.EXPLORING;
