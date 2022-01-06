@@ -49,7 +49,7 @@ public class Soldier extends Robot {
         trySwitchState();
         switch (currState) {
             case DEFENSE:
-                Debug.setIndicatorString("in defense mode");
+                Debug.printString("Defending");
                 if (!tryAttackBestEnemy()) {
                     if (!tryMoveTowardsEnemy()) {
                         latticeAroundHome();
@@ -57,12 +57,12 @@ public class Soldier extends Robot {
                 }
                 break;
             case RUSHING:
-                Debug.setIndicatorString("in rushing mode");
+                Debug.printString("Rushing");
                 tryAttackBestEnemy();
                 moveTowardsWeakestArchon();
                 break;
             case DONE_RUSHING:
-                Debug.setIndicatorString("in done rushing mode");
+                Debug.printString("Done rushing");
                 if (!tryAttackBestEnemy()) {
                     if (!tryMoveTowardsEnemy()) {
                         latticeAroundHomeAfterRushing();
@@ -70,14 +70,14 @@ public class Soldier extends Robot {
                 }
                 break;
             case EXPLORING:
-                Debug.setIndicatorString("in exploring mode");
+                Debug.printString("Exploring");
                 tryAttackBestEnemy();
                 if (!tryMoveTowardsEnemy()) { 
                     soldierExplore();
                 }
                 break;
             case HELPING: 
-                Debug.setIndicatorString("in Helping Mode");
+                Debug.printString("Helping");
                 tryAttackBestEnemy();
                 moveTowardsDistressedArchon();
                 break;
@@ -89,8 +89,10 @@ public class Soldier extends Robot {
 
     public void trySwitchState() throws GameActionException {
         // if >= 15 latticing soldiers, switch to rushing
-        int maxHelpers = Comms.readMaxHelper();
-        int bestDistance = Util.MAP_MAX_DIST_SQUARED / 4;
+        int maxHelpers;
+        int bestDistance;
+        maxHelpers = Comms.readMaxHelper();
+        bestDistance = Util.MAP_MAX_DIST_SQUARED / 4;
         distressLocation = null;
         for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
             int flag = rc.readSharedArray(x);
@@ -120,7 +122,7 @@ public class Soldier extends Robot {
         else if (currState == SoldierState.RUSHING && Comms.isArchonDead(targetId)) {
             target = null;
             targetId = 0;
-            currState = SoldierState.DONE_RUSHING;
+            currState = SoldierState.EXPLORING;
         }
         else if(currState != SoldierState.RUSHING){
             currState = SoldierState.EXPLORING;
@@ -270,7 +272,7 @@ public class Soldier extends Robot {
                     Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
                 }
     
-                Debug.setIndicatorString("Targeting Archon at: " + bestLoc.toString());
+                Debug.printString("Targeting Archon at: " + bestLoc.toString());
                 Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 255, 0, 0);
             }
             else {
@@ -290,13 +292,21 @@ public class Soldier extends Robot {
                     Direction bestDir = Nav.getBestDir(bestLoc);
                     bestDirs = Util.getInOrderDirections(bestDir);
                     Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
+                    Debug.printString("Going to defend Archon at: " + bestLoc.toString());
+                }
+                else {
+                    if (!tryMoveTowardsEnemy()) { 
+                        Direction toHome = currLoc.directionTo(home);
+                        Direction spinDir = Util.turnRight90(toHome);
+                        bestDirs = Util.getInOrderDirections(Nav.getBestDir(currLoc.add(spinDir)));
+                        Debug.printString("Spinning around Archon at: " + bestLoc.toString());
+                    }
                 }
     
-                Debug.setIndicatorString("Defending Archon at: " + bestLoc.toString());
                 Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 255, 0, 0);
             }
             else {
-                Debug.setIndicatorString("Distress location null: ERROR");
+                Debug.printString("NULL DISTRESS");
             }
             tryMoveDest(bestDirs);
     }

@@ -37,6 +37,7 @@ public class Archon extends Robot {
     static int soldiersNearby = 0;
     static int leadObesity;
     static int maxLeadUsedByArchons;
+    static int distressSemaphore = 0;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -137,15 +138,33 @@ public class Archon extends Robot {
         checkForObesity();
         doStateAction();
         tryToRepair();
-        Debug.setIndicatorString(leadToUse + "; " + robotCounter + "; num alive enemies: " + Comms.aliveEnemyArchonCount());
+        // Debug.setIndicatorString(leadToUse + "; " + robotCounter + "; num alive enemies: " + Comms.aliveEnemyArchonCount());
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
     }
 
     public boolean shouldCallForHelp() throws GameActionException {
-        int numFriendlies = FriendlySensable.length;
-        int numEnemies = EnemySensable.length;
+        int numFriendlies = 0;
+        for (RobotInfo robot : FriendlySensable) {
+            switch (robot.getType()) {
+                case SOLDIER: case WATCHTOWER: case SAGE: 
+                    numFriendlies++;
+                    break;
+                default:
+                    break;
+            }
+        }
+        int numEnemies = 0;
+        for (RobotInfo robot : EnemySensable) {
+            switch (robot.getType()) {
+                case SOLDIER: case WATCHTOWER: case SAGE: 
+                    numEnemies++;
+                    break;
+                default:
+                    break;
+            }
+        }
         if (rc.getHealth() < rc.getType().getMaxHealth(1) * 0.1) {
             if (numEnemies > 2 * numFriendlies) {
                 return false;
@@ -155,17 +174,27 @@ public class Archon extends Robot {
     }
 
     public void broadcastSoldierNear() throws GameActionException {
-        boolean callForHelp = shouldCallForHelp();
-        for(RobotInfo robot: rc.senseNearbyRobots(rc.getType().visionRadiusSquared)) {
-            if (robot.type == RobotType.SOLDIER && robot.team == rc.getTeam().opponent() && callForHelp) {
-                int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.UNDER_ATTACK);
-                rc.writeSharedArray(flagIndex, newFlag);
-                return;
+        if (shouldCallForHelp()) {
+            for(RobotInfo robot: rc.senseNearbyRobots(rc.getType().visionRadiusSquared)) {
+                if (robot.type == RobotType.SOLDIER && robot.team == rc.getTeam().opponent()) {
+                    int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.UNDER_ATTACK);
+                    Comms.writeIfChanged(flagIndex, newFlag);
+                    distressSemaphore = 10;
+                    return;
+                }
             }
-        }
-        if(Comms.getICFromFlag(rc.readSharedArray(flagIndex)) == Comms.InformationCategory.UNDER_ATTACK || !callForHelp) {
+            if (Comms.getICFromFlag(rc.readSharedArray(flagIndex)) == Comms.InformationCategory.UNDER_ATTACK) {
+                if (distressSemaphore == 0) {
+                    int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
+                    rc.writeSharedArray(flagIndex, newFlag);
+                } else {
+                    distressSemaphore--;
+                }
+            }
+        } else {
+            distressSemaphore = 0;
             int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
-            rc.writeSharedArray(flagIndex, newFlag);
+            Comms.writeIfChanged(flagIndex, newFlag);
         }
     }
     public void updateRobotCounts() throws GameActionException {
@@ -190,69 +219,70 @@ public class Archon extends Robot {
             lastPayDay = 0;
         }
     }
+
+    public int buildMiner(int counter) throws GameActionException {
+        if (minerCount < MAX_NUM_MINERS) {
+            Debug.printString("Building miner");
+            if(buildRobot(RobotType.MINER, Util.randomDirection())){
+                counter++;
+            }
+        }
+        else {
+            Debug.printString("Building soldier");
+            if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+                counter++;
+            }
+        }
+        return counter;
+    }
+
+    public int buildSoldier(int counter) throws GameActionException {
+        Debug.printString("Building soldier");
+        if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+            counter++;
+        }
+        return counter;
+    }
+
+    public int buildBuilder(int counter) throws GameActionException {
+        Debug.printString("Building builder, num builders: " + builderCount);
+        if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
+            counter++;
+        }
+        return counter;
+    }
+
     public int minerSoldier5050(int counter) throws GameActionException {
         switch(counter % 2) {
-            case 0: 
-                if (minerCount < MAX_NUM_MINERS) { 
-                    Debug.setIndicatorString("Trying to build a miner");
-                    if(buildRobot(RobotType.MINER, Util.randomDirection())){
-                        counter ++;
-                    }
-                }
-                else {
-                    Debug.setIndicatorString("Trying to build a soldier");
-                    if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                        counter ++;
-                    }                    
-                }
+            case 0:
+                counter = buildMiner(counter);
                 break;
-            case 1:
-                Debug.setIndicatorString("Trying to build a soldier");
-                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                    counter ++;
-                }
+            default:
+                counter = buildSoldier(counter);
                 break;
         }
         return counter;
     }
+
     public int minerSoldier13Ratio(int counter) throws GameActionException {
         switch(counter % 4) {
             case 0:
-                if (minerCount < MAX_NUM_MINERS) { 
-                    Debug.setIndicatorString("Trying to build a miner");
-                    if(buildRobot(RobotType.MINER, Util.randomDirection())){
-                        counter ++;
-                    }
-                }
-                else {
-                    Debug.setIndicatorString("Trying to build a soldier");
-                    if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                        counter ++;
-                    }                    
-                }
+                counter = buildMiner(counter);
                 break;
-            case 1: case 2: case 3: 
-                Debug.setIndicatorString("Trying to build a soldier");
-                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                    counter ++;
-                }
+            default:
+                counter = buildSoldier(counter);
                 break;
         }
         return counter;
     }
+
     public int SoldierBuilder11Ratio(int counter) throws GameActionException {
         switch(counter % 2) {
             case 0:
-                Debug.setIndicatorString("Trying to build a builder, num builders: " + builderCount);
-                if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
-                    counter++;
-                }
+                counter = buildBuilder(counter);
                 break;
-            case 1: 
-                Debug.setIndicatorString("Trying to build a soldier");
-                if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                    counter++;
-                }
+            default:
+                counter = buildSoldier(counter);
                 break;
 
         }
@@ -260,13 +290,15 @@ public class Archon extends Robot {
     }
     public void doStateAction() throws GameActionException {
         switch(currentState) {
-            case INIT: 
+            case INIT:
+                Debug.printString("Init");
                 if (leadToUse < Util.LeadThreshold) {
                     break;
                 }
                 firstRounds();
                 break;
             case CHILLING:
+                Debug.printString("Chilling");
                 if (leadToUse < Util.LeadThreshold) {
                     break;
                 }
@@ -276,19 +308,17 @@ public class Archon extends Robot {
                 else {
                     chillingCounter = minerSoldier13Ratio(chillingCounter);
                 }
-                // Debug.setIndicatorString("CHILLING state, last pay day: " + lastPayDay);
+                // Debug.printString("CHILLING state, last pay day: " + lastPayDay);
                 break;
             case OBESITY:
+                Debug.printString("Obesity");
                 int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
                 int watchtowersPossible = leadForBuilders / 180;
                 if (watchtowersPossible > builderCount && builderCount <= MIN_NUM_MINERS) {
                     obesityCounter = SoldierBuilder11Ratio(obesityCounter);
                 } else {
-                        Debug.setIndicatorString("Trying to build a soldier");
-                        if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
-                            obesityCounter++;
-                        }
-                        break;
+                    obesityCounter = buildSoldier(obesityCounter);
+                    break;
                 }
                 break;
             default: 
@@ -296,8 +326,8 @@ public class Archon extends Robot {
                 break;
         }
     }
+
     public void firstRounds() throws GameActionException {
-        Debug.setIndicatorString("INIT state");
         RobotType toBuild = RobotType.MINER;
         Direction dir = null;
         // if(leadSource == null) {
@@ -343,6 +373,7 @@ public class Archon extends Robot {
         currentState = newState;
         Comms.updateState(turnNumber, newState.ordinal());
     }
+
     public void checkForObesity() throws GameActionException {
         if(currentState == State.CHILLING && rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
             stateStack.push(currentState);
@@ -353,9 +384,10 @@ public class Archon extends Robot {
             changeState(oldState);
         }
     }
+
     public void clearAndResetHelpers() throws GameActionException {
-        rc.writeSharedArray(Comms.FIRST_HELPER_COUNTER, 0);
-        rc.writeSharedArray(Comms.SECOND_HELPER_COUNTER, 0);
+        Comms.writeIfChanged(Comms.FIRST_HELPER_COUNTER, 0);
+        Comms.writeIfChanged(Comms.SECOND_HELPER_COUNTER, 0);
         int count = Comms.getRushSoldierCount();
         int newMax = count / rc.getArchonCount();
         Comms.setMaxHelper(newMax);

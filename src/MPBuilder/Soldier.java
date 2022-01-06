@@ -202,7 +202,7 @@ public class Soldier extends Robot {
         }
         return false;
     }
-
+    
     public void latticeAroundHome() throws GameActionException {
         findFriendlySoldiers();
 
