@@ -3,8 +3,12 @@ package MPBuilder;
 import battlecode.common.*;
 import MPBuilder.Debug.*;
 import MPBuilder.Util.*;
+import MPBuilder.fast.FastIterableLocSet;
+
 
 public class Builder extends Robot{
+    static boolean repairing;
+    static boolean making;
     public Builder(RobotController r) throws GameActionException {
         super(r);
     }
@@ -17,47 +21,77 @@ public class Builder extends Robot{
         }
         return false;
     }
-    public void takeTurn() throws GameActionException {
-        super.takeTurn();
-        Comms.incrementBuilderCount();
-        boolean repairing = false;
-        int overallDX = 0;
-        int overallDY = 0;
+    public boolean makeWatchtowerIfPossible() throws GameActionException{
+        boolean seenFriendly = false;
         for(RobotInfo robot: FriendlySensable) {
-            if(robot.type == RobotType.WATCHTOWER && (currLoc.distanceSquaredTo(robot.location) < actionRadiusSquared)) {
+            if(robot.type == RobotType.ARCHON) {
+                if(currLoc.distanceSquaredTo(robot.location) <= 8) {
+                    seenFriendly = true;
+                }
+                MapLocation robotLoc = robot.location;
+                for(MapLocation newLoc: Util.makePattern(robotLoc)) {
+                    if(currLoc.distanceSquaredTo(newLoc) <=2) {
+                        if(rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc))) {
+                            rc.setIndicatorString("Building a Watchtower");
+                            rc.buildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc));
+                        }
+                        else {
+                            rc.setIndicatorString("Cannot make robot at: " + newLoc.toString());
+                        }
+                    }
+                }               
+            }
+            if(robot.type == RobotType.WATCHTOWER) {
+                if(currLoc.distanceSquaredTo(robot.location) <= 8) {
+                    seenFriendly = true;
+                }               
+                MapLocation robotLoc = robot.location;
+                MapLocation[] Pattern = Util.makePattern(robotLoc);
+                for(MapLocation newLoc: Pattern) {
+                    if(currLoc.distanceSquaredTo(newLoc) <=2 && rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc))) {
+                        rc.setIndicatorString("Building a Watchtower");
+                        making = true;
+                        rc.buildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc));
+                    }
+                }
+            }
+        }
+        return seenFriendly;
+    }
+    public void repairWatchtowerIfPossible() throws GameActionException{
+        for(RobotInfo robot: FriendlySensable) {
+            if(currLoc.distanceSquaredTo(robot.location) < actionRadiusSquared && robot.getType() == RobotType.WATCHTOWER) {
                 if(robot.health < robot.getType().getMaxHealth(robot.level)) {
                     if(rc.canRepair(robot.location)) {
                         rc.repair(robot.location);
                     }
-                    rc.setIndicatorString("repairing at " + robot.location.toString() + ", health is " + robot.health + ", max health is " + Util.WatchTowerHealths[robot.level - 1]);
                     repairing = true;
+                    rc.setIndicatorString("repairing at " + robot.location.toString() + ", health is " + robot.health + ", max health is " + Util.WatchTowerHealths[robot.level - 1]);
                 }
                 if(rc.canMutate(robot.location)) {
                     rc.mutate(robot.location);
                 }
             }
-            if(robot.location.distanceSquaredTo(currLoc) < Util.WatchTowerDomain && (robot.type == RobotType.BUILDER || robot.type == RobotType.WATCHTOWER)) {
-                overallDX += currLoc.directionTo(robot.getLocation()).dx * (10000 / (currLoc.distanceSquaredTo(robot.location)));
-                overallDY += currLoc.directionTo(robot.getLocation()).dy * (10000 / (currLoc.distanceSquaredTo(robot.location)));
-            }
         }
-        if(currLoc.distanceSquaredTo(home) <= 4) {
-            tryMoveDest(Util.getInOrderDirections(currLoc.directionTo(home).opposite()));
-        }
-        if(!repairing) {
-            if(overallDX != 0 || overallDY != 0) {
-                Direction DirectionAway = currLoc.directionTo(currLoc.translate(overallDX, overallDY)).opposite();
-                tryMoveDest(Util.getInOrderDirections(DirectionAway));
-                rc.setIndicatorString("trying to lattice with other builders");
+    }
+    public void takeTurn() throws GameActionException {
+        super.takeTurn();
+        Comms.incrementBuilderCount();
+        repairing = false;
+        making = false;
+        boolean seenFriendly = makeWatchtowerIfPossible();
+        repairWatchtowerIfPossible();
+        if(!repairing && !making) {
+            if(seenFriendly) {
+                rc.setIndicatorString("Friendly near, moving away from home");
+                tryMoveDest(Util.getInOrderDirections(currLoc.directionTo(home).opposite()));
             }
             else {
-                rc.setIndicatorString("creating a new watch tower");
-                Direction newDir = Util.randomDirection();
-                if (rc.canBuildRobot(RobotType.WATCHTOWER,newDir) && !enemyNear()) {
-                    rc.buildRobot(RobotType.WATCHTOWER, newDir);
-                }
+                rc.setIndicatorString("No Friendly near, moving towards home");
+                tryMoveDest(Util.getInOrderDirections(currLoc.directionTo(home)));
             }
         }
+            
         else {
             int a = 0;//rc.setIndicatorString("repairing");
         }

@@ -46,7 +46,12 @@ public class Util {
             SOLDIERS_NEEDED_TO_RUSH = 30;
         }
     }
-    
+    static MapLocation[] makePattern(MapLocation loc) {
+        return new MapLocation[] {loc.translate(2, 0),
+                                  loc.translate(-2, 0),
+                                  loc.translate(0, 2),
+                                  loc.translate(0, -2)};
+    }    
     static Direction turnLeft90(Direction dir) {
         return dir.rotateLeft().rotateLeft();
     }

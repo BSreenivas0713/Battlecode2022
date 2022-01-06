@@ -281,7 +281,7 @@ public class Archon extends Robot {
             case OBESITY:
                 int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
                 int watchtowersPossible = leadForBuilders / 180;
-                if (watchtowersPossible > builderCount && builderCount <= rc.getArchonCount()) {
+                if (watchtowersPossible > builderCount && builderCount <= MIN_NUM_MINERS) {
                     obesityCounter = SoldierBuilder11Ratio(obesityCounter);
                 } else {
                         Debug.setIndicatorString("Trying to build a soldier");
