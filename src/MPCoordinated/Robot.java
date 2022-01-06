@@ -53,7 +53,6 @@ public class Robot {
     }
 
     public void takeTurn() throws GameActionException {
-        AnomalyScheduleEntry[] AnomolySchedule = rc.getAnomalySchedule();
         turnCount += 1;
         
         // setting flag on next turn if archon
@@ -78,6 +77,7 @@ public class Robot {
         // initializeGlobals();
         // turnCount += 1;
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
+        Debug.flush();
     }
 
     public RobotInfo getClosestEnemy() {
@@ -244,12 +244,13 @@ public class Robot {
         // Try to attack someone
         RobotInfo bestEnemy = getBestEnemy();
         if(bestEnemy != null) {
-            rc.setIndicatorString("I got the best enemy: " + bestEnemy.getLocation().toString());
-        }
-        if (bestEnemy != null && rc.canAttack(bestEnemy.getLocation())) {
-            rc.attack(bestEnemy.getLocation());
-            rc.setIndicatorString("I am attacking");
-            return true;
+            if(rc.canAttack(bestEnemy.getLocation())) {
+                rc.attack(bestEnemy.getLocation());
+                Debug.printString("Attacking: " + bestEnemy.getLocation().toString());
+                return true;
+            } else {
+                Debug.printString("Enemy: " + bestEnemy.getLocation().toString());
+            }
         }
         return false;
     }

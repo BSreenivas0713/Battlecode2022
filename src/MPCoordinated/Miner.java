@@ -103,24 +103,22 @@ public class Miner extends Robot {
         int someoneClaimed = LeadGoldList[2].y;
         Direction DirectionAway = currLoc.directionTo(currLoc.translate(LeadGoldList[3].x, LeadGoldList[3].y)).opposite();
         if(goldSource != null) {
-            rc.setIndicatorString("Can see Gold!");
+            Debug.printString("Gold found");
             while(rc.canMineGold(goldSource)) {
-                rc.setIndicatorString("Mining Gold!");
                 rc.mineGold(goldSource);
             }
         }
         if(leadSource != null) {
-            rc.setIndicatorString("Can see Lead: " + leadSource.toString());
+            Debug.printString("Lead found: " + leadSource.toString());
             while(rc.canMineLead(leadSource) && rc.senseLead(leadSource) > 1) {
                 Comms.incrementMinerMiningCounter();
-                rc.setIndicatorString("Mining Lead!");
                 rc.mineLead(leadSource);
                 amMining = true;
             }
         }
         Direction[] dir = {};
         String str = "";
-        String str1 = "domain Size: " + Integer.toString(totalLeadSourcesWithinDomain) + ", ";
+        Debug.printString("Domain: " + totalLeadSourcesWithinDomain);
 
         if (!amMining && (totalLeadSourcesWithinDomain < 15 || someoneClaimed == 1)  && !explorer) {
             dir = Nav.explore();
@@ -156,7 +154,7 @@ public class Miner extends Robot {
             str = "going toward gold";
         }
 
-        rc.setIndicatorString(str1 + str);
+        Debug.printString(str);
         tryMoveDest(dir);
     }
 }
