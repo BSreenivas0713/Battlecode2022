@@ -277,7 +277,7 @@ public class Comms {
 
         if(lastCount != 0) {
             rc.writeSharedArray(SOLDIER_COUNTER_IDX, 1);
-        } else {
+        } else if (currCount < 255) {
             rc.writeSharedArray(SOLDIER_COUNTER_IDX, currCount + 1);
         }
     }

@@ -19,16 +19,28 @@ public class Soldier extends Robot {
     static int targetId;
     static MapLocation distressLocation;
 
+    static int numEnemySoldiers;
+    static int overallEnemySoldierDx;
+    static int overallEnemySoldierDy;
+
+    static int numFriendlySoldiers;
+    static int overallFriendlySoldierDx;
+    static int overallFriendlySoldierDy;
+
     public Soldier(RobotController r) throws GameActionException {
-        super(r);
-        currState = SoldierState.EXPLORING;
-        homeFlagIdx = Comms.firstArchonFlag;
+        this(r, Comms.firstArchonFlag);
     }
 
     public Soldier(RobotController r, int homeFlagIndex) throws GameActionException {
         super(r);
         currState = SoldierState.EXPLORING;
         homeFlagIdx = homeFlagIndex;
+        numEnemySoldiers = 0;
+        overallEnemySoldierDx = 0;
+        overallEnemySoldierDy = 0;
+        numFriendlySoldiers = 0;
+        overallFriendlySoldierDx = 0;
+        overallFriendlySoldierDy = 0;
     } 
 
     public void takeTurn() throws GameActionException {
@@ -115,12 +127,74 @@ public class Soldier extends Robot {
         }
     }
 
+    public RobotInfo getClosestEnemy() {
+        RobotInfo robot;
+        RobotInfo closestRobot = null;
+        int leastDistance = Integer.MAX_VALUE;
+        int currDistance;
+        MapLocation loc;
+
+        for (int i = EnemySensable.length - 1; i >= 0; i--) {
+            robot = EnemySensable[i];
+            loc = robot.location;
+            currDistance = robot.getLocation().distanceSquaredTo(currLoc);
+            if(leastDistance > currDistance) {
+                leastDistance = currDistance;
+                closestRobot = robot;
+            }
+
+            if(robot.type == RobotType.SOLDIER) {
+                numEnemySoldiers++;
+                overallEnemySoldierDx += currLoc.directionTo(loc).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
+                overallEnemySoldierDy += currLoc.directionTo(loc).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
+            }
+        }
+
+        return closestRobot;
+    }
+
+    public void findFriendlySoldiers() {
+        overallFriendlySoldierDx = 0;
+        overallFriendlySoldierDy = 0;
+        numFriendlySoldiers = 0;
+
+        // get averaged overall dx and overall dy to friendly sensables
+        RobotInfo friend;
+        MapLocation loc;
+        for (int i = FriendlySensable.length - 1; i >= 0; i--) {
+            friend = FriendlySensable[i];
+            loc = friend.location;
+            if (friend.getType() == RobotType.SOLDIER) {
+                numFriendlySoldiers++;
+                overallFriendlySoldierDx += currLoc.directionTo(loc).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
+                overallFriendlySoldierDy += currLoc.directionTo(loc).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
+            }
+        }
+
+        // Weight home Archon ever so slightly.
+        // Only really has an effect when no soldiers are seen
+        // Primarily for running towards other soldiers/home when running away from enemies.
+        overallFriendlySoldierDx += currLoc.directionTo(home).dx * (1000 / (currLoc.distanceSquaredTo(home)));
+        overallFriendlySoldierDy += currLoc.directionTo(home).dy * (1000 / (currLoc.distanceSquaredTo(home)));
+    }
+
+    public boolean shouldRunAway() {
+        return numEnemySoldiers > numFriendlySoldiers;
+    }
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {
         RobotInfo closestEnemy = getClosestEnemy();
         // move towards it if found
         if (closestEnemy != null) {
-            Direction[] targets = Util.getInOrderDirections(currLoc.directionTo(closestEnemy.getLocation()));
+            findFriendlySoldiers();
+            Direction dir = null;
+            if(shouldRunAway()) {
+                dir = currLoc.directionTo(currLoc.translate(overallFriendlySoldierDx, overallFriendlySoldierDy));
+            } else {
+                dir = currLoc.directionTo(closestEnemy.getLocation());
+            }
+
+            Direction[] targets = Util.getInOrderDirections(dir);
             tryMoveDest(targets);
             return true;
         }
@@ -128,23 +202,12 @@ public class Soldier extends Robot {
     }
 
     public void latticeAroundHome() throws GameActionException {
-        int overallDx = 0;
-        int overallDy = 0;
+        findFriendlySoldiers();
 
-        // get averaged overall dx and overall dy to friendly sensables
-        int soldiersFound = 0;
-        for (RobotInfo friend : FriendlySensable) {
-            if (friend.getType() == RobotType.SOLDIER) {
-                soldiersFound++;
-                MapLocation loc = friend.getLocation();
-                overallDx += currLoc.directionTo(loc).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
-                overallDy += currLoc.directionTo(loc).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
-            }
-        }
         // move away from this direction
         Direction awayDir = null;
-        if (soldiersFound >= 3) {
-            awayDir = currLoc.directionTo(currLoc.translate(overallDx, overallDy)).opposite();
+        if (numFriendlySoldiers >= 3) {
+            awayDir = currLoc.directionTo(currLoc.translate(overallFriendlySoldierDx, overallFriendlySoldierDy)).opposite();
         }
         else {
             //move away from home if no soldier found within sensing radius
@@ -155,23 +218,12 @@ public class Soldier extends Robot {
     }
 
     public void latticeAroundHomeAfterRushing() throws GameActionException {
-        int overallDx = 0;
-        int overallDy = 0;
+        findFriendlySoldiers();
 
-        // get averaged overall dx and overall dy to friendly sensables
-        int soldiersFound = 0;
-        for (RobotInfo friend : FriendlySensable) {
-            if (friend.getType() == RobotType.SOLDIER) {
-                soldiersFound++;
-                MapLocation loc = friend.getLocation();
-                overallDx += currLoc.directionTo(loc).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
-                overallDy += currLoc.directionTo(loc).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
-            }
-        }
         // move away from this direction
         Direction awayDir = null;
-        if (soldiersFound >= 3 && currLoc.distanceSquaredTo(home) < 4 * RobotType.ARCHON.visionRadiusSquared) {
-            awayDir = currLoc.directionTo(currLoc.translate(overallDx, overallDy)).opposite();
+        if (numFriendlySoldiers >= 3 && currLoc.distanceSquaredTo(home) < 4 * RobotType.ARCHON.visionRadiusSquared) {
+            awayDir = currLoc.directionTo(currLoc.translate(overallFriendlySoldierDx, overallFriendlySoldierDy)).opposite();
         }
         else {
             //move away from home if no soldier found within sensing radius

@@ -112,12 +112,6 @@ public class Archon extends Robot {
 
     public boolean buildRobot(RobotType toBuild, Direction mainDir) throws GameActionException {
         Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
-        if (toBuild == RobotType.SOLDIER) {
-            soldierCount++;
-            // if (soldierCount % 5 == 0) {
-            //     nextFlag = Comms.encodeArchonFlag(InformationCategory.DEFENSE_SOLDIERS);
-            // }
-        }
         for(Direction dir : orderedDirs) {
             if (rc.canBuildRobot(toBuild, dir)){
                 rc.buildRobot(toBuild, dir);
@@ -143,20 +137,33 @@ public class Archon extends Robot {
         checkForObesity();
         doStateAction();
         tryToRepair();
-        Debug.setIndicatorString(leadToUse + "; " + robotCounter);
+        Debug.setIndicatorString(leadToUse + "; " + robotCounter + "; num alive enemies: " + Comms.aliveEnemyArchonCount());
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
     }
+
+    public boolean shouldCallForHelp() throws GameActionException {
+        int numFriendlies = FriendlySensable.length;
+        int numEnemies = EnemySensable.length;
+        if (rc.getHealth() < rc.getType().getMaxHealth(1) * 0.1) {
+            if (numEnemies > 2 * numFriendlies) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public void broadcastSoldierNear() throws GameActionException {
+        boolean callForHelp = shouldCallForHelp();
         for(RobotInfo robot: rc.senseNearbyRobots(rc.getType().visionRadiusSquared)) {
-            if (robot.type == RobotType.SOLDIER && robot.team == rc.getTeam().opponent()) {
+            if (robot.type == RobotType.SOLDIER && robot.team == rc.getTeam().opponent() && callForHelp) {
                 int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.UNDER_ATTACK);
                 rc.writeSharedArray(flagIndex, newFlag);
                 return;
             }
         }
-        if(Comms.getICFromFlag(rc.readSharedArray(flagIndex)) == Comms.InformationCategory.UNDER_ATTACK) {
+        if(Comms.getICFromFlag(rc.readSharedArray(flagIndex)) == Comms.InformationCategory.UNDER_ATTACK || !callForHelp) {
             int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
             rc.writeSharedArray(flagIndex, newFlag);
         }
@@ -170,7 +177,8 @@ public class Archon extends Robot {
                 soldiersNearby++;
             }
         }
-        if ((Comms.getRushSoldierCount() >= Util.SOLDIERS_NEEDED_TO_RUSH || (rc.getRoundNum() < 200 && Comms.getRushSoldierCount() >= 10)) &&
+        soldierCount = Comms.getRushSoldierCount();
+        if ((soldierCount >= Util.SOLDIERS_NEEDED_TO_RUSH || (rc.getRoundNum() < 200 && Comms.getRushSoldierCount() >= 10)) &&
             Comms.aliveEnemyArchonCount() > 0) {
             //tell soldiers near me to rush
             nextSoldierFlag = Comms.encodeSoldierStateFlag(Comms.SoldierStateCategory.RUSH_SOLDIERS);
@@ -273,7 +281,7 @@ public class Archon extends Robot {
             case OBESITY:
                 int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
                 int watchtowersPossible = leadForBuilders / 180;
-                if (watchtowersPossible > builderCount && builderCount <= rc.getArchonCount()) {
+                if (watchtowersPossible > builderCount && builderCount <= MIN_NUM_MINERS) {
                     obesityCounter = SoldierBuilder11Ratio(obesityCounter);
                 } else {
                         Debug.setIndicatorString("Trying to build a soldier");

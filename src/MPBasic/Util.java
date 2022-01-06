@@ -26,7 +26,10 @@ public class Util {
     static final int MAX_MINERS = 128;
     static final int MAX_MAP_SIZE_TO_MINER_RATIO = 16;
     static final int SOLDIERS_NEEDED_TO_RUSH = 30;
+
+
     
+
     static Direction turnLeft90(Direction dir) {
         return dir.rotateLeft().rotateLeft();
     }

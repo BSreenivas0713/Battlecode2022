@@ -32,7 +32,7 @@ public class Miner extends Robot {
         float overallDX = 0;
         float overallDY = 0;
 // find the best lead source, prioritizing lead that is within your action radius
-        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(currLoc, RobotType.MINER.visionRadiusSquared);
+        MapLocation[] locs = rc.senseNearbyLocationsWithLead(RobotType.MINER.visionRadiusSquared);
         MapLocation loc;
         for(int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
@@ -56,15 +56,16 @@ public class Miner extends Robot {
                         bestLeadScore = leadScore;
                     }
                 }
-            }               
+            }     
             
             if (leadAmount > 0 && loc.isWithinDistanceSquared(currLoc, Util.MinerDomain)) {
                 totalLeadSourcesWithinDomain ++;            
             }
-            int goldAmount = rc.senseGold(loc);
-            if (goldAmount != 0){
-                goldSource = loc; 
-            }
+        }
+
+        locs = rc.senseNearbyLocationsWithGold(RobotType.MINER.visionRadiusSquared);
+        if(locs.length > 0) {
+            goldSource = locs[0];
         }
 
         RobotInfo[] sensableWithin8 = rc.senseNearbyRobots(8, rc.getTeam());
