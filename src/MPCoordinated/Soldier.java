@@ -73,7 +73,7 @@ public class Soldier extends Robot {
                 Debug.setIndicatorString("in exploring mode");
                 tryAttackBestEnemy();
                 if (!tryMoveTowardsEnemy()) { 
-                    tryMoveDest(Nav.explore());
+                    soldierExplore();
                 }
                 break;
             case HELPING: 
@@ -299,5 +299,15 @@ public class Soldier extends Robot {
                 Debug.setIndicatorString("Distress location null: ERROR");
             }
             tryMoveDest(bestDirs);
+    }
+
+    public void soldierExplore() throws GameActionException {
+        // for (RobotInfo bot : FriendlySensable) {
+            
+        // }
+        // else {
+        //     tryMoveDest(Nav.explore());
+        // }
+        tryMoveDest(Nav.explore());
     }
 }
