@@ -8,9 +8,12 @@ public class Miner extends Robot {
     int roundNumBorn;
     int minerCount;
     boolean explorer;
+    MapLocation unitLeadLoc;
+
     public Miner(RobotController r) throws GameActionException {
         super(r);
         roundNumBorn = r.getRoundNum();
+        unitLeadLoc = null;
         if(Util.rng.nextInt(6) == 0) {
             explorer = true;
         }
@@ -34,6 +37,7 @@ public class Miner extends Robot {
 // find the best lead source, prioritizing lead that is within your action radius
         MapLocation[] locs = rc.senseNearbyLocationsWithLead(RobotType.MINER.visionRadiusSquared);
         MapLocation loc;
+        unitLeadLoc = null;
         for(int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
             int leadDistToHomeDiff = currLoc.distanceSquaredTo(home) - loc.distanceSquaredTo(home);
@@ -56,7 +60,9 @@ public class Miner extends Robot {
                         bestLeadScore = leadScore;
                     }
                 }
-            }     
+            } else {
+                unitLeadLoc = loc;
+            }
             
             if (leadAmount > 0 && loc.isWithinDistanceSquared(currLoc, Util.MinerDomain)) {
                 totalLeadSourcesWithinDomain ++;            
@@ -91,6 +97,12 @@ public class Miner extends Robot {
                };
     }
 
+    // Deplete unit lead sources if far away from home and more enemies than friends
+    public boolean shouldDepleteUnitLead() throws GameActionException {
+        return EnemySensable.length > FriendlySensable.length &&
+            !currLoc.isWithinDistanceSquared(home, Util.MIN_DIST_TO_DEPLETE_UNIT_LEAD);
+    }
+
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         Comms.incrementMinerCounter();
@@ -110,6 +122,10 @@ public class Miner extends Robot {
         }
         if(leadSource != null) {
             Debug.printString("Lead found: " + leadSource.toString());
+            if(unitLeadLoc != null && shouldDepleteUnitLead() && rc.canMineLead(unitLeadLoc)) {
+                Debug.printString("Depleting unit lead");
+                rc.mineLead(unitLeadLoc);
+            }
             while(rc.canMineLead(leadSource) && rc.senseLead(leadSource) > 1) {
                 Comms.incrementMinerMiningCounter();
                 rc.mineLead(leadSource);
