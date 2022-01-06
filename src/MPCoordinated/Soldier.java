@@ -94,22 +94,27 @@ public class Soldier extends Robot {
         maxHelpers = Comms.readMaxHelper();
         bestDistance = Util.MAP_MAX_DIST_SQUARED / 4;
         distressLocation = null;
+        int distressLocationIdx = 0;
         for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
             int flag = rc.readSharedArray(x);
             if(Comms.getICFromFlag(flag) == Comms.InformationCategory.UNDER_ATTACK) {
                 int locationIndex = x - Comms.mapLocToFlag;
-                if (Comms.getHelpersForArchon(locationIndex) < maxHelpers) {
+                MapLocation archonInTrouble = Comms.locationFromFlag(rc.readSharedArray(locationIndex));
+                int distance = rc.getLocation().distanceSquaredTo(archonInTrouble);
+                // either there aren't enough helpers and you're on the right half of the map
+                // or you're close to the distressed archon already
+                // if ((Comms.getHelpersForArchon(locationIndex) < maxHelpers && distance < bestDistance) || 
+                //     distance < visionRadiusSquared) {
+                if (distance < bestDistance) {
+                    distressLocationIdx = locationIndex;
                     currState = SoldierState.HELPING;
-                    Comms.incrementHelpersForArchon(locationIndex);
-                    MapLocation archonInTrouble = Comms.locationFromFlag(rc.readSharedArray(locationIndex));
-                    int distance = rc.getLocation().distanceSquaredTo(archonInTrouble);
-                    if (distance < bestDistance) {
-                        distressLocation = archonInTrouble;
-                    }
+                    distressLocation = archonInTrouble;
                 }
             }
         }
         if (distressLocation != null)  {
+            //only update counter for the final one you're gonna help
+            // Comms.incrementHelpersForArchon(distressLocationIdx);
             return;
         }
         else if (currState != SoldierState.RUSHING && 
@@ -168,8 +173,8 @@ public class Soldier extends Robot {
             loc = friend.location;
             if (friend.getType() == RobotType.SOLDIER) {
                 numFriendlySoldiers++;
-                overallFriendlySoldierDx += currLoc.directionTo(loc).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
-                overallFriendlySoldierDy += currLoc.directionTo(loc).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
+                overallFriendlySoldierDx += currLoc.directionTo(loc).dx * (10000 / (currLoc.distanceSquaredTo(loc) + 1));
+                overallFriendlySoldierDy += currLoc.directionTo(loc).dy * (10000 / (currLoc.distanceSquaredTo(loc) + 1));
             }
         }
 
