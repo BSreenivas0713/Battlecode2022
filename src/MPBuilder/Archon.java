@@ -306,9 +306,7 @@ public class Archon extends Robot {
         double builderPercentage = ((double) leadNeededByBuilders) / availableLead;
         percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), turnNumber, builderPercentage);
         leadToUse = (int) (availableLead * (percentLeadToTake));
-        rc.setIndicatorString("lead To Use: " + leadToUse);
         if (leadToUse < Util.LeadThreshold) {
-            // Debug.println("lead to use less than 50, going to bot " + Comms.getArchonWithLeastFirstRoundBuilt());
             if (Comms.getArchonWithLeastFirstRoundBuilt() == turnNumber) {
                 leadToUse = (int) (availableLead * (1.0 - builderPercentage));
             } else {
