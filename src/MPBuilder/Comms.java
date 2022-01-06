@@ -272,14 +272,24 @@ public class Comms {
         int currFlag = rc.readSharedArray(FIRST_ROUNDS_BUILD_COUNTER_IDX);
         int minArchonTurnNum = 0;
         int minTowersBuilt = Integer.MAX_VALUE;
-        for (int i = 0; i < rc.getArchonCount(); i++) {
+        int archonCount = rc.getArchonCount();
+        for (int i = 0; i < archonCount; i++) {
             int thisArchonsBuilt = (currFlag >> (4 * i)) & STATE_MASK;
             if (thisArchonsBuilt < minTowersBuilt) {
                 minTowersBuilt = thisArchonsBuilt;
                 minArchonTurnNum = i + 1;
             }
         }
-        return minArchonTurnNum;
+        int numTied = 0;
+        int[] tiedIds = new int[archonCount];
+        for (int i = 0; i < archonCount; i++) {
+            int thisArchonsBuilt = (currFlag >> (4 * i)) & STATE_MASK;
+            if (thisArchonsBuilt == minTowersBuilt) {
+                tiedIds[numTied] = i + 1;
+                numTied++;
+            }
+        }
+        return tiedIds[Util.rng.nextInt(numTied)];
     }
 
     // Lets Archons know when the first enemy has been found
