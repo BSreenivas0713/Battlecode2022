@@ -66,6 +66,7 @@ public class Robot {
         currLoc = rc.getLocation();
         reportKilledArchons();
         tryToReportArchon();
+        Comms.broadcastEnemyFound();
         // initializeGlobals();
         // turnCount += 1;
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
