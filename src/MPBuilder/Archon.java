@@ -52,7 +52,7 @@ public class Archon extends Robot {
         r.writeSharedArray(nextArchon, myLocFlag);
         flagIndex = nextArchon + Comms.mapLocToFlag;
         homeFlagIdx = flagIndex;
-        currentState = State.CHILLING;
+        currentState = State.INIT;
         Comms.updateState(nextArchon, currentState.ordinal());
         turnNumber = nextArchon;
         leadNeededByBuilders = 0;
