@@ -293,11 +293,12 @@ public class Soldier extends Robot {
                     Debug.printString("Going to defend Archon at: " + bestLoc.toString());
                 }
                 else {
-                    Direction toHome = currLoc.directionTo(home);
-                    Direction spinDir = Util.turnRight90(toHome);
-                    bestDirs = Util.getInOrderDirections(Nav.getBestDir(currLoc.add(spinDir)));
-                    Debug.printString("Spinning around Archon at: " + bestLoc.toString());
-
+                    if (!tryMoveTowardsEnemy()) { 
+                        Direction toHome = currLoc.directionTo(home);
+                        Direction spinDir = Util.turnRight90(toHome);
+                        bestDirs = Util.getInOrderDirections(Nav.getBestDir(currLoc.add(spinDir)));
+                        Debug.printString("Spinning around Archon at: " + bestLoc.toString());
+                    }
                 }
     
                 Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 255, 0, 0);
