@@ -236,6 +236,11 @@ public class Robot {
                 res = maybeSoldier;
             }
         }
+        if(maybeArchon != null) {
+            if (currLoc.distanceSquaredTo(maybeArchon.getLocation()) < 4) {
+                res = maybeArchon;
+            }
+        }
 
         return res;
     }

@@ -38,7 +38,7 @@ public class Util {
     static final int SOLDIER_PRIORITY_ATTACK_DIST = 40;
 
     // Distance a miner needs to be from home to deplete unit lead sources
-    static final int MIN_DIST_TO_DEPLETE_UNIT_LEAD = 50;
+    static final int MIN_DIST_TO_DEPLETE_UNIT_LEAD = 256;
 
     static void init(RobotController r) {
         rc = r;
