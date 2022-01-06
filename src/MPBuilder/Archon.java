@@ -136,6 +136,7 @@ public class Archon extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        clearAndResetHelpers();
         broadcastSoldierNear();
         updateLead();
         updateRobotCounts();
@@ -341,5 +342,12 @@ public class Archon extends Robot {
             State oldState = stateStack.pop();
             changeState(oldState);
         }
+    }
+    public void clearAndResetHelpers() throws GameActionException {
+        rc.writeSharedArray(Comms.FIRST_HELPER_COUNTER, 0);
+        rc.writeSharedArray(Comms.SECOND_HELPER_COUNTER, 0);
+        int count = Comms.getRushSoldierCount();
+        int newMax = count / rc.getArchonCount();
+        Comms.setMaxHelper(newMax);
     }
 }

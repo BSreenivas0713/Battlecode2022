@@ -7,6 +7,7 @@ import MPBuilder.Util.*;
 public class Comms {
     static final int mapLocToFlag = 8;
 
+    static final int setupFlag = 0;
     static final int firstArchon = 1;
     static final int lastArchon = 4;
     static final int firstEnemy = 5;
@@ -22,15 +23,21 @@ public class Comms {
     static final int FIRST_ROUNDS_BUILD_COUNTER_IDX = 20;
     static final int ARCHON_COMM_IDX = 21;
     static final int SOLDIER_STATE_IDX = 22;
+    static final int FIRST_HELPER_COUNTER = 23;
+    static final int SECOND_HELPER_COUNTER = 24;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
     static final int HEALTH_MASK = 15;
     static final int STATE_MASK = 15;
+    static final int HELPER_MASK = 255;
+    static final int MAX_HELPER_MASK = 63;
     static final int COUNT_OFFSET = 3;
+    static final int MAX_HELPER_OFFSET = 6;
     static final int X_COORD_OFFSET = 0;
     static final int Y_COORD_OFFSET = 6;
     static final int HEALTH_OFFSET = 12;
+    static final int HELPER_OFFSET = 8;
     static final int HEALTH_BUCKET_SIZE = 80;
     static final int NUM_HEALTH_BUCKETS = 16;
     static final int DEAD_ARCHON_FLAG = 65535;
@@ -86,12 +93,22 @@ public class Comms {
     }
 
     public static int friendlyArchonCount() throws GameActionException {
-        int flag = rc.readSharedArray(0);
+        int flag = rc.readSharedArray(setupFlag);
         return flag & COUNT_MASK;
     }
     public static int enemyArchonCount() throws GameActionException {
-        int flag = rc.readSharedArray(0);
+        int flag = rc.readSharedArray(setupFlag);
         return (flag >> COUNT_OFFSET) & COUNT_MASK;
+    }
+    public static void setMaxHelper(int maximum) throws GameActionException {
+        int flag = rc.readSharedArray(setupFlag);
+        int clearedFlag = (~(MAX_HELPER_MASK << MAX_HELPER_OFFSET)) & flag;
+        int newFlag = clearedFlag | (maximum << MAX_HELPER_OFFSET);
+        rc.writeSharedArray(setupFlag, newFlag);
+    }
+    public static int readMaxHelper() throws GameActionException {
+        int flag = rc.readSharedArray(setupFlag);
+        return (flag >> MAX_HELPER_OFFSET) & MAX_HELPER_MASK;
     }
     public static int aliveEnemyArchonCount() throws GameActionException {
         int res = 0;
@@ -105,7 +122,7 @@ public class Comms {
     }
     // Returns array index to put current friendly Archon location in
     public static int incrementFriendly() throws GameActionException {
-        int oldFlag = rc.readSharedArray(0);
+        int oldFlag = rc.readSharedArray(setupFlag);
         //updating num friendly archons discovered
         int newFlag = oldFlag + 1;
         rc.writeSharedArray(0, newFlag);
@@ -113,7 +130,7 @@ public class Comms {
     }
     // Returns array index to put current enemy Archon location in
     public static int incrementEnemy(int id) throws GameActionException {
-        int oldFlag = rc.readSharedArray(0);
+        int oldFlag = rc.readSharedArray(setupFlag);
         int oldCount = (oldFlag >> COUNT_OFFSET) & COUNT_MASK;
         int newFlag = oldFlag + (1 << COUNT_OFFSET);
         rc.writeSharedArray(0, newFlag);
@@ -332,5 +349,38 @@ public class Comms {
             return true;
         }
         return false;
+    }
+
+    public static int getHelpersForArchon(int archonNumber) throws GameActionException {
+        int counter;
+        if (archonNumber == 1 || archonNumber == 2) {
+            counter = FIRST_HELPER_COUNTER;
+        } else {
+            counter = SECOND_HELPER_COUNTER;
+        }
+        int oldFlag = rc.readSharedArray(counter);
+        if (archonNumber == 1 || archonNumber == 3) {
+            return oldFlag & HELPER_MASK;
+        } else {
+            return (oldFlag >> HELPER_OFFSET) & HELPER_MASK;
+        }
+    }
+    public static void incrementHelpersForArchon(int archonNumber) throws GameActionException {
+        int counter;
+        if (archonNumber == 1 || archonNumber == 2) {
+            counter = FIRST_HELPER_COUNTER;
+        } else {
+            counter = SECOND_HELPER_COUNTER;
+        }
+        int oldFlag = rc.readSharedArray(counter);
+        int lowerCount = oldFlag & HELPER_MASK;
+        int upperCount = (oldFlag >> HELPER_OFFSET) & HELPER_MASK;
+        if (archonNumber == 1 || archonNumber == 3) {
+            lowerCount++;
+        } else {
+            upperCount++;
+        }
+        int newFlag = (upperCount << HELPER_OFFSET) | lowerCount;
+        rc.writeSharedArray(counter, newFlag);
     }
 }

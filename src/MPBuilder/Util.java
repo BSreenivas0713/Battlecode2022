@@ -26,12 +26,26 @@ public class Util {
     static final int WatchTowerDomain = 15;
     static final int MAX_MINERS = 128;
     static final int MAX_MAP_SIZE_TO_MINER_RATIO = 16;
-    static final int SOLDIERS_NEEDED_TO_RUSH = 30;
     static final int[] WatchTowerHealths = new int[]{130,143,156};
+    
+    private static RobotController rc;
+    static int SOLDIERS_NEEDED_TO_RUSH;
 
     // Distance an enemy soldier needs to be within to an Archon
     // to be prioritized over a miner when attacking.
     static final int SOLDIER_PRIORITY_ATTACK_DIST = 40;
+
+    static void init(RobotController r) {
+        rc = r;
+        int area = rc.getMapHeight() * rc.getMapWidth();
+        if (area <= 1500) {
+            SOLDIERS_NEEDED_TO_RUSH = 10;
+        } else if (area <= 2500) {
+            SOLDIERS_NEEDED_TO_RUSH = 20;
+        } else {
+            SOLDIERS_NEEDED_TO_RUSH = 30;
+        }
+    }
     
     static Direction turnLeft90(Direction dir) {
         return dir.rotateLeft().rotateLeft();
