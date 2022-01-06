@@ -217,13 +217,13 @@ public class Robot {
         // Prioritize these the least
         if(maybeLab != null) res = maybeLab;
         if(maybeArchon != null) res = maybeArchon;
-        if(maybeBuilder != null) res = maybeBuilder;
         if(maybeSage != null) res = maybeSage;
-        if(maybeWatchtower != null) res = maybeWatchtower;
 
         if(maybeSoldier != null) res = maybeSoldier;
+        if(maybeWatchtower != null) res = maybeWatchtower;
         if(maybeMiner != null) res = maybeMiner;
-        
+        if(maybeBuilder != null) res = maybeBuilder;
+
         // A soldier is prioritized if either you or the enemy is
         // close to home or an enemy archon
         if(maybeSoldier != null) {

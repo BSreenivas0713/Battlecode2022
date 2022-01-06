@@ -91,13 +91,8 @@ public class Soldier extends Robot {
         // if >= 15 latticing soldiers, switch to rushing
         int maxHelpers;
         int bestDistance;
-        if (currState != SoldierState.EXPLORING) {
-            maxHelpers = Comms.readMaxHelper();
-            bestDistance = Util.MAP_MAX_DIST_SQUARED / 4;
-        } else {
-            maxHelpers = Util.MAP_AREA;
-            bestDistance = Util.MAP_MAX_DIST_SQUARED;
-        }
+        maxHelpers = Comms.readMaxHelper();
+        bestDistance = Util.MAP_MAX_DIST_SQUARED / 4;
         distressLocation = null;
         for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
             int flag = rc.readSharedArray(x);
