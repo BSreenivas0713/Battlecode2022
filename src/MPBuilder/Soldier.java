@@ -187,15 +187,17 @@ public class Soldier extends Robot {
         // move towards it if found
         if (closestEnemy != null) {
             findFriendlySoldiers();
-            Direction dir = null;
+            MapLocation dest;
             if(shouldRunAway()) {
-                dir = currLoc.directionTo(currLoc.translate(overallFriendlySoldierDx, overallFriendlySoldierDy));
+                // Positive so that we move towards the point mass.
+                dest = currLoc.translate(overallFriendlySoldierDx, overallFriendlySoldierDy);
             } else {
-                dir = currLoc.directionTo(closestEnemy.getLocation());
+                dest = closestEnemy.getLocation();
             }
 
-            Direction[] targets = Util.getInOrderDirections(dir);
-            tryMoveDest(targets);
+            Direction dir = Nav.getBestDir(dest);
+            Direction[] targetDirs = Util.getInOrderDirections(dir);
+            tryMoveDest(targetDirs);
             return true;
         }
         return false;
@@ -204,32 +206,35 @@ public class Soldier extends Robot {
     public void latticeAroundHome() throws GameActionException {
         findFriendlySoldiers();
 
-        // move away from this direction
-        Direction awayDir = null;
+        // move towards this dest
+        MapLocation dest;
         if (numFriendlySoldiers >= 3) {
-            awayDir = currLoc.directionTo(currLoc.translate(overallFriendlySoldierDx, overallFriendlySoldierDy)).opposite();
+            // This is negative since we're moving *away* from the point mass
+            dest = currLoc.translate(-overallFriendlySoldierDx, -overallFriendlySoldierDy);
         }
         else {
-            //move away from home if no soldier found within sensing radius
-            awayDir = currLoc.directionTo(home);
+            //move toward from home if no soldier found within sensing radius
+            dest = home;
         }
-        Direction[] targetDirs = Util.getInOrderDirections(awayDir);
+        Direction dir = Nav.getBestDir(dest);
+        Direction[] targetDirs = Util.getInOrderDirections(dir);
         tryMoveDest(targetDirs);
     }
 
     public void latticeAroundHomeAfterRushing() throws GameActionException {
         findFriendlySoldiers();
 
-        // move away from this direction
-        Direction awayDir = null;
+        // move towards this dest
+        MapLocation dest;
         if (numFriendlySoldiers >= 3 && currLoc.distanceSquaredTo(home) < 4 * RobotType.ARCHON.visionRadiusSquared) {
-            awayDir = currLoc.directionTo(currLoc.translate(overallFriendlySoldierDx, overallFriendlySoldierDy)).opposite();
+            dest = currLoc.translate(-overallFriendlySoldierDx, -overallFriendlySoldierDy);
         }
         else {
-            //move away from home if no soldier found within sensing radius
-            awayDir = currLoc.directionTo(home);
+            //move toward from home if no soldier found within sensing radius
+            dest = home;
         }
-        Direction[] targetDirs = Util.getInOrderDirections(awayDir);
+        Direction dir = Nav.getBestDir(dest);
+        Direction[] targetDirs = Util.getInOrderDirections(dir);
         tryMoveDest(targetDirs);
     }
 

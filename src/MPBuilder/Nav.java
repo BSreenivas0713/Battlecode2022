@@ -25,7 +25,7 @@ public class Nav {
         lastExploreDir = null;
     }
 
-    static Direction getBestDir(MapLocation dest) {
+    static Direction getBestDir(MapLocation dest) throws GameActionException {
         MapLocation currLoc = rc.getLocation();
 
         if(!dest.equals(lastDest)) {
@@ -49,8 +49,16 @@ public class Nav {
             Debug.println(Debug.PATHFINDING, "Doing BFS normally");
         }
 
-        Direction dir = bfs.getBestDir(dest);
+        Direction dir = Nav.navTo(dest);
         return dir == null ? currLoc.directionTo(dest) : dir;
+    }
+
+    public static Direction navTo(MapLocation dest) throws GameActionException {
+        if(Clock.getBytecodeNum() > 6000) {
+            return bfs.getBestDir(dest);
+        } else {
+            return getGreedyDirection(rc.getLocation().directionTo(dest));
+        }
     }
 
 	public static Direction[] explorePathfinding() throws GameActionException {

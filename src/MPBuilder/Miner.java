@@ -130,29 +130,29 @@ public class Miner extends Robot {
         if(rc.getRoundNum() == roundNumBorn + 1) {
             for(RobotInfo robot: FriendlySensable) {
                 if(robot.getType() == RobotType.ARCHON) {
-                    dir = Util.getInOrderDirections(currLoc.directionTo(robot.getLocation()).opposite());
+                    dir = Nav.greedyDirection(currLoc.directionTo(robot.getLocation()).opposite());
                     str = "going away from AR";
                 }
             }
         }
 
         if(leadSource != null) {
-            dir = Util.getInOrderDirections(currLoc.directionTo(leadSource));
+            dir = Nav.greedyDirection(currLoc.directionTo(leadSource));
             str = "going towards lead";
             if(minerCount >= 4 && someoneClaimed == 1 && amMining) {
-                dir = Util.getInOrderDirections(DirectionAway);
+                dir = Nav.greedyDirection(DirectionAway);
                 str = "going away from other miners: " + DirectionAway.toString() + " " + Integer.toString(LeadGoldList[3].x) + " " + Integer.toString(LeadGoldList[3].y);
             }
         }
 
         RobotInfo closestEnemy = getClosestEnemy(RobotType.SOLDIER);
         if(closestEnemy != null) {
-            dir = Util.getInOrderDirections(currLoc.directionTo(closestEnemy.getLocation()).opposite());
+            dir = Nav.greedyDirection(currLoc.directionTo(closestEnemy.getLocation()).opposite());
             str = "going away from enemy";
         }
         
         if(goldSource != null) {
-            dir = Util.getInOrderDirections(currLoc.directionTo(goldSource));
+            dir = Nav.greedyDirection(currLoc.directionTo(goldSource));
             str = "going toward gold";
         }
 
