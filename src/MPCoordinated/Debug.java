@@ -10,9 +10,29 @@ public class Debug {
 
     private static RobotController rc;
 
+    private static StringBuilder sb;
+
     static void init(RobotController r) {
         rc = r;
+        sb = new StringBuilder();
     }
+
+    static void flush() {
+        rc.setIndicatorString(sb.toString());
+        sb = new StringBuilder();
+    }
+
+    static void printString(boolean cond, String s) {
+        if(VERBOSE && cond) {
+            sb.append(s);
+            sb.append(", ");
+        }
+    }
+
+    static void printString(String s) {
+        Debug.printString(Debug.INFO, s);
+    }
+
 
     static void println(boolean cond, String s) {
         if(VERBOSE && cond) {
@@ -40,10 +60,5 @@ public class Debug {
         if(VERBOSE && INDICATORS && cond && startLoc != null && endLoc != null) {
             rc.setIndicatorLine(startLoc, endLoc, r, g, b);
         }
-    }
-
-    //could be used with more complex parameters to print nicer things
-    static void setIndicatorString(String s) {
-        rc.setIndicatorString(s);
     }
 }
