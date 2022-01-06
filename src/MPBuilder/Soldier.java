@@ -68,6 +68,7 @@ public class Soldier extends Robot {
                 Debug.setIndicatorString("in Helping Mode");
                 tryAttackBestEnemy();
                 moveTowardsDistressedArchon();
+                break;
             default:
                 break;
         }
@@ -76,13 +77,17 @@ public class Soldier extends Robot {
 
     public void trySwitchState() throws GameActionException {
         // if >= 15 latticing soldiers, switch to rushing
+        int maxHelpers = Comms.readMaxHelper();
         for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
             int flag = rc.readSharedArray(x);
             if(Comms.getICFromFlag(flag) == Comms.InformationCategory.UNDER_ATTACK) {
-                currState = SoldierState.HELPING;
-                int locationindex = x - Comms.mapLocToFlag;
-                distressLocation = Comms.locationFromFlag(rc.readSharedArray(locationindex));
-                return;
+                int locationIndex = x - Comms.mapLocToFlag;
+                if (Comms.getHelpersForArchon(locationIndex) < maxHelpers) {
+                    currState = SoldierState.HELPING;
+                    Comms.incrementHelpersForArchon(locationIndex);
+                    distressLocation = Comms.locationFromFlag(rc.readSharedArray(locationIndex));
+                    return;
+                }
             }
         }
         if (currState != SoldierState.RUSHING && 
