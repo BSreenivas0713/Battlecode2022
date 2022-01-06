@@ -60,16 +60,19 @@ public class Soldier extends Robot {
             case EXPLORING:
                 Debug.setIndicatorString("in exploring mode");
                 tryAttackBestEnemy();
+                if (!tryMoveTowardsEnemy()) { 
+                    tryMoveDest(Nav.explore());
+                }
                 break;
             case HELPING: 
                 Debug.setIndicatorString("in Helping Mode");
                 tryAttackBestEnemy();
                 moveTowardsDistressedArchon();
+                break;
             default:
                 break;
         }
         // try to move if not moved in above functions
-        tryMoveDest(Nav.explore());
     }
 
     public void trySwitchState() throws GameActionException {
