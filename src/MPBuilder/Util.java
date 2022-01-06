@@ -28,6 +28,10 @@ public class Util {
     static final int MAX_MAP_SIZE_TO_MINER_RATIO = 16;
     static final int SOLDIERS_NEEDED_TO_RUSH = 30;
     static final int[] WatchTowerHealths = new int[]{130,143,156};
+
+    // Distance an enemy soldier needs to be within to an Archon
+    // to be prioritized over a miner when attacking.
+    static final int SOLDIER_PRIORITY_ATTACK_DIST = 40;
     
     static Direction turnLeft90(Direction dir) {
         return dir.rotateLeft().rotateLeft();

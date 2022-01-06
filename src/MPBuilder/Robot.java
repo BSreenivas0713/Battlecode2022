@@ -79,11 +79,8 @@ public class Robot {
         // turnCount += 1;
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
     }
-    /*
-     * Prioritizes attacking enemies in the given order.
-     * Prioritizes attacking lower health enemies.
-     */
-    public RobotInfo getBestEnemy() {
+
+    public void loadEnemies() {
         maybeArchon = null;
         maybeWatchtower = null;
         maybeSage = null;
@@ -91,6 +88,7 @@ public class Robot {
         maybeBuilder = null;
         maybeMiner = null;
         maybeLab = null;
+
         Team opponent = rc.getTeam().opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(actionRadiusSquared, opponent);
         RobotInfo enemy;
@@ -134,16 +132,84 @@ public class Robot {
                     break;
             }
         }
-        
-        if(maybeArchon != null) return maybeArchon;
-        if(maybeWatchtower != null) return maybeWatchtower;
-        if(maybeSage != null) return maybeSage;
-        if(maybeSoldier != null) return maybeSoldier;
-        if(maybeBuilder != null) return maybeBuilder;
-        if(maybeMiner != null) return maybeMiner;
-        if(maybeLab != null) return maybeLab;
-        return null;
     }
+
+    public MapLocation getClosestLoc(MapLocation[] locs) {
+        MapLocation loc;
+        MapLocation closest = null;
+        int leastDistance = Integer.MAX_VALUE;
+        int currDistance;
+
+        for (int i = locs.length - 1; i >= 0; i--) {
+            loc = locs[i];
+            currDistance = loc.distanceSquaredTo(currLoc);
+            if(leastDistance < currDistance) {
+                leastDistance = currDistance;
+                closest = loc;
+            }
+        }
+
+        return closest;
+    }
+
+    public RobotInfo getClosestRobot(RobotInfo[] robots) {
+        RobotInfo robot;
+        RobotInfo closestRobot = null;
+        int leastDistance = Integer.MAX_VALUE;
+        int currDistance;
+
+        for (int i = robots.length - 1; i >= 0; i--) {
+            robot = robots[i];
+            currDistance = robot.getLocation().distanceSquaredTo(currLoc);
+            if(leastDistance < currDistance) {
+                leastDistance = currDistance;
+                closestRobot = robot;
+            }
+        }
+
+        return closestRobot;
+    }
+
+    public MapLocation getClosestArchon() throws GameActionException {
+        MapLocation[] enemyArchons = Comms.getEnemyArchonLocations();
+        return getClosestLoc(enemyArchons);
+    }
+
+    /*
+     * Prioritizes miners in general.
+     * Unless you're close enough to an Archon, then prioritize soldiers.
+     */
+    public RobotInfo getBestEnemy() throws GameActionException {
+        loadEnemies();
+
+        RobotInfo res = null;
+
+        // Prioritize these the least
+        if(maybeLab != null) res = maybeLab;
+        if(maybeArchon != null) res = maybeArchon;
+        if(maybeBuilder != null) res = maybeBuilder;
+        if(maybeSage != null) res = maybeSage;
+        if(maybeWatchtower != null) res = maybeWatchtower;
+
+        if(maybeSoldier != null) res = maybeSoldier;
+        if(maybeMiner != null) res = maybeMiner;
+        
+        // A soldier is prioritized if either you or the enemy is
+        // close to home or an enemy archon
+        if(maybeSoldier != null) {
+            MapLocation closestEnemyArchon = getClosestArchon();
+            boolean nearHome = currLoc.distanceSquaredTo(home) < Util.SOLDIER_PRIORITY_ATTACK_DIST;
+            boolean enemyNearHome = maybeSoldier.location.distanceSquaredTo(home) < Util.SOLDIER_PRIORITY_ATTACK_DIST;
+            boolean nearArchon = closestEnemyArchon != null && currLoc.distanceSquaredTo(closestEnemyArchon) < Util.SOLDIER_PRIORITY_ATTACK_DIST;
+            boolean enemyNearArchon = closestEnemyArchon != null && maybeSoldier.location.distanceSquaredTo(closestEnemyArchon) < Util.SOLDIER_PRIORITY_ATTACK_DIST;
+            if(nearHome || enemyNearHome || nearArchon || enemyNearArchon) {
+                res = maybeSoldier;
+            }
+        }
+
+        return res;
+    }
+
     public boolean tryAttackBestEnemy() throws GameActionException {
         // Try to attack someone
         RobotInfo bestEnemy = getBestEnemy();
