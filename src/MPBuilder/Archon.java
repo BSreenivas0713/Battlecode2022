@@ -305,6 +305,7 @@ public class Archon extends Robot {
             changeState(State.CHILLING);
         }
         else if(rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
+            stateStack.push(State.CHILLING);
             changeState(State.OBESITY);
         }
 
@@ -350,6 +351,7 @@ public class Archon extends Robot {
         int count = Comms.getRushSoldierCount();
         int newMax = count / rc.getArchonCount();
         Comms.setMaxHelper(newMax);
+    }
 
     // Tries to repair the lowest health droid in range if an action is ready.
     public void tryToRepair() throws GameActionException {
@@ -391,7 +393,7 @@ public class Archon extends Robot {
             }
         }
 
-        if(maybeSage != null && rc.canRepair(maybeSage.location)) {rc.repair(maybeSage.location);
+        if(maybeSage != null && rc.canRepair(maybeSage.location)) rc.repair(maybeSage.location);
         if(maybeSoldier != null && rc.canRepair(maybeSoldier.location)) rc.repair(maybeSoldier.location);
         if(maybeBuilder != null && rc.canRepair(maybeBuilder.location)) rc.repair(maybeBuilder.location);
         if(maybeMiner != null && rc.canRepair(maybeMiner.location)) rc.repair(maybeMiner.location);
