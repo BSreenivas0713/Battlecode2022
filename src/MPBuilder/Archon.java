@@ -128,8 +128,8 @@ public class Archon extends Robot {
                 if (robot == null) {
                     System.out.println("CRITICAL: EC didn't find the robot it just built");
                 }
-                Comms.incrementBuiltRobots(turnNumber);
                 robotCounter += 1;
+                Comms.incrementBuiltRobots(turnNumber, robotCounter);
                 return true;
             }
         }

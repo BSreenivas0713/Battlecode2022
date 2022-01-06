@@ -258,10 +258,11 @@ public class Comms {
         rc.writeSharedArray(BUILDER_COUNTER_IDX, currCount + 1);
     }
 
-    public static void incrementBuiltRobots(int archonTurnNum) throws GameActionException {
+    public static void incrementBuiltRobots(int archonTurnNum, int robotCounter) throws GameActionException {
         int currFlag = rc.readSharedArray(FIRST_ROUNDS_BUILD_COUNTER_IDX);
         int thisArchonsBuilt = (currFlag >> (4 * (archonTurnNum - 1))) & STATE_MASK;
-        if (thisArchonsBuilt < 15) {
+        int newBucket = robotCounter / 3;
+        if (thisArchonsBuilt != newBucket && newBucket < 15) {
             int newFlag = currFlag + (1 << (4 * (archonTurnNum - 1)));
             rc.writeSharedArray(FIRST_ROUNDS_BUILD_COUNTER_IDX, newFlag);
         }
