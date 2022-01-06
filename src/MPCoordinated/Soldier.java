@@ -290,9 +290,16 @@ public class Soldier extends Robot {
                     Direction bestDir = Nav.getBestDir(bestLoc);
                     bestDirs = Util.getInOrderDirections(bestDir);
                     Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
+                    Debug.setIndicatorString("Going to defend Archon at: " + bestLoc.toString());
+                }
+                else {
+                    Direction toHome = currLoc.directionTo(home);
+                    Direction spinDir = Util.turnRight90(toHome);
+                    bestDirs = Util.getInOrderDirections(Nav.getBestDir(currLoc.add(spinDir)));
+                    Debug.setIndicatorString("Spinning around Archon at: " + bestLoc.toString());
+
                 }
     
-                Debug.setIndicatorString("Defending Archon at: " + bestLoc.toString());
                 Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 255, 0, 0);
             }
             else {
