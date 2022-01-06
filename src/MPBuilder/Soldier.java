@@ -9,11 +9,12 @@ public class Soldier extends Robot {
     static enum SoldierState {
         DEFENSE,
         RUSHING,
+        DONE_RUSHING,
     }
     static SoldierState currState;
     static int homeFlagIdx;
-    
-
+    static MapLocation target;
+    static int targetId;
 
     public Soldier(RobotController r) throws GameActionException {
         super(r);
@@ -26,8 +27,6 @@ public class Soldier extends Robot {
         currState = SoldierState.DEFENSE;
         homeFlagIdx = homeFlagIndex;
     } 
-
-
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
@@ -47,6 +46,14 @@ public class Soldier extends Robot {
                 tryAttackBestEnemy();
                 moveTowardsWeakestArchon();
                 break;
+            case DONE_RUSHING:
+                Debug.setIndicatorString("in done rushing mode");
+                if (!tryAttackBestEnemy()) {
+                    if (!tryMoveTowardsEnemy()) {
+                        latticeAroundHomeAfterRushing();
+                    }
+                }
+                break;
             default:
                 break;
         }
@@ -57,8 +64,16 @@ public class Soldier extends Robot {
     public void trySwitchState() throws GameActionException {
         // if >= 15 latticing soldiers, switch to rushing
         if (currState != SoldierState.RUSHING && 
-            Comms.getICFromFlag(rc.readSharedArray(homeFlagIdx)) == Comms.InformationCategory.RUSH_SOLDIERS) {
+            Comms.getSoldierCatFromFlag(rc.readSharedArray(Comms.SOLDIER_STATE_IDX)) == Comms.SoldierStateCategory.RUSH_SOLDIERS) {
             currState = SoldierState.RUSHING;
+            MapLocation[] targetAndId = findWeakestArchon(Comms.enemyArchonCount());
+            target = targetAndId[0];
+            targetId = targetAndId[1].x;
+        }
+        else if (currState == SoldierState.RUSHING && Comms.isArchonDead(targetId)) {
+            target = null;
+            targetId = 0;
+            currState = SoldierState.DONE_RUSHING;
         }
     }
 
@@ -110,22 +125,63 @@ public class Soldier extends Robot {
         tryMoveDest(targetDirs);
     }
 
+    public void latticeAroundHomeAfterRushing() throws GameActionException {
+        int overallDx = 0;
+        int overallDy = 0;
+
+        // get averaged overall dx and overall dy to friendly sensables
+        int soldiersFound = 0;
+        for (RobotInfo friend : FriendlySensable) {
+            if (friend.getType() == RobotType.SOLDIER) {
+                soldiersFound++;
+                MapLocation loc = friend.getLocation();
+                overallDx += currLoc.directionTo(loc).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
+                overallDy += currLoc.directionTo(loc).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
+            }
+        }
+        // move away from this direction
+        Direction awayDir = null;
+        if (soldiersFound >= 3 && currLoc.distanceSquaredTo(home) < 4 * RobotType.ARCHON.visionRadiusSquared) {
+            awayDir = currLoc.directionTo(currLoc.translate(overallDx, overallDy)).opposite();
+        }
+        else {
+            //move away from home if no soldier found within sensing radius
+            awayDir = currLoc.directionTo(home);
+        }
+        Direction[] targetDirs = Util.getInOrderDirections(awayDir);
+        tryMoveDest(targetDirs);
+    }
+
+    public MapLocation[] findWeakestArchon(int theirArchons) throws GameActionException {
+        int leastHealth = Comms.NUM_HEALTH_BUCKETS;
+        MapLocation bestLoc = null;
+        int idxOfBestLoc = 0;
+        for (int i = Comms.firstEnemy; i < Comms.firstEnemy + theirArchons; i++) {
+            int currFlag = rc.readSharedArray(i);
+            if (currFlag != Comms.DEAD_ARCHON_FLAG) {
+                int currHealth = Comms.getHealthBucket(currFlag);
+                if (currHealth < leastHealth) {
+                    leastHealth = currHealth;
+                    bestLoc = Comms.locationFromFlag(currFlag);
+                    idxOfBestLoc = i - Comms.firstEnemy;
+                }
+            }
+        }
+        return new MapLocation[]{bestLoc, new MapLocation(idxOfBestLoc, 0)};
+    }
+    /**
+     * first time you rush, set firstTimeRushing boolean and find target and set it
+     * every turn, go towards that target. also check if its dead
+     * if target is dead, then only done rushing
+     * when done rushing, set firstTimeRushing = false, target = null
+     * @throws GameActionException
+     */
+
     public void moveTowardsWeakestArchon() throws GameActionException {
         // First try to move to the Archon with least health
         int theirArchons = Comms.enemyArchonCount();
         if (theirArchons > 0) {
-            int leastHealth = Comms.NUM_HEALTH_BUCKETS;
-            MapLocation bestLoc = null;
-            for (int i = Comms.firstEnemy; i < Comms.firstEnemy + theirArchons; i++) {
-                int currFlag = rc.readSharedArray(i);
-                if (currFlag != Comms.DEAD_ARCHON_FLAG) {
-                    int currHealth = Comms.getHealthBucket(currFlag);
-                    if (currHealth < leastHealth) {
-                        leastHealth = currHealth;
-                        bestLoc = Comms.locationFromFlag(currFlag);
-                    }
-                }
-            }
+            MapLocation bestLoc = target;
 
             Direction[] bestDirs = {};
             if (bestLoc != null) {
@@ -142,6 +198,9 @@ public class Soldier extends Robot {
                 bestDirs = Nav.explore();
             }
             tryMoveDest(bestDirs);
+        }
+        else {
+            currState = SoldierState.DEFENSE;
         }
     }
 }

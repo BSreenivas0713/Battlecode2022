@@ -21,6 +21,7 @@ public class Comms {
     static final int BUILDER_COUNTER_IDX = 19;
     static final int FIRST_ROUNDS_BUILD_COUNTER_IDX = 20;
     static final int ARCHON_COMM_IDX = 21;
+    static final int SOLDIER_STATE_IDX = 22;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
@@ -47,8 +48,12 @@ public class Comms {
 
     public enum InformationCategory {
         EMPTY,
-        RUSH_SOLDIERS,
         DEFENSE_SOLDIERS,
+    }
+
+    public enum SoldierStateCategory {
+        EMPTY,
+        RUSH_SOLDIERS,
     }
 
     // Categories of information to tell the Archons
@@ -67,8 +72,16 @@ public class Comms {
         return cat.ordinal();
     }
 
+    public static int encodeSoldierStateFlag(SoldierStateCategory cat) {
+        return cat.ordinal();
+    }
+
     public static InformationCategory getICFromFlag(int flag) {
         return InformationCategory.values()[flag];
+    }
+
+    public static SoldierStateCategory getSoldierCatFromFlag(int flag) {
+        return SoldierStateCategory.values()[flag];
     }
 
     public static int friendlyArchonCount() throws GameActionException {
@@ -78,6 +91,16 @@ public class Comms {
     public static int enemyArchonCount() throws GameActionException {
         int flag = rc.readSharedArray(0);
         return (flag >> COUNT_OFFSET) & COUNT_MASK;
+    }
+    public static int aliveEnemyArchonCount() throws GameActionException {
+        int res = 0;
+        for (int i = 0; i < Comms.enemyArchonCount(); i++) {
+            int enemyLocFlag = rc.readSharedArray(Comms.firstEnemy + i);
+            if (enemyLocFlag != DEAD_ARCHON_FLAG) {
+                res += 1;
+            }
+        }
+        return res;
     }
     // Returns array index to put current friendly Archon location in
     public static int incrementFriendly() throws GameActionException {
@@ -270,14 +293,12 @@ public class Comms {
 
     public static int getArchonWithLeastFirstRoundBuilt() throws GameActionException {
         int currFlag = rc.readSharedArray(FIRST_ROUNDS_BUILD_COUNTER_IDX);
-        int minArchonTurnNum = 0;
         int minTowersBuilt = Integer.MAX_VALUE;
         int archonCount = rc.getArchonCount();
         for (int i = 0; i < archonCount; i++) {
             int thisArchonsBuilt = (currFlag >> (4 * i)) & STATE_MASK;
             if (thisArchonsBuilt < minTowersBuilt) {
                 minTowersBuilt = thisArchonsBuilt;
-                minArchonTurnNum = i + 1;
             }
         }
         int numTied = 0;
@@ -303,5 +324,12 @@ public class Comms {
                 rc.writeSharedArray(ARCHON_COMM_IDX, archonInfo | FOUND_ENEMY_ARCHON_INFO);
             }
         }
+    }
+
+    public static boolean isArchonDead(int idx) throws GameActionException {
+        if (rc.readSharedArray(idx + firstEnemy) == DEAD_ARCHON_FLAG) {
+            return true;
+        }
+        return false;
     }
 }

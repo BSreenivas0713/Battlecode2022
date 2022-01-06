@@ -16,6 +16,7 @@ public class Robot {
     static int visionRadiusSquared;
     static int homeFlagIdx;
     static int nextFlag;
+    static int nextSoldierFlag;
     static int defaultFlag;
     // This is the order of priorities to attack enemies
     static RobotInfo maybeArchon = null;
@@ -56,10 +57,17 @@ public class Robot {
         turnCount += 1;
         
         // setting flag on next turn if archon
-        if (rc.getType() == RobotType.ARCHON && rc.readSharedArray(homeFlagIdx) != nextFlag) {
-            rc.writeSharedArray(homeFlagIdx, nextFlag);
-            nextFlag = defaultFlag;
+        if (rc.getType() == RobotType.ARCHON) {
+            if (rc.readSharedArray(homeFlagIdx) != nextFlag) {
+                rc.writeSharedArray(homeFlagIdx, nextFlag);
+            }
+            if (rc.readSharedArray(Comms.SOLDIER_STATE_IDX) != nextSoldierFlag) {
+                rc.writeSharedArray(Comms.SOLDIER_STATE_IDX, nextSoldierFlag);
+            }
         }
+
+        nextFlag = defaultFlag;
+        nextSoldierFlag = defaultFlag;
 
         EnemySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent());
         FriendlySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam());

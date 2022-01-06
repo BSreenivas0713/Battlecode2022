@@ -157,9 +157,9 @@ public class Archon extends Robot {
             }
         }
         if ((Comms.getRushSoldierCount() >= Util.SOLDIERS_NEEDED_TO_RUSH || (rc.getRoundNum() < 200 && Comms.getRushSoldierCount() >= 10)) &&
-            Comms.enemyArchonCount() > 0) {
+            Comms.aliveEnemyArchonCount() > 0) {
             //tell soldiers near me to rush
-            nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.RUSH_SOLDIERS);
+            nextSoldierFlag = Comms.encodeSoldierStateFlag(Comms.SoldierStateCategory.RUSH_SOLDIERS);
         }
         minerMiningCount = Comms.getMinerMiningCount();
         builderCount = Comms.getBuilderCount();
