@@ -116,7 +116,7 @@ public class Archon extends Robot {
         Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
         if (toBuild == RobotType.SOLDIER) {
             soldierCount++;
-            if (soldierCount % 3 == 0) {
+            if (soldierCount % 5 == 0) {
                 nextFlag = Comms.encodeArchonFlag(InformationCategory.DEFENSE_SOLDIERS);
             }
         }
@@ -156,7 +156,7 @@ public class Archon extends Robot {
                 soldiersNearby++;
             }
         }
-        if (Comms.getRushSoldierCount() >= Util.SOLDIERS_NEEDED_TO_RUSH &&
+        if ((Comms.getRushSoldierCount() >= Util.SOLDIERS_NEEDED_TO_RUSH || (rc.getRoundNum() < 200 && Comms.getRushSoldierCount() >= 10)) &&
             Comms.enemyArchonCount() > 0) {
             //tell soldiers near me to rush
             nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.RUSH_SOLDIERS);
@@ -193,8 +193,8 @@ public class Archon extends Robot {
         }
         return counter;
     }
-    public int minerSoldier12Ratio(int counter) throws GameActionException {
-        switch(counter % 3) {
+    public int minerSoldier14Ratio(int counter) throws GameActionException {
+        switch(counter % 5) {
             case 0:
                 if (minerCount < MAX_NUM_MINERS) { 
                     Debug.setIndicatorString("Trying to build a miner");
@@ -209,7 +209,7 @@ public class Archon extends Robot {
                     }                    
                 }
                 break;
-            case 1: case 2:
+            case 1: case 2: case 3: case 4: 
                 Debug.setIndicatorString("Trying to build a soldier");
                 if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
                     counter ++;
@@ -252,12 +252,7 @@ public class Archon extends Robot {
                     chillingCounter = minerSoldier5050(chillingCounter);
                 }
                 else {
-                    if (lastPayDay <= 30) {
-                        chillingCounter = minerSoldier5050(chillingCounter);
-                    }
-                    else {
-                        chillingCounter = minerSoldier12Ratio(chillingCounter);
-                    }
+                    chillingCounter = minerSoldier14Ratio(chillingCounter);
                 }
                 // Debug.setIndicatorString("CHILLING state, last pay day: " + lastPayDay);
                 break;
@@ -292,8 +287,12 @@ public class Archon extends Robot {
         buildRobot(toBuild,dir);
         
         if(robotCounter >= 3 && Comms.foundEnemy) {
-            currentState = State.CHILLING;
+            changeState(State.CHILLING);
         }
+        else if(rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
+            changeState(State.OBESITY);
+        }
+
     }
 
     public void updateLead() throws GameActionException {
@@ -309,7 +308,7 @@ public class Archon extends Robot {
         leadToUse = (int) (availableLead * (percentLeadToTake));
         rc.setIndicatorString("lead To Use: " + leadToUse);
         if (leadToUse < Util.LeadThreshold) {
-            Debug.println("lead to use less than 50, going to bot " + Comms.getArchonWithLeastFirstRoundBuilt());
+            // Debug.println("lead to use less than 50, going to bot " + Comms.getArchonWithLeastFirstRoundBuilt());
             if (Comms.getArchonWithLeastFirstRoundBuilt() == turnNumber) {
                 leadToUse = (int) (availableLead * (1.0 - builderPercentage));
             } else {
