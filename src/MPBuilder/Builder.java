@@ -9,6 +9,7 @@ import MPBuilder.fast.FastIterableLocSet;
 public class Builder extends Robot{
     static boolean repairing;
     static boolean making;
+    static MapLocation closestEmptySpotToHome;
     public Builder(RobotController r) throws GameActionException {
         super(r);
     }
@@ -23,6 +24,8 @@ public class Builder extends Robot{
     }
     public boolean makeWatchtowerIfPossible() throws GameActionException{
         boolean seenFriendly = false;
+        closestEmptySpotToHome = null;
+        int distClosetsEmptySpotToHome = -1;
         for(RobotInfo robot: FriendlySensable) {
             if(robot.type == RobotType.ARCHON) {
                 if(currLoc.distanceSquaredTo(robot.location) <= 8) {
@@ -39,6 +42,14 @@ public class Builder extends Robot{
                             rc.setIndicatorString("Cannot make robot at: " + newLoc.toString());
                         }
                     }
+                    if((closestEmptySpotToHome == null || newLoc.distanceSquaredTo(home) < distClosetsEmptySpotToHome)) {
+                        if(rc.canSenseLocation(newLoc)) {
+                            if(rc.senseRobotAtLocation(newLoc) == null) {
+                                closestEmptySpotToHome = newLoc;
+                                distClosetsEmptySpotToHome = newLoc.distanceSquaredTo(home);
+                            }
+                        }
+                    }
                 }               
             }
             if(robot.type == RobotType.WATCHTOWER) {
@@ -52,6 +63,14 @@ public class Builder extends Robot{
                         rc.setIndicatorString("Building a Watchtower");
                         making = true;
                         rc.buildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc));
+                    }
+                    if((closestEmptySpotToHome == null || newLoc.distanceSquaredTo(home) < distClosetsEmptySpotToHome)) {
+                        if(rc.canSenseLocation(newLoc)) {
+                            if(rc.senseRobotAtLocation(newLoc) == null) {
+                                closestEmptySpotToHome = newLoc;
+                                distClosetsEmptySpotToHome = newLoc.distanceSquaredTo(home);
+                            }
+                        }
                     }
                 }
             }
@@ -82,6 +101,11 @@ public class Builder extends Robot{
         boolean seenFriendly = makeWatchtowerIfPossible();
         repairWatchtowerIfPossible();
         if(!repairing && !making) {
+            if(closestEmptySpotToHome != null) {
+                rc.setIndicatorString("Moving towards location that needs to be filled");
+                tryMoveDest(Util.getInOrderDirections(currLoc.directionTo(closestEmptySpotToHome)));
+            }
+
             if(seenFriendly) {
                 rc.setIndicatorString("Friendly near, moving away from home");
                 tryMoveDest(Util.getInOrderDirections(currLoc.directionTo(home).opposite()));
