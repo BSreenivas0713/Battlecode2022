@@ -104,7 +104,7 @@ public class Comms {
         int flag = rc.readSharedArray(setupFlag);
         int clearedFlag = (~(MAX_HELPER_MASK << MAX_HELPER_OFFSET)) & flag;
         int newFlag = clearedFlag | (maximum << MAX_HELPER_OFFSET);
-        rc.writeSharedArray(setupFlag, newFlag);
+        Comms.writeIfChanged(setupFlag, newFlag);
     }
     public static int readMaxHelper() throws GameActionException {
         int flag = rc.readSharedArray(setupFlag);
@@ -169,7 +169,7 @@ public class Comms {
     public static void storeID(int id, int number) throws GameActionException {
         int oldFlag = rc.readSharedArray(idList);
         int newFlag = (id << (4 * number)) | oldFlag;
-        rc.writeSharedArray(idList, newFlag);
+        Comms.writeIfChanged(idList, newFlag);
     }
     public static int[] getIDs() throws GameActionException {
         int idFlag = rc.readSharedArray(idList);
@@ -249,7 +249,7 @@ public class Comms {
         int offset = 4 * (archonNumber - 1);
         int clearedFlag = oldFlag & ~(STATE_MASK << offset);
         int newFlag = clearedFlag & (newState << offset);
-        rc.writeSharedArray(STATE_STORAGE_IDX, newFlag);
+        Comms.writeIfChanged(STATE_STORAGE_IDX, newFlag);
     }
     
     // The upper half of 16 bits hold the robot count for the last turn.
@@ -339,7 +339,7 @@ public class Comms {
             if(rc.senseNearbyRobots(rc.getType().visionRadiusSquared, 
                 rc.getTeam().opponent()).length > 0) {
                 foundEnemy = true;
-                rc.writeSharedArray(ARCHON_COMM_IDX, archonInfo | FOUND_ENEMY_ARCHON_INFO);
+                Comms.writeIfChanged(ARCHON_COMM_IDX, archonInfo | FOUND_ENEMY_ARCHON_INFO);
             }
         }
     }
@@ -382,5 +382,14 @@ public class Comms {
         }
         int newFlag = (upperCount << HELPER_OFFSET) | lowerCount;
         rc.writeSharedArray(counter, newFlag);
+    }
+
+    public static void writeIfChanged(int index, int flag) throws GameActionException {
+        int oldFlag = rc.readSharedArray(index);
+        if (flag == oldFlag) {
+            return;
+        } else {
+            rc.writeSharedArray(index, flag);
+        }
     }
 }
