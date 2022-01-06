@@ -11,11 +11,13 @@ public class Soldier extends Robot {
         RUSHING,
         DONE_RUSHING,
         EXPLORING,
+        HELPING,
     }
     static SoldierState currState;
     static int homeFlagIdx;
     static MapLocation target;
     static int targetId;
+    static MapLocation distressLocation;
 
     public Soldier(RobotController r) throws GameActionException {
         super(r);
@@ -59,6 +61,10 @@ public class Soldier extends Robot {
                 Debug.setIndicatorString("in exploring mode");
                 tryAttackBestEnemy();
                 break;
+            case HELPING: 
+                Debug.setIndicatorString("in Helping Mode");
+                tryAttackBestEnemy();
+                moveTowardsDistressedArchon();
             default:
                 break;
         }
@@ -68,6 +74,15 @@ public class Soldier extends Robot {
 
     public void trySwitchState() throws GameActionException {
         // if >= 15 latticing soldiers, switch to rushing
+        for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
+            int flag = rc.readSharedArray(x);
+            if(Comms.getICFromFlag(flag) == Comms.InformationCategory.UNDER_ATTACK) {
+                currState = SoldierState.HELPING;
+                int locationindex = x - Comms.mapLocToFlag;
+                distressLocation = Comms.locationFromFlag(rc.readSharedArray(locationindex));
+                return;
+            }
+        }
         if (currState != SoldierState.RUSHING && 
             Comms.getSoldierCatFromFlag(rc.readSharedArray(Comms.SOLDIER_STATE_IDX)) == Comms.SoldierStateCategory.RUSH_SOLDIERS) {
             currState = SoldierState.RUSHING;
@@ -79,6 +94,9 @@ public class Soldier extends Robot {
             target = null;
             targetId = 0;
             currState = SoldierState.DONE_RUSHING;
+        }
+        else if(currState != SoldierState.RUSHING){
+            currState = SoldierState.EXPLORING;
         }
     }
 
@@ -165,13 +183,6 @@ public class Soldier extends Robot {
         }
         return new MapLocation[]{bestLoc, new MapLocation(idxOfBestLoc, 0)};
     }
-    /**
-     * first time you rush, set firstTimeRushing boolean and find target and set it
-     * every turn, go towards that target. also check if its dead
-     * if target is dead, then only done rushing
-     * when done rushing, set firstTimeRushing = false, target = null
-     * @throws GameActionException
-     */
 
     public void moveTowardsWeakestArchon() throws GameActionException {
         // First try to move to the Archon with least health
@@ -196,7 +207,25 @@ public class Soldier extends Robot {
             tryMoveDest(bestDirs);
         }
         else {
-            currState = SoldierState.DEFENSE;
+            currState = SoldierState.EXPLORING;
         }
+    }
+    public void moveTowardsDistressedArchon() throws GameActionException {
+            MapLocation bestLoc = distressLocation;
+            Direction[] bestDirs = {};
+            if (bestLoc != null) {
+                if(currLoc.distanceSquaredTo(bestLoc) > 15) {
+                    Direction bestDir = Nav.getBestDir(bestLoc);
+                    bestDirs = Util.getInOrderDirections(bestDir);
+                    Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
+                }
+    
+                Debug.setIndicatorString("Defending Archon at: " + bestLoc.toString());
+                Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 255, 0, 0);
+            }
+            else {
+                Debug.setIndicatorString("Distress location null: ERROR");
+            }
+            tryMoveDest(bestDirs);
     }
 }

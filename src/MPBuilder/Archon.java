@@ -136,6 +136,7 @@ public class Archon extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        broadcastSoldierNear();
         updateLead();
         updateRobotCounts();
         checkForObesity();
@@ -144,6 +145,19 @@ public class Archon extends Robot {
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
+    }
+    public void broadcastSoldierNear() throws GameActionException {
+        for(RobotInfo robot: rc.senseNearbyRobots(rc.getType().visionRadiusSquared)) {
+            if (robot.type == RobotType.SOLDIER && robot.team == rc.getTeam().opponent()) {
+                int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.UNDER_ATTACK);
+                rc.writeSharedArray(flagIndex, newFlag);
+                return;
+            }
+        }
+        if(Comms.getICFromFlag(rc.readSharedArray(flagIndex)) == Comms.InformationCategory.UNDER_ATTACK) {
+            int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
+            rc.writeSharedArray(flagIndex, newFlag);
+        }
     }
     public void updateRobotCounts() throws GameActionException {
         minerCount = Comms.getMinerCount();
@@ -191,8 +205,8 @@ public class Archon extends Robot {
         }
         return counter;
     }
-    public int minerSoldier14Ratio(int counter) throws GameActionException {
-        switch(counter % 5) {
+    public int minerSoldier13Ratio(int counter) throws GameActionException {
+        switch(counter % 4) {
             case 0:
                 if (minerCount < MAX_NUM_MINERS) { 
                     Debug.setIndicatorString("Trying to build a miner");
@@ -207,7 +221,7 @@ public class Archon extends Robot {
                     }                    
                 }
                 break;
-            case 1: case 2: case 3: case 4: 
+            case 1: case 2: case 3: 
                 Debug.setIndicatorString("Trying to build a soldier");
                 if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
                     counter ++;
@@ -250,7 +264,7 @@ public class Archon extends Robot {
                     chillingCounter = minerSoldier5050(chillingCounter);
                 }
                 else {
-                    chillingCounter = minerSoldier14Ratio(chillingCounter);
+                    chillingCounter = minerSoldier13Ratio(chillingCounter);
                 }
                 // Debug.setIndicatorString("CHILLING state, last pay day: " + lastPayDay);
                 break;

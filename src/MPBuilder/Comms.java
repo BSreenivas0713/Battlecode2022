@@ -49,6 +49,7 @@ public class Comms {
     public enum InformationCategory {
         EMPTY,
         DEFENSE_SOLDIERS,
+        UNDER_ATTACK,
     }
 
     public enum SoldierStateCategory {
