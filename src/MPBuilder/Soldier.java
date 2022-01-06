@@ -68,6 +68,7 @@ public class Soldier extends Robot {
                 Debug.setIndicatorString("in Helping Mode");
                 tryAttackBestEnemy();
                 moveTowardsDistressedArchon();
+                break;
             default:
                 break;
         }

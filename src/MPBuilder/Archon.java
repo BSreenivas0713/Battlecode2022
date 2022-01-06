@@ -141,6 +141,7 @@ public class Archon extends Robot {
         updateRobotCounts();
         checkForObesity();
         doStateAction();
+        tryToRepair();
         Debug.setIndicatorString(leadToUse + "; " + robotCounter);
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
@@ -341,5 +342,51 @@ public class Archon extends Robot {
             State oldState = stateStack.pop();
             changeState(oldState);
         }
+    }
+
+    // Tries to repair the lowest health droid in range if an action is ready.
+    public void tryToRepair() throws GameActionException {
+        if(!rc.isActionReady()) {
+            return;
+        }
+
+        RobotInfo[] friendlies = rc.senseNearbyRobots(actionRadiusSquared, rc.getTeam());
+        RobotInfo maybeSage = null;
+        RobotInfo maybeSoldier = null;
+        RobotInfo maybeBuilder = null;
+        RobotInfo maybeMiner = null;
+        RobotInfo friendly = null;
+        for (int i = friendlies.length - 1; i >= 0; i--) {
+            friendly = friendlies[i];
+            switch(friendly.type) {
+                case SAGE:
+                    if(maybeSage == null || maybeSage.health > friendly.health) {
+                        maybeSage = friendly;
+                    }
+                    break;
+                case SOLDIER:
+                    if(maybeSoldier == null || maybeSoldier.health > friendly.health) {
+                        maybeSoldier = friendly;
+                    }
+                    break;
+                case BUILDER:
+                    if(maybeBuilder == null || maybeBuilder.health > friendly.health) {
+                        maybeBuilder = friendly;
+                    }
+                    break;
+                case MINER:
+                    if(maybeMiner == null || maybeMiner.health > friendly.health) {
+                        maybeMiner = friendly;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if(maybeSage != null && rc.canRepair(maybeSage.location)) {rc.repair(maybeSage.location);
+        if(maybeSoldier != null && rc.canRepair(maybeSoldier.location)) rc.repair(maybeSoldier.location);
+        if(maybeBuilder != null && rc.canRepair(maybeBuilder.location)) rc.repair(maybeBuilder.location);
+        if(maybeMiner != null && rc.canRepair(maybeMiner.location)) rc.repair(maybeMiner.location);
     }
 }
