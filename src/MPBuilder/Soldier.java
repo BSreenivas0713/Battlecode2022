@@ -10,6 +10,7 @@ public class Soldier extends Robot {
         DEFENSE,
         RUSHING,
         DONE_RUSHING,
+        EXPLORING,
     }
     static SoldierState currState;
     static int homeFlagIdx;
@@ -18,13 +19,13 @@ public class Soldier extends Robot {
 
     public Soldier(RobotController r) throws GameActionException {
         super(r);
-        currState = SoldierState.DEFENSE;
+        currState = SoldierState.EXPLORING;
         homeFlagIdx = Comms.firstArchonFlag;
     }
 
     public Soldier(RobotController r, int homeFlagIndex) throws GameActionException {
         super(r);
-        currState = SoldierState.DEFENSE;
+        currState = SoldierState.EXPLORING;
         homeFlagIdx = homeFlagIndex;
     } 
 
@@ -53,6 +54,10 @@ public class Soldier extends Robot {
                         latticeAroundHomeAfterRushing();
                     }
                 }
+                break;
+            case EXPLORING:
+                Debug.setIndicatorString("in exploring mode");
+                tryAttackBestEnemy();
                 break;
             default:
                 break;

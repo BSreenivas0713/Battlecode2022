@@ -2,8 +2,6 @@ package MPBuilder;
 
 import battlecode.common.*;
 
-import javax.tools.DocumentationTool.Location;
-
 import MPBuilder.Debug.*;
 import MPBuilder.Util.*;
 import MPBuilder.Comms.*;
@@ -116,9 +114,9 @@ public class Archon extends Robot {
         Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
         if (toBuild == RobotType.SOLDIER) {
             soldierCount++;
-            if (soldierCount % 5 == 0) {
-                nextFlag = Comms.encodeArchonFlag(InformationCategory.DEFENSE_SOLDIERS);
-            }
+            // if (soldierCount % 5 == 0) {
+            //     nextFlag = Comms.encodeArchonFlag(InformationCategory.DEFENSE_SOLDIERS);
+            // }
         }
         for(Direction dir : orderedDirs) {
             if (rc.canBuildRobot(toBuild, dir)){
