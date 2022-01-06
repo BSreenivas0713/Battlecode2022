@@ -30,6 +30,8 @@ public class Util {
     
     private static RobotController rc;
     static int SOLDIERS_NEEDED_TO_RUSH;
+    static int MAP_AREA;
+    static int MAP_MAX_DIST_SQUARED;
 
     // Distance an enemy soldier needs to be within to an Archon
     // to be prioritized over a miner when attacking.
@@ -37,14 +39,15 @@ public class Util {
 
     static void init(RobotController r) {
         rc = r;
-        int area = rc.getMapHeight() * rc.getMapWidth();
-        if (area <= 1500) {
+        MAP_AREA = rc.getMapHeight() * rc.getMapWidth();
+        if (MAP_AREA <= 1500) {
             SOLDIERS_NEEDED_TO_RUSH = 10;
-        } else if (area <= 2500) {
+        } else if (MAP_AREA <= 2500) {
             SOLDIERS_NEEDED_TO_RUSH = 20;
         } else {
             SOLDIERS_NEEDED_TO_RUSH = 30;
         }
+        MAP_MAX_DIST_SQUARED = rc.getMapHeight() * rc.getMapHeight() + rc.getMapWidth() * rc.getMapWidth();
     }
     
     static Direction turnLeft90(Direction dir) {

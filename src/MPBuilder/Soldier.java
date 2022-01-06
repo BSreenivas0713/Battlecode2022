@@ -78,6 +78,8 @@ public class Soldier extends Robot {
     public void trySwitchState() throws GameActionException {
         // if >= 15 latticing soldiers, switch to rushing
         int maxHelpers = Comms.readMaxHelper();
+        int bestDistance = Util.MAP_MAX_DIST_SQUARED / 4;
+        distressLocation = null;
         for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
             int flag = rc.readSharedArray(x);
             if(Comms.getICFromFlag(flag) == Comms.InformationCategory.UNDER_ATTACK) {
@@ -85,12 +87,18 @@ public class Soldier extends Robot {
                 if (Comms.getHelpersForArchon(locationIndex) < maxHelpers) {
                     currState = SoldierState.HELPING;
                     Comms.incrementHelpersForArchon(locationIndex);
-                    distressLocation = Comms.locationFromFlag(rc.readSharedArray(locationIndex));
-                    return;
+                    MapLocation archonInTrouble = Comms.locationFromFlag(rc.readSharedArray(locationIndex));
+                    int distance = rc.getLocation().distanceSquaredTo(archonInTrouble);
+                    if (distance < bestDistance) {
+                        distressLocation = archonInTrouble;
+                    }
                 }
             }
         }
-        if (currState != SoldierState.RUSHING && 
+        if (distressLocation != null)  {
+            return;
+        }
+        else if (currState != SoldierState.RUSHING && 
             Comms.getSoldierCatFromFlag(rc.readSharedArray(Comms.SOLDIER_STATE_IDX)) == Comms.SoldierStateCategory.RUSH_SOLDIERS) {
             currState = SoldierState.RUSHING;
             MapLocation[] targetAndId = findWeakestArchon(Comms.enemyArchonCount());

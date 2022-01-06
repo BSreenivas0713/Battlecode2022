@@ -16,6 +16,7 @@ public strictfp class RobotPlayer {
         Debug.init(rc);
         Comms.init(rc);
         Nav.init(rc);
+        Util.init(rc);
 
         int setupFlag = rc.readSharedArray(0);
         int dataFlag = 0;
