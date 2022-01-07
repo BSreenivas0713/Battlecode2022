@@ -15,6 +15,7 @@ public class ScoutMiner extends Robot {
         roundNumBorn = r.getRoundNum();
         unitLeadLoc = null;
         this.dest = dest;
+        // System.out.println("Scout: " + dest.toString());
     }
 
     public ScoutMiner(RobotController r, MapLocation dest, int homeFlagIndex) throws GameActionException {
