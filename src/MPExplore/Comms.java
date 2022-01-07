@@ -476,6 +476,9 @@ public class Comms {
             closestClusterIdx = numClusters;
         }
         int numEnemies = rc.readSharedArray(closestClusterIdx * 3 + CURR_ROUND_NUM_ENEMIES_IDX_1);
+        if (numEnemies == 255) {
+            return;
+        }
         int currX = currAvgLocs[closestClusterIdx].x;
         int currY = currAvgLocs[closestClusterIdx].y;
         int newX = (currX * numEnemies + enemyLoc.x) / (numEnemies + 1);
