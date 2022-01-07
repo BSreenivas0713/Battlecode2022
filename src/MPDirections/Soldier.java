@@ -46,7 +46,7 @@ public class Soldier extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        avgEnemyLoc = Comms.locationFromFlag(rc.readSharedArray(Comms.LAST_ROUND_AVG_ENEMY_LOC_IDX));
+        avgEnemyLoc = Comms.getClosestCluster(currLoc);
         Debug.printString(avgEnemyLoc + "");
         Comms.incrementRushSoldierCounter();
         trySwitchState();
@@ -337,7 +337,7 @@ public class Soldier extends Robot {
         // else {
         //     tryMoveDest(Nav.explore());
         // }
-        if (currLoc.distanceSquaredTo(avgEnemyLoc) > 1.5 * visionRadiusSquared) {
+        if (avgEnemyLoc != null && currLoc.distanceSquaredTo(avgEnemyLoc) > 1.5 * visionRadiusSquared) {
             Direction[] targets = Nav.greedyDirection(currLoc.directionTo(avgEnemyLoc));
             tryMoveDest(targets);
         }

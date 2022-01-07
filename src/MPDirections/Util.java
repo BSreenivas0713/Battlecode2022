@@ -43,13 +43,14 @@ public class Util {
     static void init(RobotController r) {
         rc = r;
         MAP_AREA = rc.getMapHeight() * rc.getMapWidth();
-        if (MAP_AREA <= 1500) {
-            SOLDIERS_NEEDED_TO_RUSH = 10;
-        } else if (MAP_AREA <= 2500) {
-            SOLDIERS_NEEDED_TO_RUSH = 20;
-        } else {
-            SOLDIERS_NEEDED_TO_RUSH = 30;
-        }
+        // if (MAP_AREA <= 1500) {
+        //     SOLDIERS_NEEDED_TO_RUSH = 10;
+        // } else if (MAP_AREA <= 2500) {
+        //     SOLDIERS_NEEDED_TO_RUSH = 20;
+        // } else {
+        //     SOLDIERS_NEEDED_TO_RUSH = 30;
+        // }
+        SOLDIERS_NEEDED_TO_RUSH = 30;
         MAP_MAX_DIST_SQUARED = rc.getMapHeight() * rc.getMapHeight() + rc.getMapWidth() * rc.getMapWidth();
     }
     static MapLocation[] makePattern(MapLocation loc) {

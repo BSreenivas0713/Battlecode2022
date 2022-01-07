@@ -25,9 +25,15 @@ public class Comms {
     static final int SOLDIER_STATE_IDX = 22;
     static final int FIRST_HELPER_COUNTER = 23;
     static final int SECOND_HELPER_COUNTER = 24;
-    static final int LAST_ROUND_AVG_ENEMY_LOC_IDX = 25;
-    static final int CURR_ROUND_AVG_ENEMY_LOC_IDX = 26;
-    static final int CURR_ROUND_NUM_ENEMIES_IDX = 27;
+    static final int LAST_ROUND_AVG_ENEMY_LOC_IDX_1 = 25;
+    static final int CURR_ROUND_AVG_ENEMY_LOC_IDX_1 = 26;
+    static final int CURR_ROUND_NUM_ENEMIES_IDX_1 = 27;
+    static final int LAST_ROUND_AVG_ENEMY_LOC_IDX_2 = 28;
+    static final int CURR_ROUND_AVG_ENEMY_LOC_IDX_2 = 29;
+    static final int CURR_ROUND_NUM_ENEMIES_IDX_2 = 30;
+    static final int LAST_ROUND_AVG_ENEMY_LOC_IDX_3 = 31;
+    static final int CURR_ROUND_AVG_ENEMY_LOC_IDX_3 = 32;
+    static final int CURR_ROUND_NUM_ENEMIES_IDX_3 = 33;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
@@ -400,22 +406,68 @@ public class Comms {
         }
     }
 
+    public static MapLocation getClosestCluster(MapLocation currLoc) throws GameActionException {
+        MapLocation closestCluster = null;
+        int closestClusterDist = Integer.MAX_VALUE;
+        int numClusters = 0;
+        for (int i = 0; i < 3; i++) {
+            if (rc.readSharedArray(i * 3 + LAST_ROUND_AVG_ENEMY_LOC_IDX_1) != 0) {
+                numClusters++;
+            }
+        }
+        MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
+        MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
+        MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
+        MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
+        for (int i = 0; i < numClusters; i++) {
+            MapLocation currCluster = currAvgLocs[i];
+            int dist = currLoc.distanceSquaredTo(currCluster);
+            if (dist < closestClusterDist) {
+                closestClusterDist = dist;
+                closestCluster = currCluster;
+            }
+        }
+        return closestCluster;
+    }
+
     /**
      * update avg enemy loc (MapLocation enemyLoc)
      * update curr round running avg
      * also add 1 to curr num enemies
      */
     public static void updateAvgEnemyLoc(MapLocation enemyLoc) throws GameActionException {
-        MapLocation currAvgLoc = locationFromFlag(rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX));
-        int numEnemies = rc.readSharedArray(CURR_ROUND_NUM_ENEMIES_IDX);
-        int currX = currAvgLoc.x;
-        int currY = currAvgLoc.y;
+        int numClusters = 0;
+        for (int i = 0; i < 3; i++) {
+            if (rc.readSharedArray(i * 3 + CURR_ROUND_AVG_ENEMY_LOC_IDX_1) != 0) {
+                numClusters++;
+            }
+        }
+        MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_1));
+        MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_2));
+        MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_3));
+        MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
+
+        int closestClusterDist = Integer.MAX_VALUE;
+        int closestClusterIdx = -1;
+        for (int i = 0; i < numClusters; i++) {
+            MapLocation clusterLoc = currAvgLocs[i];
+            int distToCluster = clusterLoc.distanceSquaredTo(enemyLoc);
+            if (distToCluster < closestClusterDist) {
+                closestClusterDist = distToCluster;
+                closestClusterIdx = i;
+            }
+        }
+        if (closestClusterDist > Util.MAP_MAX_DIST_SQUARED / 9 && numClusters < 3) {
+            closestClusterIdx = numClusters;
+        }
+        int numEnemies = rc.readSharedArray(closestClusterIdx * 3 + CURR_ROUND_NUM_ENEMIES_IDX_1);
+        int currX = currAvgLocs[closestClusterIdx].x;
+        int currY = currAvgLocs[closestClusterIdx].y;
         int newX = (currX * numEnemies + enemyLoc.x) / (numEnemies + 1);
         int newY = (currY * numEnemies + enemyLoc.y) / (numEnemies + 1);
         int encodedNewLoc = encodeLocation(new MapLocation(newX, newY));
-        // Debug.println(enemyLoc + "; currX: " + currX + "; currY: " + "; newX: " + newX + "; newY: " + newY);
-        writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX, encodedNewLoc);
-        rc.writeSharedArray(CURR_ROUND_NUM_ENEMIES_IDX, numEnemies + 1);
+        writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_1 + closestClusterIdx * 3, encodedNewLoc);
+        rc.writeSharedArray(CURR_ROUND_NUM_ENEMIES_IDX_1 + closestClusterIdx * 3, numEnemies + 1);
     }
 
     /**
@@ -425,10 +477,18 @@ public class Comms {
      */
     public static void resetAvgEnemyLoc(int archonNum) throws GameActionException {
         if (archonNum == 1) {
-            int currAvgLoc = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX);
-            writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX, currAvgLoc);
-            writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX, 0);
-            writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX, 0);
+            int currAvgLoc1 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_1);
+            writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_1, currAvgLoc1);
+            writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_1, 0);
+            writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_1, 0);
+            int currAvgLoc2 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_2);
+            writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_2, currAvgLoc2);
+            writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_2, 0);
+            writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_2, 0);
+            int currAvgLoc3 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_3);
+            writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_3, currAvgLoc3);
+            writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_3, 0);
+            writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_3, 0);
         }
     }
 }
