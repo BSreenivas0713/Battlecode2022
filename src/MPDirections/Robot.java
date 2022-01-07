@@ -6,7 +6,9 @@ import MPDirections.Util.*;
 import MPDirections.Comms.*;
 
 public class Robot {
-    static RobotController rc; 
+    static RobotController rc;
+    public static Robot changeTo = null;
+
     static int turnCount;
     static MapLocation home;
     static RobotInfo[] EnemySensable;
@@ -18,6 +20,7 @@ public class Robot {
     static int nextFlag;
     static int nextSoldierFlag;
     static int defaultFlag;
+
     // This is the order of priorities to attack enemies
     static RobotInfo maybeArchon = null;
     static RobotInfo maybeWatchtower = null;
