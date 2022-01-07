@@ -1,8 +1,6 @@
 package MPCoordinated;
 
 import battlecode.common.*;
-import MPCoordinated.fast.FastIterableIntSet;
-import MPCoordinated.fast.FasterQueue;
 
 public class Nav {
     static RobotController rc;

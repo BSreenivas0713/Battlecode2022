@@ -1,29 +1,26 @@
-package MPDirections;
+package MPCoordinated;
 
 import battlecode.common.*;
-import MPDirections.Debug.*;
-import MPDirections.Util.*;
+import MPCoordinated.Debug.*;
+import MPCoordinated.Util.*;
 
-public class Miner extends Robot {
+// TODO: Have ScoutMiners report the dest that they're going to even if they don't see it
+// if they're being attacked and are about to die.
+public class ScoutMiner extends Robot {
+    MapLocation dest;
     int roundNumBorn;
     int minerCount;
-    boolean explorer;
     MapLocation unitLeadLoc;
 
-    public Miner(RobotController r) throws GameActionException {
+    public ScoutMiner(RobotController r, MapLocation dest) throws GameActionException {
         super(r);
         roundNumBorn = r.getRoundNum();
         unitLeadLoc = null;
-        if(Util.rng.nextInt(6) == 0) {
-            explorer = true;
-        }
-        else {
-            explorer = false;
-        }
+        this.dest = dest;
     }
 
-    public Miner(RobotController r, int homeFlagIndex) throws GameActionException {
-        this(r);
+    public ScoutMiner(RobotController r, MapLocation dest, int homeFlagIndex) throws GameActionException {
+        this(r, dest);
         homeFlagIdx = homeFlagIndex;
     }
 
@@ -39,7 +36,7 @@ public class Miner extends Robot {
         int someoneClaimed = 0;
         float overallDX = 0;
         float overallDY = 0;
-// find the best lead source, prioritizing lead that is within your action radius
+        // find the best lead source, prioritizing lead that is within your action radius
         MapLocation[] locs = rc.senseNearbyLocationsWithLead(RobotType.MINER.visionRadiusSquared);
         MapLocation loc;
         unitLeadLoc = null;
@@ -79,8 +76,7 @@ public class Miner extends Robot {
             goldSource = locs[0];
         }
 
-        // Uhhh is minerCount supposed to be zeroed? This wasn't here before
-        // minerCount = 0;
+        minerCount = 0;
         RobotInfo[] sensableWithin8 = rc.senseNearbyRobots(8, rc.getTeam());
         RobotInfo possibleFriendly;
         for (int i = sensableWithin8.length - 1; i >= 0; i--) {
@@ -114,19 +110,18 @@ public class Miner extends Robot {
         super.takeTurn();
         Comms.incrementMinerCounter();
         // Try to mine on squares around us.
-        boolean amMining = false;
         MapLocation[] LeadGoldList = findLeadAndGold();
         MapLocation leadSource = LeadGoldList[0];
         MapLocation goldSource = LeadGoldList[1];
         int totalLeadSourcesWithinDomain = LeadGoldList[2].x;
-        int someoneClaimed = LeadGoldList[2].y;
-        Direction DirectionAway = currLoc.directionTo(currLoc.translate(LeadGoldList[3].x, LeadGoldList[3].y)).opposite();
+        
         if(goldSource != null) {
             Debug.printString("Gold found");
             while(rc.canMineGold(goldSource)) {
                 rc.mineGold(goldSource);
             }
         }
+
         if(leadSource != null) {
             Debug.printString("Lead found: " + leadSource.toString());
             if(unitLeadLoc != null && shouldDepleteUnitLead() && rc.canMineLead(unitLeadLoc)) {
@@ -136,48 +131,25 @@ public class Miner extends Robot {
             while(rc.canMineLead(leadSource) && rc.senseLead(leadSource) > 1) {
                 Comms.incrementMinerMiningCounter();
                 rc.mineLead(leadSource);
-                amMining = true;
             }
         }
-        Direction[] dir = {};
+        Direction[] dirs = {};
         String str = "";
         Debug.printString("Domain: " + totalLeadSourcesWithinDomain);
 
-        if (!amMining && (totalLeadSourcesWithinDomain < 15 || someoneClaimed == 1)  && !explorer) {
-            dir = Nav.explore();
-            str = "Exploring";
-        }
+        if(rc.canSenseLocation(dest)) {
+            Miner bot = new Miner(rc);
+            bot.roundNumBorn = this.roundNumBorn;
+            changeTo = bot;
+        } else {
+            Direction bestDir = Nav.getBestDir(dest);
+            dirs = Util.getInOrderDirections(bestDir);
 
-        if(rc.getRoundNum() == roundNumBorn + 1) {
-            for(RobotInfo robot: FriendlySensable) {
-                if(robot.getType() == RobotType.ARCHON) {
-                    dir = Nav.greedyDirection(currLoc.directionTo(robot.getLocation()).opposite());
-                    str = "going away from AR";
-                }
-            }
-        }
-
-        if(leadSource != null) {
-            dir = Nav.greedyDirection(currLoc.directionTo(leadSource));
-            str = "going towards lead";
-            if(minerCount >= 4 && someoneClaimed == 1 && amMining) {
-                dir = Nav.greedyDirection(DirectionAway);
-                str = "going away from other miners: " + DirectionAway.toString() + " " + Integer.toString(LeadGoldList[3].x) + " " + Integer.toString(LeadGoldList[3].y);
-            }
-        }
-
-        RobotInfo closestEnemy = getClosestEnemy(RobotType.SOLDIER);
-        if(closestEnemy != null) {
-            dir = Nav.greedyDirection(currLoc.directionTo(closestEnemy.getLocation()).opposite());
-            str = "going away from enemy";
-        }
-        
-        if(goldSource != null) {
-            dir = Nav.greedyDirection(currLoc.directionTo(goldSource));
-            str = "going toward gold";
+            Debug.setIndicatorDot(Debug.INDICATORS, dest, 255, 0, 0);
+            Debug.setIndicatorLine(Debug.INDICATORS, currLoc, currLoc.add(bestDir), 0, 0, 255);
         }
 
         Debug.printString(str);
-        tryMoveDest(dir);
+        tryMoveDest(dirs);
     }
 }

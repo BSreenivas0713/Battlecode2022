@@ -6,7 +6,9 @@ import MPDirections.Util.*;
 import MPDirections.Comms.*;
 
 public class Robot {
-    static RobotController rc; 
+    static RobotController rc;
+    public static Robot changeTo = null;
+
     static int turnCount;
     static MapLocation home;
     static RobotInfo[] EnemySensable;
@@ -61,7 +63,9 @@ public class Robot {
         }
         else {
             for (RobotInfo bot : EnemySensable) {
-                Comms.updateAvgEnemyLoc(bot.getLocation());
+                if (bot.getType() == RobotType.SOLDIER) {
+                    Comms.updateAvgEnemyLoc(bot.getLocation());
+                }
             }
         }
 

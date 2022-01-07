@@ -17,6 +17,7 @@ public strictfp class RobotPlayer {
         Comms.init(rc);
         Nav.init(rc);
         Util.init(rc);
+        Symmetry.init(rc);
 
         int setupFlag = rc.readSharedArray(0);
         int dataFlag = 0;
@@ -39,13 +40,19 @@ public strictfp class RobotPlayer {
                 }
             }
         }
-        InformationCategory ic = Comms.getICFromFlag(dataFlag);
-
+        InformationCategory IC = Comms.getICFromFlag(dataFlag);
         switch (rc.getType()) {
             case ARCHON:     bot = new Archon(rc);  break;
-            case MINER:      bot = new Miner(rc);  break;
+            case MINER:
+                if (IC == InformationCategory.SCOUT_MINER) {
+                    bot = new ScoutMiner(rc, Comms.decodeArchonFlagLocation(dataFlag), homeFlagIdx);
+                    // bot = new Miner(rc, homeFlagIdx);
+                } else {
+                    bot = new Miner(rc, homeFlagIdx);
+                }
+                break;
             case SOLDIER:
-                if (ic == InformationCategory.DEFENSE_SOLDIERS) {
+                if (IC == InformationCategory.DEFENSE_SOLDIERS) {
                     bot = new DefenseSoldier(rc, homeFlagIdx);
                 } else {
                     bot = new Soldier(rc, homeFlagIdx);
@@ -54,7 +61,7 @@ public strictfp class RobotPlayer {
             case LABORATORY: bot = new Laboratory(rc);  break;
             case WATCHTOWER: bot = new Watchtower(rc);  break;
             case BUILDER:
-                if (ic == InformationCategory.SPAWN_KILL) {
+                if (IC == InformationCategory.SPAWN_KILL) {
                     bot = new SpawnKillBuilder(rc);
                 } else {
                     bot = new Builder(rc);  

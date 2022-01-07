@@ -20,11 +20,13 @@ public class Archon extends Robot {
 
     static int robotCounter;
     static int chillingCounter;
-    static int obesityCounter; 
+    static int obesityCounter;
+
     static int minerCount;
     static int minerMiningCount;
     static int soldierCount;
     static int builderCount;
+
     static State currentState;
     static int flagIndex;
     static int turnNumber;
@@ -353,6 +355,9 @@ public class Archon extends Robot {
         //     dir = rc.getLocation().directionTo(leadSource);
         // }
         dir = Util.randomDirection(nonWallDirections);
+        // if(buildRobot(toBuild,dir) && robotCounter <= 3 && Util.MAP_AREA < 2000) {
+        //     nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.SCOUT_MINER, Symmetry.possibleEnemyLocations[robotCounter - 1]);
+        // }
         buildRobot(toBuild,dir);
         
         if(robotCounter >= 3 && Comms.foundEnemy) {

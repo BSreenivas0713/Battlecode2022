@@ -22,6 +22,11 @@ public class Miner extends Robot {
         }
     }
 
+    public Miner(RobotController r, int homeFlagIndex) throws GameActionException {
+        this(r);
+        homeFlagIdx = homeFlagIndex;
+    }
+
     public int getScore(int diff, int leadAmount) {
         return diff + (int)(leadAmount * .5);
     }
@@ -74,6 +79,7 @@ public class Miner extends Robot {
             goldSource = locs[0];
         }
 
+        // minerCount = 0;
         RobotInfo[] sensableWithin8 = rc.senseNearbyRobots(8, rc.getTeam());
         RobotInfo possibleFriendly;
         for (int i = sensableWithin8.length - 1; i >= 0; i--) {
