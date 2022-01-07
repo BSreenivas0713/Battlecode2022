@@ -132,7 +132,7 @@ public class Archon extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         clearAndResetHelpers();
-        Comms.resetAvgEnemyLoc(turnNumber);
+        Comms.resetAvgEnemyLoc();
         boolean underAttack = broadcastSoldierNear();
         updateLead();
         updateRobotCounts();

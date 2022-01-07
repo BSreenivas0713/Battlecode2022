@@ -47,6 +47,9 @@ public class Soldier extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         avgEnemyLoc = Comms.getClosestCluster(currLoc);
+        // if(avgEnemyLoc != null) {
+        //     rc.setIndicatorDot(avgEnemyLoc, 0, 255, 0);
+        // }
         Debug.printString(avgEnemyLoc + "");
         Comms.incrementRushSoldierCounter();
         trySwitchState();
@@ -184,8 +187,8 @@ public class Soldier extends Robot {
         // Weight home Archon ever so slightly.
         // Only really has an effect when no soldiers are seen
         // Primarily for running towards other soldiers/home when running away from enemies.
-        overallFriendlySoldierDx += currLoc.directionTo(home).dx * (1000 / (currLoc.distanceSquaredTo(home)));
-        overallFriendlySoldierDy += currLoc.directionTo(home).dy * (1000 / (currLoc.distanceSquaredTo(home)));
+        overallFriendlySoldierDx += currLoc.directionTo(home).dx * (1000 / (currLoc.distanceSquaredTo(home) + 1));
+        overallFriendlySoldierDy += currLoc.directionTo(home).dy * (1000 / (currLoc.distanceSquaredTo(home) + 1));
     }
 
     public boolean shouldRunAway() {

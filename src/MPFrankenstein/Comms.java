@@ -25,28 +25,41 @@ public class Comms {
     static final int SOLDIER_STATE_IDX = 22;
     static final int FIRST_HELPER_COUNTER = 23;
     static final int SECOND_HELPER_COUNTER = 24;
-    static final int LAST_ROUND_AVG_ENEMY_LOC_IDX_1 = 25;
-    static final int CURR_ROUND_AVG_ENEMY_LOC_IDX_1 = 26;
-    static final int CURR_ROUND_NUM_ENEMIES_IDX_1 = 27;
-    static final int LAST_ROUND_AVG_ENEMY_LOC_IDX_2 = 28;
-    static final int CURR_ROUND_AVG_ENEMY_LOC_IDX_2 = 29;
-    static final int CURR_ROUND_NUM_ENEMIES_IDX_2 = 30;
-    static final int LAST_ROUND_AVG_ENEMY_LOC_IDX_3 = 31;
-    static final int CURR_ROUND_AVG_ENEMY_LOC_IDX_3 = 32;
-    static final int CURR_ROUND_NUM_ENEMIES_IDX_3 = 33;
 
+    static final int LAST_ROUND_AVG_ENEMY_LOC_IDX_1 = 25;
+    static final int CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_1 = 26;
+    static final int CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_1 = 27;
+    static final int CURR_ROUND_NUM_ENEMIES_IDX_1 = 28;
+    static final int LAST_ROUND_AVG_ENEMY_LOC_IDX_2 = 29;
+    static final int CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_2 = 30;
+    static final int CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_2 = 31;
+    static final int CURR_ROUND_NUM_ENEMIES_IDX_2 = 32;
+    static final int LAST_ROUND_AVG_ENEMY_LOC_IDX_3 = 33;
+    static final int CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_3 = 34;
+    static final int CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_3 = 35;
+    static final int CURR_ROUND_NUM_ENEMIES_IDX_3 = 36;
+
+    // Setup flag masks
+    // Bits 1-3 are friendly Archon count
+    // Bits 4-6 are enemy Archon count
+    // Bits 7-12 are max helpers
+    // Bit 16 is has reset average enemy locs
     static final int COUNT_MASK = 7;
-    static final int COORD_MASK = 63;
-    static final int HEALTH_MASK = 15;
-    static final int STATE_MASK = 15;
-    static final int HELPER_MASK = 255;
-    static final int MAX_HELPER_MASK = 63;
+    static final int COORD_MASK = 0x3F;
+    static final int HEALTH_MASK = 0xF;
+    static final int STATE_MASK = 0xF;
+    static final int HELPER_MASK = 0xFF;
+    static final int MAX_HELPER_MASK = 0x3F;
     static final int COUNT_OFFSET = 3;
     static final int MAX_HELPER_OFFSET = 6;
+    public static final int MAX_HELPERS = MAX_HELPER_MASK;
+    static final int HAS_RESET_ENEMY_LOCS_OFFSET = 15;
+
     static final int X_COORD_OFFSET = 0;
     static final int Y_COORD_OFFSET = 6;
     static final int HEALTH_OFFSET = 12;
     static final int HELPER_OFFSET = 8;
+
     static final int HEALTH_BUCKET_SIZE = 80;
     static final int NUM_HEALTH_BUCKETS = 16;
     static final int DEAD_ARCHON_FLAG = 65535;
@@ -109,7 +122,9 @@ public class Comms {
         int flag = rc.readSharedArray(setupFlag);
         return (flag >> COUNT_OFFSET) & COUNT_MASK;
     }
+
     public static void setMaxHelper(int maximum) throws GameActionException {
+        maximum = Math.min(maximum, MAX_HELPERS);
         int flag = rc.readSharedArray(setupFlag);
         int clearedFlag = (~(MAX_HELPER_MASK << MAX_HELPER_OFFSET)) & flag;
         int newFlag = clearedFlag | (maximum << MAX_HELPER_OFFSET);
@@ -119,6 +134,7 @@ public class Comms {
         int flag = rc.readSharedArray(setupFlag);
         return (flag >> MAX_HELPER_OFFSET) & MAX_HELPER_MASK;
     }
+
     public static int aliveEnemyArchonCount() throws GameActionException {
         int res = 0;
         for (int i = 0; i < Comms.enemyArchonCount(); i++) {
@@ -406,15 +422,40 @@ public class Comms {
         }
     }
 
+    public static MapLocation getEnemyLoc(int X_IDX, int Y_IDX, int NUM_ENEMIES_IDX) throws GameActionException {
+        int x = rc.readSharedArray(X_IDX);
+        int y = rc.readSharedArray(Y_IDX);
+        int numEnemies = rc.readSharedArray(NUM_ENEMIES_IDX);
+        if(numEnemies == 0) {
+            return new MapLocation(-100, -100);
+        }
+        return new MapLocation(x / numEnemies, y / numEnemies);
+    }
+
+    public static MapLocation[] getCurrentClusters() throws GameActionException {
+        return new MapLocation[]{
+            getEnemyLoc(CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_1,
+                        CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_1,
+                        CURR_ROUND_NUM_ENEMIES_IDX_1),
+            getEnemyLoc(CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_2,
+                        CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_2,
+                        CURR_ROUND_NUM_ENEMIES_IDX_2),
+            getEnemyLoc(CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_3,
+                        CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_3,
+                        CURR_ROUND_NUM_ENEMIES_IDX_3),
+        };
+    }
+
     public static MapLocation getClosestCluster(MapLocation currLoc) throws GameActionException {
         MapLocation closestCluster = null;
         int closestClusterDist = Integer.MAX_VALUE;
         int numClusters = 0;
         for (int i = 0; i < 3; i++) {
-            if (rc.readSharedArray(i * 3 + LAST_ROUND_AVG_ENEMY_LOC_IDX_1) != 0) {
+            if (rc.readSharedArray(i * 4 + LAST_ROUND_AVG_ENEMY_LOC_IDX_1) != 0) {
                 numClusters++;
             }
         }
+
         MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
         MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
         MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
@@ -436,17 +477,15 @@ public class Comms {
      * also add 1 to curr num enemies
      */
     public static void updateAvgEnemyLoc(MapLocation enemyLoc) throws GameActionException {
+        setNeedToResetEnemyLocs();
         int numClusters = 0;
         for (int i = 0; i < 3; i++) {
-            if (rc.readSharedArray(i * 3 + CURR_ROUND_AVG_ENEMY_LOC_IDX_1) != 0) {
+            if (rc.readSharedArray(i * 4 + CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_1) != 0) {
                 numClusters++;
             }
         }
-        MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_1));
-        MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_2));
-        MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_3));
-        MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
 
+        MapLocation[] currAvgLocs = getCurrentClusters();
         int closestClusterDist = Integer.MAX_VALUE;
         int closestClusterIdx = -1;
         for (int i = 0; i < numClusters; i++) {
@@ -460,14 +499,32 @@ public class Comms {
         if (closestClusterDist > Util.MAP_MAX_DIST_SQUARED / 9 && numClusters < 3) {
             closestClusterIdx = numClusters;
         }
-        int numEnemies = rc.readSharedArray(closestClusterIdx * 3 + CURR_ROUND_NUM_ENEMIES_IDX_1);
-        int currX = currAvgLocs[closestClusterIdx].x;
-        int currY = currAvgLocs[closestClusterIdx].y;
-        int newX = (currX * numEnemies + enemyLoc.x) / (numEnemies + 1);
-        int newY = (currY * numEnemies + enemyLoc.y) / (numEnemies + 1);
-        int encodedNewLoc = encodeLocation(new MapLocation(newX, newY));
-        writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_1 + closestClusterIdx * 3, encodedNewLoc);
-        rc.writeSharedArray(CURR_ROUND_NUM_ENEMIES_IDX_1 + closestClusterIdx * 3, numEnemies + 1);
+
+        int X_IDX = CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_1 + 4 * closestClusterIdx;
+        int Y_IDX = CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_1 + 4 * closestClusterIdx;
+        int NUM_ENEMIES_IDX = CURR_ROUND_NUM_ENEMIES_IDX_1 + closestClusterIdx * 4;
+        int numEnemies = rc.readSharedArray(NUM_ENEMIES_IDX);
+        int currX = rc.readSharedArray(X_IDX);
+        int currY = rc.readSharedArray(Y_IDX);
+        int newX = currX + enemyLoc.x;
+        int newY = currY + enemyLoc.y;
+        rc.writeSharedArray(X_IDX, newX);
+        rc.writeSharedArray(Y_IDX, newY);
+        rc.writeSharedArray(NUM_ENEMIES_IDX, numEnemies + 1);
+    }
+
+    public static boolean needToResetEnemyLocs() throws GameActionException {
+        return (rc.readSharedArray(setupFlag) >> HAS_RESET_ENEMY_LOCS_OFFSET) != 0;
+    }
+
+    public static void setNeedToResetEnemyLocs() throws GameActionException {
+        int oldFlag = rc.readSharedArray(setupFlag);
+        writeIfChanged(setupFlag, oldFlag | (1 << HAS_RESET_ENEMY_LOCS_OFFSET));
+    }
+
+    public static void resetNeedToResetEnemyLocs() throws GameActionException {
+        int oldFlag = rc.readSharedArray(setupFlag);
+        writeIfChanged(setupFlag, oldFlag & (~(1 << HAS_RESET_ENEMY_LOCS_OFFSET)));
     }
 
     /**
@@ -475,20 +532,29 @@ public class Comms {
      * will also zero out CURR_ROUND_AVG_ENEMY_LOC_IDX
      * will also zero out CURR_ROUND_NUM_ENEMIES_IDX
      */
-    public static void resetAvgEnemyLoc(int archonNum) throws GameActionException {
-        if (archonNum == 1) {
-            int currAvgLoc1 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_1);
-            writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_1, currAvgLoc1);
-            writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_1, 0);
+    public static void resetAvgEnemyLoc() throws GameActionException {
+        if(needToResetEnemyLocs()) {
+            MapLocation[] clusters = getCurrentClusters();
+
+            writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_1,
+                clusters[0].x != -100 ? encodeLocation(clusters[0]) : 0);
+            writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_1, 0);
+            writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_1, 0);
             writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_1, 0);
-            int currAvgLoc2 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_2);
-            writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_2, currAvgLoc2);
-            writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_2, 0);
+
+            writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_2,
+                clusters[1].x != -100 ? encodeLocation(clusters[1]) : 0);
+            writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_2, 0);
+            writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_2, 0);
             writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_2, 0);
-            int currAvgLoc3 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_3);
-            writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_3, currAvgLoc3);
-            writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_3, 0);
+
+            writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_3,
+                clusters[2].x != -100 ? encodeLocation(clusters[2]) : 0);
+            writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_3, 0);
+            writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_3, 0);
             writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_3, 0);
+
+            resetNeedToResetEnemyLocs();
         }
     }
 }
