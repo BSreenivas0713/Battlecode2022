@@ -330,12 +330,13 @@ public class Archon extends Robot {
                 Debug.printString("Obesity");
                 int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
                 int watchtowersPossible = leadForBuilders / 180;
-                if (/*watchtowersPossible > builderCount &&*/ builderCount <= MIN_NUM_MINERS) {
-                    obesityCounter = SoldierBuilder11Ratio(obesityCounter);
-                } else {
-                    obesityCounter = buildSoldier(obesityCounter);
-                    break;
-                }
+                // if (/*watchtowersPossible > builderCount &&*/ builderCount <= MIN_NUM_MINERS) {
+                //     obesityCounter = SoldierBuilder11Ratio(obesityCounter);
+                // } else {
+                //     obesityCounter = buildSoldier(obesityCounter);
+                //     break;
+                // }
+                obesityCounter = buildSoldier(obesityCounter);
                 break;
             case SPAWNKILL:
                 int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.SPAWN_KILL);
