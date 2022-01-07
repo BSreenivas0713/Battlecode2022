@@ -92,7 +92,13 @@ public class Builder extends Robot{
 
             if(seenFriendly) {
                 Debug.printString("Friendly near, moving away from home");
-                tryMoveDest(Nav.greedyDirection(currLoc.directionTo(home).opposite()));
+                Direction awayFromHome = currLoc.directionTo(home).opposite();
+                if(!rc.onTheMap(currLoc.add(awayFromHome))) {
+                    tryMoveDest(Util.getInOrderDirections(Util.turnRight90(currLoc.directionTo(home))));
+                }
+                else {
+                    tryMoveDest(Nav.greedyDirection(awayFromHome));
+                }
             }
             else {
                 Debug.printString("No Friendly near, moving towards home");
