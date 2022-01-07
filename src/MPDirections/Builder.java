@@ -28,6 +28,12 @@ public class Builder extends Robot{
         closestEmptySpotToHome = null;
         int distClosetsEmptySpotToHome = -1;
         RobotInfo robot;
+        int archonTowerCount = 0;
+        for (RobotInfo Friend: FriendlySensable) {
+            if(Friend.type == RobotType.ARCHON || Friend.type == RobotType.WATCHTOWER) {
+                archonTowerCount++;
+            }
+        }
         for (int i = FriendlySensable.length - 1; i >= 0; i--) {
             robot = FriendlySensable[i];
             switch(robot.type) {
@@ -38,7 +44,7 @@ public class Builder extends Robot{
                     }
                     MapLocation robotLoc = robot.location;
                     for(MapLocation newLoc: Util.makePattern(robotLoc)) {
-                        if(currLoc.distanceSquaredTo(newLoc) <= 2 && rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc))) {
+                        if(archonTowerCount < 13 && currLoc.distanceSquaredTo(newLoc) <= 2 && rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc))) {
                             Debug.printString("Building a Watchtower");
                             making = true;
                             rc.buildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc));
