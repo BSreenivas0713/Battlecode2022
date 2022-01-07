@@ -15,9 +15,7 @@ public class Robot {
     static int actionRadiusSquared;
     static int visionRadiusSquared;
     static int homeFlagIdx;
-    static int nextFlag;
     static int nextSoldierFlag;
-    static int defaultFlag;
     // This is the order of priorities to attack enemies
     static RobotInfo maybeArchon = null;
     static RobotInfo maybeWatchtower = null;
@@ -32,8 +30,6 @@ public class Robot {
         turnCount = 0;
         actionRadiusSquared = rc.getType().actionRadiusSquared;
         visionRadiusSquared = rc.getType().visionRadiusSquared;
-        defaultFlag = 0;
-
         
         if(rc.getType() == RobotType.ARCHON) {
             home = rc.getLocation();
@@ -59,9 +55,6 @@ public class Robot {
         
         // setting flag on next turn if archon
         if (rc.getType() == RobotType.ARCHON) {
-            if (rc.readSharedArray(homeFlagIdx) != nextFlag) {
-                rc.writeSharedArray(homeFlagIdx, nextFlag);
-            }
             if (rc.readSharedArray(Comms.SOLDIER_STATE_IDX) != nextSoldierFlag) {
                 rc.writeSharedArray(Comms.SOLDIER_STATE_IDX, nextSoldierFlag);
             }
@@ -72,8 +65,7 @@ public class Robot {
             }
         }
 
-        nextFlag = defaultFlag;
-        nextSoldierFlag = defaultFlag;
+        nextSoldierFlag = Comms.SoldierStateCategory.EMPTY.ordinal();
 
         currLoc = rc.getLocation();
         reportKilledArchons();

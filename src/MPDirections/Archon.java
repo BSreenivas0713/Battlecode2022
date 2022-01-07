@@ -11,6 +11,7 @@ public class Archon extends Robot {
     static enum State {
         CHILLING,
         OBESITY,
+        SPAWNKILL,
         INIT,
     };
 
@@ -38,6 +39,7 @@ public class Archon extends Robot {
     static int leadObesity;
     static int maxLeadUsedByArchons;
     static int distressSemaphore = 0;
+    static int spawnKillCount = 0;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -133,10 +135,12 @@ public class Archon extends Robot {
         super.takeTurn();
         clearAndResetHelpers();
         Comms.resetAvgEnemyLoc(turnNumber);
-        broadcastSoldierNear();
+        boolean underAttack = broadcastSoldierNear();
         updateLead();
         updateRobotCounts();
-        checkForObesity();
+        boolean isObese = checkForObesity();
+        boolean lowOnPencils = checkForSpawnKill();
+        toggleState(isObese, lowOnPencils, underAttack);
         doStateAction();
         tryToRepair();
         // Debug.setIndicatorString(leadToUse + "; " + robotCounter + "; num alive enemies: " + Comms.aliveEnemyArchonCount());
@@ -174,28 +178,34 @@ public class Archon extends Robot {
         return true;
     }
 
-    public void broadcastSoldierNear() throws GameActionException {
+    public boolean broadcastSoldierNear() throws GameActionException {
         if (shouldCallForHelp()) {
             for(RobotInfo robot: rc.senseNearbyRobots(rc.getType().visionRadiusSquared)) {
                 if (robot.type == RobotType.SOLDIER && robot.team == rc.getTeam().opponent()) {
                     int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.UNDER_ATTACK);
                     Comms.writeIfChanged(flagIndex, newFlag);
                     distressSemaphore = 10;
-                    return;
+                    return true;
                 }
             }
             if (Comms.getICFromFlag(rc.readSharedArray(flagIndex)) == Comms.InformationCategory.UNDER_ATTACK) {
                 if (distressSemaphore == 0) {
                     int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
                     rc.writeSharedArray(flagIndex, newFlag);
+                    return false;
                 } else {
                     distressSemaphore--;
+                    return true;
                 }
             }
+            int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
+            rc.writeSharedArray(flagIndex, newFlag);
+            return false;
         } else {
             distressSemaphore = 0;
             int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
             Comms.writeIfChanged(flagIndex, newFlag);
+            return false;
         }
     }
     public void updateRobotCounts() throws GameActionException {
@@ -289,6 +299,7 @@ public class Archon extends Robot {
         }
         return counter;
     }
+
     public void doStateAction() throws GameActionException {
         switch(currentState) {
             case INIT:
@@ -322,6 +333,10 @@ public class Archon extends Robot {
                     break;
                 }
                 break;
+            case SPAWNKILL:
+                int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.SPAWN_KILL);
+                Comms.writeIfChanged(flagIndex, newFlag);
+                spawnKillCount = SoldierBuilder11Ratio(spawnKillCount);
             default: 
                 changeState(State.CHILLING);
                 break;
@@ -375,15 +390,47 @@ public class Archon extends Robot {
         Comms.updateState(turnNumber, newState.ordinal());
     }
 
-    public void checkForObesity() throws GameActionException {
-        if(currentState == State.CHILLING && rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
-            stateStack.push(currentState);
-            changeState(State.OBESITY);
+    public void toggleState(boolean obesityCheck, boolean spawnKillCheck, boolean underAttack) throws GameActionException {
+        switch (currentState) {
+            case CHILLING:
+                if (spawnKillCheck && !underAttack) {
+                    stateStack.push(currentState);
+                    changeState(State.SPAWNKILL);
+                } else if (obesityCheck) {
+                    stateStack.push(currentState);
+                    changeState(State.OBESITY);
+                }
+                break;
+            case OBESITY:
+                if (spawnKillCheck && !underAttack) {
+                    stateStack.push(currentState);
+                    changeState(State.SPAWNKILL);
+                } else if (rc.getTeamLeadAmount(rc.getTeam()) < 500) {
+                    changeState(stateStack.pop());
+                }
+                break;
+            case SPAWNKILL:
+                if (underAttack) {
+                    int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.UNDER_ATTACK);
+                    Comms.writeIfChanged(flagIndex, newFlag);
+                    changeState(State.CHILLING);
+                } else if (!spawnKillCheck) {
+                    int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
+                    Comms.writeIfChanged(flagIndex, newFlag);
+                    changeState(stateStack.pop());
+                }
+                break;
+            default:
+                break;
         }
-        else if(currentState == State.OBESITY && rc.getTeamLeadAmount(rc.getTeam()) < 500) {
-            State oldState = stateStack.pop();
-            changeState(oldState);
-        }
+    }
+
+    public boolean checkForObesity() throws GameActionException {
+        return rc.getTeamLeadAmount(rc.getTeam()) > leadObesity;
+    }
+
+    public boolean checkForSpawnKill() throws GameActionException {
+        return rc.getRoundNum() > Util.SpawnKillRound && minerMiningCount < Util.SpawnKillThreshold;
     }
 
     public void clearAndResetHelpers() throws GameActionException {

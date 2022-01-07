@@ -39,12 +39,12 @@ public strictfp class RobotPlayer {
                 }
             }
         }
+        InformationCategory ic = Comms.getICFromFlag(dataFlag);
 
         switch (rc.getType()) {
             case ARCHON:     bot = new Archon(rc);  break;
             case MINER:      bot = new Miner(rc);  break;
             case SOLDIER:
-                InformationCategory ic = Comms.getICFromFlag(dataFlag);
                 if (ic == InformationCategory.DEFENSE_SOLDIERS) {
                     bot = new DefenseSoldier(rc, homeFlagIdx);
                 } else {
@@ -53,7 +53,13 @@ public strictfp class RobotPlayer {
                 break;
             case LABORATORY: bot = new Laboratory(rc);  break;
             case WATCHTOWER: bot = new Watchtower(rc);  break;
-            case BUILDER:    bot = new Builder(rc);  break;
+            case BUILDER:
+                if (ic == InformationCategory.SPAWN_KILL) {
+                    bot = new SpawnKillBuilder(rc);
+                } else {
+                    bot = new Builder(rc);  
+                }
+                break;
             case SAGE:       bot = new Sage(rc); break;
         }
         while (true) {

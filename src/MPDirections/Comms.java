@@ -60,6 +60,7 @@ public class Comms {
         EMPTY,
         DEFENSE_SOLDIERS,
         UNDER_ATTACK,
+        SPAWN_KILL,
     }
 
     public enum SoldierStateCategory {
