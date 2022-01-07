@@ -61,6 +61,7 @@ public class Soldier extends Robot {
                 break;
             case RUSHING:
                 Debug.printString("Rushing");
+                Comms.incrementRusherCount();
                 tryAttackBestEnemy();
                 moveTowardsWeakestArchon();
                 break;
@@ -92,6 +93,16 @@ public class Soldier extends Robot {
 
     public void trySwitchState() throws GameActionException {
         // if >= 15 latticing soldiers, switch to rushing
+        if (currState != SoldierState.RUSHING && 
+            Comms.getSoldierCatFromFlag(rc.readSharedArray(Comms.SOLDIER_STATE_IDX)) == Comms.SoldierStateCategory.RUSH_SOLDIERS) {
+            if (Comms.incrementRusherCount()) {
+                currState = SoldierState.RUSHING;
+                MapLocation[] targetAndId = findWeakestArchon(Comms.enemyArchonCount());
+                target = targetAndId[0];
+                targetId = targetAndId[1].x;
+                return;
+            }
+        }
         int maxHelpers;
         int bestDistance;
         maxHelpers = Comms.readMaxHelper();
@@ -100,7 +111,7 @@ public class Soldier extends Robot {
         int distressLocationIdx = 0;
         for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
             int flag = rc.readSharedArray(x);
-            if(Comms.getICFromFlag(flag) == Comms.InformationCategory.UNDER_ATTACK) {
+            if(currState != SoldierState.RUSHING && Comms.getICFromFlag(flag) == Comms.InformationCategory.UNDER_ATTACK) {
                 int locationIndex = x - Comms.mapLocToFlag;
                 MapLocation archonInTrouble = Comms.locationFromFlag(rc.readSharedArray(locationIndex));
                 int distance = rc.getLocation().distanceSquaredTo(archonInTrouble);
@@ -120,14 +131,7 @@ public class Soldier extends Robot {
             // Comms.incrementHelpersForArchon(distressLocationIdx);
             return;
         }
-        else if (currState != SoldierState.RUSHING && 
-            Comms.getSoldierCatFromFlag(rc.readSharedArray(Comms.SOLDIER_STATE_IDX)) == Comms.SoldierStateCategory.RUSH_SOLDIERS) {
-            currState = SoldierState.RUSHING;
-            MapLocation[] targetAndId = findWeakestArchon(Comms.enemyArchonCount());
-            target = targetAndId[0];
-            targetId = targetAndId[1].x;
-        }
-        else if (currState == SoldierState.RUSHING && Comms.isArchonDead(targetId)) {
+        if (currState == SoldierState.RUSHING && Comms.isArchonDead(targetId)) {
             target = null;
             targetId = 0;
             currState = SoldierState.EXPLORING;
@@ -184,8 +188,8 @@ public class Soldier extends Robot {
         // Weight home Archon ever so slightly.
         // Only really has an effect when no soldiers are seen
         // Primarily for running towards other soldiers/home when running away from enemies.
-        overallFriendlySoldierDx += currLoc.directionTo(home).dx * (1000 / (currLoc.distanceSquaredTo(home)));
-        overallFriendlySoldierDy += currLoc.directionTo(home).dy * (1000 / (currLoc.distanceSquaredTo(home)));
+        overallFriendlySoldierDx += currLoc.directionTo(home).dx * (1000 / (currLoc.distanceSquaredTo(home) + 1));
+        overallFriendlySoldierDy += currLoc.directionTo(home).dy * (1000 / (currLoc.distanceSquaredTo(home) + 1));
     }
 
     public boolean shouldRunAway() {

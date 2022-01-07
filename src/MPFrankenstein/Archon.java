@@ -21,6 +21,7 @@ public class Archon extends Robot {
     static int robotCounter;
     static int chillingCounter;
     static int obesityCounter; 
+    static int defenseCounter = 0;
     static int minerCount;
     static int minerMiningCount;
     static int soldierCount;
@@ -304,14 +305,16 @@ public class Archon extends Robot {
                 if (leadToUse < Util.LeadThreshold) {
                     break;
                 }
-            case UNDER_ATTACK:
-                Debug.printString("Under Attack");
                 if(minerCount <= MIN_NUM_MINERS) {
                     chillingCounter = minerSoldier5050(chillingCounter);
                 }
                 else {
                     chillingCounter = minerSoldier13Ratio(chillingCounter);
                 }
+                break;
+            case UNDER_ATTACK:
+                Debug.printString("Under Attack");
+                defenseCounter = minerSoldier13Ratio(defenseCounter);
                 // Debug.printString("CHILLING state, last pay day: " + lastPayDay);
                 break;
             case OBESITY:
@@ -425,8 +428,10 @@ public class Archon extends Robot {
         Comms.writeIfChanged(Comms.FIRST_HELPER_COUNTER, 0);
         Comms.writeIfChanged(Comms.SECOND_HELPER_COUNTER, 0);
         int count = Comms.getRushSoldierCount();
-        int newMax = count / rc.getArchonCount();
-        Comms.setMaxHelper(newMax);
+        int newMaxHelpers = count / rc.getArchonCount();
+        Comms.setMaxHelper(newMaxHelpers);
+        int newMaxRushers = count / 2;
+        Comms.setMaxRushers(newMaxRushers);
     }
 
     // Tries to repair the lowest health droid in range if an action is ready.

@@ -34,6 +34,7 @@ public class Comms {
     static final int LAST_ROUND_AVG_ENEMY_LOC_IDX_3 = 31;
     static final int CURR_ROUND_AVG_ENEMY_LOC_IDX_3 = 32;
     static final int CURR_ROUND_NUM_ENEMIES_IDX_3 = 33;
+    static final int RUSHER_COUNT_IDX = 34;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
@@ -41,12 +42,14 @@ public class Comms {
     static final int STATE_MASK = 15;
     static final int HELPER_MASK = 255;
     static final int MAX_HELPER_MASK = 63;
+    static final int RUSHER_MASK = 255;
     static final int COUNT_OFFSET = 3;
     static final int MAX_HELPER_OFFSET = 6;
     static final int X_COORD_OFFSET = 0;
     static final int Y_COORD_OFFSET = 6;
     static final int HEALTH_OFFSET = 12;
     static final int HELPER_OFFSET = 8;
+    static final int RUSHER_OFFSET = 8;
     static final int HEALTH_BUCKET_SIZE = 80;
     static final int NUM_HEALTH_BUCKETS = 16;
     static final int DEAD_ARCHON_FLAG = 65535;
@@ -461,6 +464,9 @@ public class Comms {
             closestClusterIdx = numClusters;
         }
         int numEnemies = rc.readSharedArray(closestClusterIdx * 3 + CURR_ROUND_NUM_ENEMIES_IDX_1);
+        if (numEnemies == 255) {
+            return;
+        }
         int currX = currAvgLocs[closestClusterIdx].x;
         int currY = currAvgLocs[closestClusterIdx].y;
         int newX = (currX * numEnemies + enemyLoc.x) / (numEnemies + 1);
@@ -489,6 +495,33 @@ public class Comms {
             writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_3, currAvgLoc3);
             writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_3, 0);
             writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_3, 0);
+        }
+    }
+
+    public static int readMaxRushers() throws GameActionException {
+        int flag = rc.readSharedArray(RUSHER_COUNT_IDX);
+        return (flag >> RUSHER_OFFSET) & RUSHER_MASK;
+    }
+
+    public static int readRusherCount() throws GameActionException {
+        int flag = rc.readSharedArray(RUSHER_COUNT_IDX);
+        return flag & RUSHER_MASK;
+    }
+
+    public static void setMaxRushers(int maximum) throws GameActionException {
+        int oldFlag = rc.readSharedArray(RUSHER_COUNT_IDX);
+        writeIfChanged(RUSHER_COUNT_IDX, maximum << RUSHER_OFFSET);
+    }
+    
+    public static boolean incrementRusherCount() throws GameActionException {
+        int maximum = readMaxRushers();
+        int current = readRusherCount();
+        if (current < maximum) {
+            int newFlag = (maximum << RUSHER_OFFSET) | (current + 1);
+            rc.writeSharedArray(RUSHER_COUNT_IDX, newFlag);
+            return true;
+        } else {
+            return false;
         }
     }
 }
