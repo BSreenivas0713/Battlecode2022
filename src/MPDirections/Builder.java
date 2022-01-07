@@ -1,9 +1,9 @@
-package MPExplore;
+package MPDirections;
 
 import battlecode.common.*;
-import MPExplore.Debug.*;
-import MPExplore.Util.*;
-import MPExplore.fast.FastIterableLocSet;
+import MPDirections.Debug.*;
+import MPDirections.Util.*;
+import MPDirections.fast.FastIterableLocSet;
 
 
 public class Builder extends Robot{

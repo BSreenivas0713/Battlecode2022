@@ -1,8 +1,8 @@
-package MPExplore;
+package MPDirections;
 
 import battlecode.common.*;
-import MPExplore.Debug.*;
-import MPExplore.Util.*;
+import MPDirections.Debug.*;
+import MPDirections.Util.*;
 
 public class Watchtower extends Robot {
     static int timeSinceLastAttacked;

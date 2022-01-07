@@ -1,15 +1,12 @@
-package MPExplore;
+package MPDirections;
 
 import battlecode.common.*;
-import MPExplore.Debug.*;
-import MPExplore.Util.*;
+import MPDirections.Debug.*;
+import MPDirections.Util.*;
 
 public class Comms {
     static final int mapLocToFlag = 8;
 
-    // 1-4 are friendly Archon locations
-    // 5-8 are enemy Archon locations
-    // 9-13 are Archon flags
     static final int setupFlag = 0;
     static final int firstArchon = 1;
     static final int lastArchon = 4;
@@ -19,7 +16,7 @@ public class Comms {
     static final int idList = 13;
     static final int MINER_COUNTER_IDX = 14;
     static final int MINER_MINING_COUNTER_IDX = 15;
-    static final int STATE_STORAGE_IDX = 16; // CAN GET RID OF THIS
+    static final int STATE_STORAGE_IDX = 16;
     static final int SOLDIER_COUNTER_IDX = 17;
     static final int BUILDER_REQUEST_IDX = 18;
     static final int BUILDER_COUNTER_IDX = 19;
@@ -53,8 +50,6 @@ public class Comms {
     static final int HEALTH_BUCKET_SIZE = 80;
     static final int NUM_HEALTH_BUCKETS = 16;
     static final int DEAD_ARCHON_FLAG = 65535;
-    static final int ARCHON_FLAG_LOC_OFFSET = 4;
-    static final int ARCHON_FLAG_IC_MASK = 0xF;
 
     static final int ID_MASK = 15;
     static final int ID_OFFSET_1 = 0;
@@ -71,8 +66,6 @@ public class Comms {
         EMPTY,
         DEFENSE_SOLDIERS,
         UNDER_ATTACK,
-        SPAWN_KILL,
-        SCOUT_MINER,
     }
 
     public enum SoldierStateCategory {
@@ -100,16 +93,8 @@ public class Comms {
         return cat.ordinal();
     }
 
-    public static int encodeArchonFlag(InformationCategory cat, MapLocation loc) {
-        return (encodeLocation(loc) << ARCHON_FLAG_LOC_OFFSET) | cat.ordinal();
-    }
-
-    public static MapLocation decodeArchonFlagLocation(int flag) {
-        return locationFromFlag(flag >> ARCHON_FLAG_LOC_OFFSET);
-    }
-
     public static InformationCategory getICFromFlag(int flag) {
-        return InformationCategory.values()[flag & ARCHON_FLAG_IC_MASK];
+        return InformationCategory.values()[flag];
     }
 
     public static SoldierStateCategory getSoldierCatFromFlag(int flag) {
@@ -278,6 +263,14 @@ public class Comms {
         } else {
             rc.writeSharedArray(MINER_MINING_COUNTER_IDX, currCount + 1);
         }
+    }
+
+    public static void updateState(int archonNumber, int newState) throws GameActionException {
+        int oldFlag = rc.readSharedArray(STATE_STORAGE_IDX);
+        int offset = 4 * (archonNumber - 1);
+        int clearedFlag = oldFlag & ~(STATE_MASK << offset);
+        int newFlag = clearedFlag & (newState << offset);
+        Comms.writeIfChanged(STATE_STORAGE_IDX, newFlag);
     }
     
     // The upper half of 16 bits hold the robot count for the last turn.
