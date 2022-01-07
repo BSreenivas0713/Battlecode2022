@@ -13,6 +13,7 @@ public class Archon extends Robot {
         OBESITY,
         SPAWNKILL,
         INIT,
+        UNDERATTACK,
     };
 
     static int MAX_NUM_MINERS;
@@ -58,7 +59,7 @@ public class Archon extends Robot {
         flagIndex = nextArchon + Comms.mapLocToFlag;
         homeFlagIdx = flagIndex;
         currentState = State.INIT;
-        Comms.updateState(nextArchon, currentState.ordinal());
+        changeState(currentState);
         turnNumber = nextArchon;
         leadNeededByBuilders = 0;
         percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), nextArchon, 0);
@@ -311,6 +312,7 @@ public class Archon extends Robot {
                 }
                 firstRounds();
                 break;
+            case UNDERATTACK:
             case CHILLING:
                 Debug.printString("Chilling");
                 if (leadToUse < Util.LeadThreshold) {
@@ -339,6 +341,7 @@ public class Archon extends Robot {
                 int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.SPAWN_KILL);
                 Comms.writeIfChanged(flagIndex, newFlag);
                 spawnKillCount = SoldierBuilder11Ratio(spawnKillCount);
+                break;
             default: 
                 changeState(State.CHILLING);
                 break;
@@ -392,13 +395,39 @@ public class Archon extends Robot {
     
     public void changeState(State newState) throws GameActionException {
         currentState = newState;
-        Comms.updateState(turnNumber, newState.ordinal());
+        InformationCategory ic;
+        switch (newState) {
+            case INIT:
+                ic = InformationCategory.SCOUT_MINER;
+                break;
+            case SPAWNKILL:
+                ic = InformationCategory.SPAWN_KILL;
+                break;
+            case UNDERATTACK:
+                ic = InformationCategory.UNDER_ATTACK;
+                break;
+            default: // CHILLING, OBESITY
+                ic = InformationCategory.EMPTY;
+                break;
+        }
+        int flag = Comms.encodeArchonFlag(ic);
+        Comms.writeIfChanged(flagIndex, flag);
     }
 
     public void toggleState(boolean obesityCheck, boolean spawnKillCheck, boolean underAttack) throws GameActionException {
         switch (currentState) {
+            case INIT:
+                break;
+            case UNDERATTACK:
+                if (!underAttack) {
+                    changeState(stateStack.pop());
+                }
+                break;
             case CHILLING:
-                if (spawnKillCheck && !underAttack) {
+                if (underAttack) {
+                    stateStack.push(currentState);
+                    changeState(State.UNDERATTACK);
+                } else if (spawnKillCheck) {
                     stateStack.push(currentState);
                     changeState(State.SPAWNKILL);
                 } else if (obesityCheck) {
@@ -407,7 +436,10 @@ public class Archon extends Robot {
                 }
                 break;
             case OBESITY:
-                if (spawnKillCheck && !underAttack) {
+                if (underAttack) {
+                    stateStack.push(currentState);
+                    changeState(State.UNDERATTACK);
+                } else if (spawnKillCheck) {
                     stateStack.push(currentState);
                     changeState(State.SPAWNKILL);
                 } else if (rc.getTeamLeadAmount(rc.getTeam()) < 500) {
@@ -416,12 +448,8 @@ public class Archon extends Robot {
                 break;
             case SPAWNKILL:
                 if (underAttack) {
-                    int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.UNDER_ATTACK);
-                    Comms.writeIfChanged(flagIndex, newFlag);
-                    changeState(State.CHILLING);
+                    changeState(State.UNDERATTACK);
                 } else if (!spawnKillCheck) {
-                    int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
-                    Comms.writeIfChanged(flagIndex, newFlag);
                     changeState(stateStack.pop());
                 }
                 break;
