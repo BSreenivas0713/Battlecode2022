@@ -17,6 +17,7 @@ public strictfp class RobotPlayer {
         Comms.init(rc);
         Nav.init(rc);
         Util.init(rc);
+        Symmetry.init(rc);
 
         int setupFlag = rc.readSharedArray(0);
         int dataFlag = 0;
@@ -40,12 +41,19 @@ public strictfp class RobotPlayer {
             }
         }
 
+        InformationCategory IC = Comms.getICFromFlag(dataFlag);
         switch (rc.getType()) {
             case ARCHON:     bot = new Archon(rc);  break;
-            case MINER:      bot = new Miner(rc);  break;
+            case MINER:
+                if (IC == InformationCategory.SCOUT_MINER) {
+                    bot = new ScoutMiner(rc, Comms.decodeArchonFlagLocation(dataFlag), homeFlagIdx);
+                    // bot = new Miner(rc, homeFlagIdx);
+                } else {
+                    bot = new Miner(rc, homeFlagIdx);
+                }
+                break;
             case SOLDIER:
-                InformationCategory ic = Comms.getICFromFlag(dataFlag);
-                if (ic == InformationCategory.DEFENSE_SOLDIERS) {
+                if (IC == InformationCategory.DEFENSE_SOLDIERS) {
                     bot = new DefenseSoldier(rc, homeFlagIdx);
                 } else {
                     bot = new Soldier(rc, homeFlagIdx);
@@ -62,6 +70,12 @@ public strictfp class RobotPlayer {
 
             try {
                 bot.takeTurn();
+
+                if (bot.changeTo != null) {
+                    bot = bot.changeTo;
+                    bot.changeTo = null;
+                }
+
                 Clock.yield();
 
             } catch (Exception e) {
