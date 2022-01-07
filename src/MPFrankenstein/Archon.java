@@ -267,8 +267,8 @@ public class Archon extends Robot {
         return counter;
     }
 
-    public int minerSoldier13Ratio(int counter) throws GameActionException {
-        switch(counter % 4) {
+    public int minerSoldieronetenRatio(int counter) throws GameActionException {
+        switch(counter % 10) {
             case 0:
                 counter = buildMiner(counter);
                 break;
@@ -305,23 +305,21 @@ public class Archon extends Robot {
                 if (leadToUse < Util.LeadThreshold) {
                     break;
                 }
+                // intentional fallthrough
+            case UNDER_ATTACK:
+                Debug.printString("Under Attack");
                 if(minerCount <= MIN_NUM_MINERS) {
                     chillingCounter = minerSoldier5050(chillingCounter);
                 }
                 else {
-                    chillingCounter = minerSoldier13Ratio(chillingCounter);
+                    chillingCounter = minerSoldieronetenRatio(chillingCounter);
                 }
-                break;
-            case UNDER_ATTACK:
-                Debug.printString("Under Attack");
-                defenseCounter = minerSoldier13Ratio(defenseCounter);
-                // Debug.printString("CHILLING state, last pay day: " + lastPayDay);
                 break;
             case OBESITY:
                 Debug.printString("Obesity");
                 int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
                 int watchtowersPossible = leadForBuilders / 180;
-                if (/*watchtowersPossible > builderCount &&*/ builderCount <= MIN_NUM_MINERS) {
+                if (/*watchtowersPossible > builderCount &&*/ builderCount <= 4) {
                     obesityCounter = SoldierBuilder11Ratio(obesityCounter);
                 } else {
                     obesityCounter = buildSoldier(obesityCounter);
@@ -371,9 +369,15 @@ public class Archon extends Robot {
         switch (currentState) {
             case INIT:
                 if(robotCounter >= 3 && Comms.foundEnemy) {
+                    MAX_NUM_MINERS = Math.max(minerCount, MIN_NUM_MINERS);
+                    Debug.printString("max num miners: " + MAX_NUM_MINERS);
+                    MIN_NUM_MINERS = minerCount - 3;
                     changeState(State.CHILLING);
                 }
                 else if(rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
+                    MAX_NUM_MINERS = Math.max(minerCount, MIN_NUM_MINERS);
+                    MIN_NUM_MINERS = minerCount - 3;
+                    Debug.printString("max num miners: " + MAX_NUM_MINERS);
                     stateStack.push(State.CHILLING);
                     changeState(State.OBESITY);
                 }

@@ -454,7 +454,7 @@ public class Archon extends Robot {
     }
 
     public boolean checkForSpawnKill() throws GameActionException {
-        return rc.getRoundNum() > Util.SpawnKillRound && minerMiningCount < Util.SpawnKillThreshold;
+        return false;//rc.getRoundNum() > Util.SpawnKillRound && minerMiningCount < Util.SpawnKillThreshold;
     }
 
     public void clearAndResetHelpers() throws GameActionException {
