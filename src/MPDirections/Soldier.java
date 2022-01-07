@@ -13,6 +13,7 @@ public class Soldier extends Robot {
         EXPLORING,
         HELPING,
     }
+
     static SoldierState currState;
     static int homeFlagIdx;
     static MapLocation target;
@@ -123,7 +124,7 @@ public class Soldier extends Robot {
         else if (currState != SoldierState.RUSHING && 
             Comms.getSoldierCatFromFlag(rc.readSharedArray(Comms.SOLDIER_STATE_IDX)) == Comms.SoldierStateCategory.RUSH_SOLDIERS) {
             currState = SoldierState.RUSHING;
-            MapLocation[] targetAndId = findWeakestArchon(Comms.enemyArchonCount());
+            MapLocation[] targetAndId = findNextArchon(Comms.enemyArchonCount());
             target = targetAndId[0];
             targetId = targetAndId[1].x;
         }
@@ -248,9 +249,11 @@ public class Soldier extends Robot {
         tryMoveDest(targetDirs);
     }
 
-    public MapLocation[] findWeakestArchon(int theirArchons) throws GameActionException {
+    public MapLocation[] findNextArchon(int theirArchons) throws GameActionException {
         int leastHealth = Comms.NUM_HEALTH_BUCKETS;
         MapLocation bestLoc = null;
+        int leastDistance = target == null ? Integer.MAX_VALUE : 
+                                rc.getLocation().distanceSquaredTo(target);
         int idxOfBestLoc = 0;
         for (int i = Comms.firstEnemy; i < Comms.firstEnemy + theirArchons; i++) {
             int currFlag = rc.readSharedArray(i);
@@ -261,6 +264,21 @@ public class Soldier extends Robot {
                     bestLoc = Comms.locationFromFlag(currFlag);
                     idxOfBestLoc = i - Comms.firstEnemy;
                 }
+                // if(target == null) {
+                //     int currHealth = Comms.getHealthBucket(currFlag);
+                //     if (currHealth < leastHealth) {
+                //         leastHealth = currHealth;
+                //         bestLoc = Comms.locationFromFlag(currFlag);
+                //         idxOfBestLoc = i - Comms.firstEnemy;
+                //     }
+                // } else {
+                //     MapLocation loc = Comms.locationFromFlag(currFlag);
+                //     int currDistance = rc.getLocation().distanceSquaredTo(loc);
+                //     if(currDistance < leastDistance) {
+                //         leastDistance = currDistance;
+                //         bestLoc = loc;
+                //     }
+                // }
             }
         }
         return new MapLocation[]{bestLoc, new MapLocation(idxOfBestLoc, 0)};

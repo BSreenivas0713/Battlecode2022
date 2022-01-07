@@ -137,7 +137,8 @@ public class Archon extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         clearAndResetHelpers();
-        Comms.resetAvgEnemyLoc(turnNumber);
+        Comms.resetAvgEnemyLoc();
+        Comms.resetAvgSoldierLoc();
         boolean underAttack = broadcastSoldierNear();
         updateLead();
         updateRobotCounts();
@@ -150,6 +151,8 @@ public class Archon extends Robot {
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
+        rc.setIndicatorString("Avg soldier loc: " + Comms.getAvgSoldierLoc().toString());
+        rc.setIndicatorDot(Comms.getAvgSoldierLoc(), 255, 255, 255);
     }
 
     public boolean shouldCallForHelp() throws GameActionException {
@@ -211,6 +214,7 @@ public class Archon extends Robot {
             return false;
         }
     }
+
     public void updateRobotCounts() throws GameActionException {
         minerCount = Comms.getMinerCount();
         // update soldiers within sensing radius count

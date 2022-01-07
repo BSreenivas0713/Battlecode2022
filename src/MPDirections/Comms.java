@@ -37,6 +37,8 @@ public class Comms {
     static final int LAST_ROUND_AVG_ENEMY_LOC_IDX_3 = 31;
     static final int CURR_ROUND_AVG_ENEMY_LOC_IDX_3 = 32;
     static final int CURR_ROUND_NUM_ENEMIES_IDX_3 = 33;
+    static final int LAST_ROUND_AVG_SOLDIER_LOC_IDX = 34;
+    static final int CURR_ROUND_AVG_SOLDIER_LOC_IDX = 35;
 
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 63;
@@ -291,6 +293,7 @@ public class Comms {
     // The lower half holds the running count updated by the miners.
     // Miners zero out the upper half if they see it's not 0.
     public static void incrementRushSoldierCounter() throws GameActionException {
+        updateAvgSoldierLoc();
         int soldierFlag = rc.readSharedArray(SOLDIER_COUNTER_IDX);
         int lastCount = (soldierFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
         int currCount = soldierFlag & MINER_MASK;
@@ -482,20 +485,61 @@ public class Comms {
      * will also zero out CURR_ROUND_AVG_ENEMY_LOC_IDX
      * will also zero out CURR_ROUND_NUM_ENEMIES_IDX
      */
-    public static void resetAvgEnemyLoc(int archonNum) throws GameActionException {
-        if (archonNum == 1) {
-            int currAvgLoc1 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_1);
+    public static void resetAvgEnemyLoc() throws GameActionException {
+        int currAvgLoc1 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_1);
+        if(currAvgLoc1 != 0) {
             writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_1, currAvgLoc1);
             writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_1, 0);
             writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_1, 0);
-            int currAvgLoc2 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_2);
+        }
+
+        int currAvgLoc2 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_2);
+        if(currAvgLoc2 != 0) {
             writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_2, currAvgLoc2);
             writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_2, 0);
             writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_2, 0);
-            int currAvgLoc3 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_3);
+        }
+
+        int currAvgLoc3 = rc.readSharedArray(CURR_ROUND_AVG_ENEMY_LOC_IDX_3);
+        if(currAvgLoc3 != 0) {
             writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_3, currAvgLoc3);
             writeIfChanged(CURR_ROUND_AVG_ENEMY_LOC_IDX_3, 0);
             writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_3, 0);
         }
+    }
+
+    /**
+     * update avg soldier loc (MapLocation soldierLoc)
+     * update curr round running avg
+     * also add 1 to curr num soldier
+     */
+    public static void updateAvgSoldierLoc() throws GameActionException {
+        MapLocation soldierLoc = rc.getLocation();
+        MapLocation currAvgLoc = locationFromFlag(rc.readSharedArray(CURR_ROUND_AVG_SOLDIER_LOC_IDX));
+        int numSoldiers = rc.readSharedArray(SOLDIER_COUNTER_IDX) & MINER_MASK;
+        int currX = currAvgLoc.x;
+        int currY = currAvgLoc.y;
+        int newX = (currX * numSoldiers + soldierLoc.x) / (numSoldiers + 1);
+        int newY = (currY * numSoldiers + soldierLoc.y) / (numSoldiers + 1);
+        int encodedNewLoc = encodeLocation(new MapLocation(newX, newY));
+        // Debug.println(soldierLoc + "; currX: " + currX + "; currY: " + "; newX: " + newX + "; newY: " + newY);
+        writeIfChanged(CURR_ROUND_AVG_SOLDIER_LOC_IDX, encodedNewLoc);
+    }
+
+    /**
+     * first archon will move CURR_ROUND_AVG_SOLDIER_LOC_IDX to LAST_ROUND_AVG_SOLDIER_LOC_IDX
+     * will also zero out CURR_ROUND_AVG_SOLDIER_LOC_IDX
+     * We don't need to zero out SOLDIER_COUNTER_IDX since that will be done by getRushSoldierCount
+     */
+    public static void resetAvgSoldierLoc() throws GameActionException {
+        int currAvgLoc = rc.readSharedArray(CURR_ROUND_AVG_SOLDIER_LOC_IDX);
+        if(currAvgLoc != 0) {
+            writeIfChanged(LAST_ROUND_AVG_SOLDIER_LOC_IDX, currAvgLoc);
+            writeIfChanged(CURR_ROUND_AVG_SOLDIER_LOC_IDX, 0);
+        }
+    }
+
+    public static MapLocation getAvgSoldierLoc() throws GameActionException {
+        return Comms.locationFromFlag(rc.readSharedArray(Comms.LAST_ROUND_AVG_SOLDIER_LOC_IDX));
     }
 }
