@@ -1,4 +1,4 @@
-package MPDirections;
+package MPExplore;
 
 import battlecode.common.*;
 import java.util.Random;

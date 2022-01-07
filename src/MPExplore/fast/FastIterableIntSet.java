@@ -1,4 +1,4 @@
-package MPDirections.fast;
+package MPExplore.fast;
 
 /**
  * Interface to represent ints up to 65535 (2^16-1)

@@ -1,9 +1,9 @@
-package MPDirections;
+package MPExplore;
 
 import battlecode.common.*;
-import MPDirections.Debug.*;
-import MPDirections.Util.*;
-import MPDirections.fast.FastIterableLocSet;
+import MPExplore.Debug.*;
+import MPExplore.Util.*;
+import MPExplore.fast.FastIterableLocSet;
 
 
 public class SpawnKillBuilder extends Robot {

@@ -1,9 +1,9 @@
-package MPDirections;
+package MPExplore;
 
 import battlecode.common.*;
-import MPDirections.Debug.*;
-import MPDirections.Util.*;
-import MPDirections.Comms.*;
+import MPExplore.Debug.*;
+import MPExplore.Util.*;
+import MPExplore.Comms.*;
 
 public class Soldier extends Robot {
     static enum SoldierState {

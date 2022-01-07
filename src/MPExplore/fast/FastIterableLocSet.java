@@ -1,4 +1,4 @@
-package MPDirections.fast;
+package MPExplore.fast;
 
 import battlecode.common.*;
 

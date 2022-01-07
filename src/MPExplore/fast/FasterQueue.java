@@ -1,4 +1,4 @@
-package MPDirections.fast;
+package MPExplore.fast;
 
 // Unsafe version of a queue that 
 // assumes you never try to add more items than maxlen

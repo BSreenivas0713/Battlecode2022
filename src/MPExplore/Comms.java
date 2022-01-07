@@ -1,8 +1,8 @@
-package MPDirections;
+package MPExplore;
 
 import battlecode.common.*;
-import MPDirections.Debug.*;
-import MPDirections.Util.*;
+import MPExplore.Debug.*;
+import MPExplore.Util.*;
 
 public class Comms {
     static final int mapLocToFlag = 8;

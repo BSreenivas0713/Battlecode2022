@@ -1,4 +1,4 @@
-package MPDirections.fast;
+package MPExplore.fast;
 
 // Kinda buggy. Don't use.
 public class FastMinQueue<T extends Comparable<? super T>> {

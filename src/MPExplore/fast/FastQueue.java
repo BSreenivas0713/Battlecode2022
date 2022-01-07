@@ -1,4 +1,4 @@
-package MPDirections.fast;
+package MPExplore.fast;
 
 /**
  * An implementation of a ring buffer queue
