@@ -1,8 +1,6 @@
-package MPCoordinated;
+package MPDirections;
 
 import battlecode.common.*;
-import MPCoordinated.Debug.*;
-import MPCoordinated.Util.*;
 
 // TODO: Have ScoutMiners report the dest that they're going to even if they don't see it
 // if they're being attacked and are about to die.
