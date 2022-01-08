@@ -77,7 +77,6 @@ public class Robot {
         // initializeGlobals();
         // turnCount += 1;
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
-        Debug.flush();
         // if(rc.getRoundNum() > 150) {
         //     rc.resign();
         // }
