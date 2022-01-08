@@ -48,6 +48,7 @@ public class Soldier extends Robot {
         super.takeTurn();
         avgEnemyLoc = Comms.getClosestCluster(currLoc);
         Debug.printString(avgEnemyLoc + "");
+        Debug.setIndicatorLine(Debug.INDICATORS, currLoc, avgEnemyLoc, 255, 255, 0);
         Comms.incrementRushSoldierCounter();
         trySwitchState();
         switch (currState) {
@@ -277,7 +278,7 @@ public class Soldier extends Robot {
                 if(currLoc.distanceSquaredTo(bestLoc) > 2) {
                     Direction bestDir = Nav.getBestDir(bestLoc);
                     bestDirs = Util.getInOrderDirections(bestDir);
-                    Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
+                    // Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
                 }
     
                 Debug.printString("Targeting Archon at: " + bestLoc.toString());
@@ -299,7 +300,7 @@ public class Soldier extends Robot {
                 if(currLoc.distanceSquaredTo(bestLoc) > 15) {
                     Direction bestDir = Nav.getBestDir(bestLoc);
                     bestDirs = Util.getInOrderDirections(bestDir);
-                    Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
+                    // Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
                     Debug.printString("Going to defend Archon at: " + bestLoc.toString());
                 }
                 else {

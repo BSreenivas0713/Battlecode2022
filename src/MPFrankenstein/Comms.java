@@ -406,9 +406,15 @@ public class Comms {
         }
     }
 
+    public static int dotProduct(int[] v1, int[] v2) {
+        return v1[0] * v2[0] + v1[1] * v2[1];
+    }
+
+    public static int[] vectorFromPt(MapLocation p1, MapLocation p2) {
+        return new int[]{p2.x - p1.x, p2.y - p1.y};
+    }
+
     public static MapLocation getClosestCluster(MapLocation currLoc) throws GameActionException {
-        MapLocation closestCluster = null;
-        int closestClusterDist = Integer.MAX_VALUE;
         int numClusters = 0;
         for (int i = 0; i < 3; i++) {
             if (rc.readSharedArray(i * 3 + LAST_ROUND_AVG_ENEMY_LOC_IDX_1) != 0) {
@@ -419,15 +425,84 @@ public class Comms {
         MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
         MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
         MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
-        for (int i = 0; i < numClusters; i++) {
-            MapLocation currCluster = currAvgLocs[i];
-            int dist = currLoc.distanceSquaredTo(currCluster);
-            if (dist < closestClusterDist) {
-                closestClusterDist = dist;
-                closestCluster = currCluster;
-            }
+        int[] AX;
+        int[] AB;
+        int AXDotAB;
+        int ABDotAB;
+        double[] unitAB;
+        int newX;
+        int newY;
+        double tmp;
+        switch (numClusters) {
+            case 1:
+                return currAvgLoc1;
+            case 2:
+                Debug.setIndicatorLine(Debug.INDICATORS, currAvgLoc1, currAvgLoc2, 0, 255, 255);
+                AX = vectorFromPt(currAvgLoc1, currLoc);
+                AB = vectorFromPt(currAvgLoc1, currAvgLoc2);
+                AXDotAB = dotProduct(AX, AB);
+                ABDotAB = dotProduct(AB, AB);
+                unitAB = new double[]{(double) AB[0] / (double) ABDotAB, (double) AB[1] / (double) ABDotAB};
+                newX = (int) (unitAB[0] * AXDotAB);
+                newY = (int) (unitAB[1] * AXDotAB);
+                if (AXDotAB < 0) {
+                    return currAvgLoc1;
+                }
+                else if (AXDotAB > ABDotAB) {
+                    return currAvgLoc2;
+                }
+                else {
+                    return new MapLocation(newX + currAvgLoc1.x, newY + currAvgLoc1.y);
+                }
+            case 3:
+                Debug.setIndicatorLine(Debug.INDICATORS, currAvgLoc1, currAvgLoc2, 0, 255, 255);
+                Debug.setIndicatorLine(Debug.INDICATORS, currAvgLoc1, currAvgLoc3, 0, 255, 255);
+                Debug.setIndicatorLine(Debug.INDICATORS, currAvgLoc2, currAvgLoc3, 0, 255, 255);
+                int furthestIdx = -1;
+                int furthestDist = 0;
+                for (int i = 0; i < numClusters; i++) {
+                    int candidateDist = currLoc.distanceSquaredTo(currAvgLocs[i]);
+                    if (candidateDist > furthestDist) {
+                        furthestDist = candidateDist;
+                        furthestIdx = i;
+                    }
+                }
+                MapLocation A = null;
+                MapLocation B = null;
+                switch (furthestIdx) {
+                    case 0:
+                        A = currAvgLoc2;
+                        B = currAvgLoc3;
+                        break;
+                    case 1:
+                        A = currAvgLoc1;
+                        B = currAvgLoc3;
+                        break;
+                    case 2:
+                        A = currAvgLoc1;
+                        B = currAvgLoc2;
+                        break;
+                }
+                AX = vectorFromPt(A, currLoc);
+                AB = vectorFromPt(A, B);
+                AXDotAB = dotProduct(AX, AB);
+                ABDotAB = dotProduct(AB, AB);
+                unitAB = new double[]{(double) AB[0] / (double) ABDotAB, (double) AB[1] / (double) ABDotAB};
+                newX = (int) (unitAB[0] * AXDotAB);
+                newY = (int) (unitAB[1] * AXDotAB);
+                if (AXDotAB < 0) {
+                    return A;
+                }
+                else if (AXDotAB > ABDotAB) {
+                    return B;
+                }
+                else {
+                    return new MapLocation(newX + A.x, newY + A.y);
+                }
+            default:
+                break;
         }
-        return closestCluster;
+        return null;
     }
 
     /**
