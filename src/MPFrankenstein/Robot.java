@@ -62,7 +62,7 @@ public class Robot {
         }
         else {
             for (RobotInfo bot : EnemySensable) {
-                if (bot.getType() == RobotType.SOLDIER) {
+                if (bot.getType() == RobotType.SOLDIER || bot.getType() == RobotType.WATCHTOWER) {
                     Comms.updateAvgEnemyLoc(bot.getLocation());
                 }
             }
