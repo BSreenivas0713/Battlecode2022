@@ -27,6 +27,7 @@ public class Soldier extends Robot {
     static int overallFriendlySoldierDx;
     static int overallFriendlySoldierDy;
     static MapLocation avgEnemyLoc;
+    static RobotInfo closestEnemy;
 
     public Soldier(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -46,6 +47,8 @@ public class Soldier extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        closestEnemy = getClosestEnemy();
+        findFriendlySoldiers();
         avgEnemyLoc = Comms.getClosestCluster(currLoc);
         // if(avgEnemyLoc != null) {
         //     rc.setIndicatorDot(avgEnemyLoc, 0, 255, 0);
@@ -197,10 +200,8 @@ public class Soldier extends Robot {
     }
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {
-        RobotInfo closestEnemy = getClosestEnemy();
         // move towards it if found
         if (closestEnemy != null) {
-            findFriendlySoldiers();
             MapLocation dest;
             if(shouldRunAway()) {
                 // Positive so that we move towards the point mass.
@@ -218,7 +219,6 @@ public class Soldier extends Robot {
     }
 
     public void latticeAroundHome() throws GameActionException {
-        findFriendlySoldiers();
 
         // move towards this dest
         MapLocation dest;
@@ -236,7 +236,6 @@ public class Soldier extends Robot {
     }
 
     public void latticeAroundHomeAfterRushing() throws GameActionException {
-        findFriendlySoldiers();
 
         // move towards this dest
         MapLocation dest;
@@ -271,6 +270,17 @@ public class Soldier extends Robot {
     }
 
     public void moveTowardsWeakestArchon() throws GameActionException {
+        if (target != null) {
+            Debug.printString("Targeting Archon at: " + target.toString());
+        }
+        if(shouldRunAway()) {
+            // Positive so that we move towards the point mass.
+            MapLocation dest = currLoc.translate(overallFriendlySoldierDx, overallFriendlySoldierDy);
+            Direction dir = Nav.getBestDir(dest);
+            Direction[] targetDirs = Util.getInOrderDirections(dir);
+            tryMoveDest(targetDirs);
+            return;
+        }
         // First try to move to the Archon with least health
         int theirArchons = Comms.enemyArchonCount();
         if (theirArchons > 0) {
@@ -283,8 +293,6 @@ public class Soldier extends Robot {
                     bestDirs = Util.getInOrderDirections(bestDir);
                     // Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), rc.getLocation().add(bestDir), 0, 0, 255);
                 }
-    
-                Debug.printString("Targeting Archon at: " + bestLoc.toString());
                 Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 255, 0, 0);
             }
             else {
@@ -341,7 +349,7 @@ public class Soldier extends Robot {
         // else {
         //     tryMoveDest(Nav.explore());
         // }
-        if (avgEnemyLoc != null && currLoc.distanceSquaredTo(avgEnemyLoc) > 1.5 * visionRadiusSquared) {
+        if (avgEnemyLoc != null && currLoc.distanceSquaredTo(avgEnemyLoc) > visionRadiusSquared) {
             Direction[] targets = Nav.greedyDirection(currLoc.directionTo(avgEnemyLoc));
             tryMoveDest(targets);
         }
