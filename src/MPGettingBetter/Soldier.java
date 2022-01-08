@@ -28,6 +28,8 @@ public class Soldier extends Robot {
     static int overallFriendlySoldierDy;
     static MapLocation avgEnemyLoc;
     static RobotInfo closestEnemy;
+    static int numEnemySoldiersAttackingUs;
+    static int numFriendlySoldiersAttackingClosest;
 
     public Soldier(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -49,6 +51,7 @@ public class Soldier extends Robot {
         super.takeTurn();
         closestEnemy = getClosestEnemy();
         findFriendlySoldiers();
+        resetShouldRunAway();
         avgEnemyLoc = Comms.getClosestCluster(currLoc);
         // if(avgEnemyLoc != null) {
         //     rc.setIndicatorDot(avgEnemyLoc, 0, 255, 0);
@@ -105,27 +108,27 @@ public class Soldier extends Robot {
         distressLocation = null;
         int distressLocationIdx = 0;
 
-        for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
-            int flag = rc.readSharedArray(x);
-            if(Comms.getICFromFlag(flag) == Comms.InformationCategory.UNDER_ATTACK) {
-                int locationIndex = x - Comms.mapLocToFlag;
-                MapLocation archonInTrouble = Comms.locationFromFlag(rc.readSharedArray(locationIndex));
-                int distance = rc.getLocation().distanceSquaredTo(archonInTrouble);
-                // either there aren't enough helpers and you're on the right half of the map
-                // or you're close to the distressed archon already
-                if (distance < bestDistance) {
-                    distressLocationIdx = locationIndex;
-                    currState = SoldierState.HELPING;
-                    distressLocation = archonInTrouble;
-                }
-            }
-        }
-        if (distressLocation != null)  {
-            //only update counter for the final one you're gonna help
-            // Comms.incrementHelpersForArchon(distressLocationIdx);
-            return;
-        }
-        else if (currState != SoldierState.RUSHING && 
+        // for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
+        //     int flag = rc.readSharedArray(x);
+        //     if(Comms.getICFromFlag(flag) == Comms.InformationCategory.UNDER_ATTACK) {
+        //         int locationIndex = x - Comms.mapLocToFlag;
+        //         MapLocation archonInTrouble = Comms.locationFromFlag(rc.readSharedArray(locationIndex));
+        //         int distance = rc.getLocation().distanceSquaredTo(archonInTrouble);
+        //         // either there aren't enough helpers and you're on the right half of the map
+        //         // or you're close to the distressed archon already
+        //         if (distance < bestDistance) {
+        //             distressLocationIdx = locationIndex;
+        //             currState = SoldierState.HELPING;
+        //             distressLocation = archonInTrouble;
+        //         }
+        //     }
+        // }
+        // if (distressLocation != null)  {
+        //     //only update counter for the final one you're gonna help
+        //     // Comms.incrementHelpersForArchon(distressLocationIdx);
+        //     return;
+        // }
+        if (currState != SoldierState.RUSHING && 
             Comms.getSoldierCatFromFlag(rc.readSharedArray(Comms.SOLDIER_STATE_IDX)) == Comms.SoldierStateCategory.RUSH_SOLDIERS) {
             currState = SoldierState.RUSHING;
             MapLocation[] targetAndId = findWeakestArchon(Comms.enemyArchonCount());
@@ -197,9 +200,36 @@ public class Soldier extends Robot {
         numFriendlySoldiers++;
     }
 
+    public void resetShouldRunAway() throws GameActionException {
+        numEnemySoldiersAttackingUs = 0;
+        numFriendlySoldiersAttackingClosest = 0;
+        MapLocation closestEnemySoldier = null;
+        int closestSoldierDist = Integer.MAX_VALUE;
+        for (RobotInfo bot : EnemySensable) {
+            MapLocation candidateLoc = bot.getLocation();
+            int candidateDist = currLoc.distanceSquaredTo(candidateLoc);
+            if (bot.getType() == RobotType.SOLDIER) {
+                if (candidateDist <= actionRadiusSquared) {
+                    numEnemySoldiersAttackingUs++;
+                }
+                if (candidateDist < closestSoldierDist) {
+                    closestSoldierDist = candidateDist;
+                    closestEnemySoldier = candidateLoc;
+                }
+            }
+        }
+        if (closestEnemySoldier != null) {
+            for (RobotInfo bot : rc.senseNearbyRobots(closestEnemySoldier, actionRadiusSquared, rc.getTeam())) {
+                if (bot.getType() == RobotType.SOLDIER) {
+                    numFriendlySoldiersAttackingClosest++;
+                }
+            }
+        }
+    }
+
     public boolean shouldRunAway() {
-        Debug.printString("enemy: " + numEnemySoldiers + ", friendly: " + numFriendlySoldiers);
-        return numEnemySoldiers >= numFriendlySoldiers;
+        Debug.printString(numEnemySoldiersAttackingUs + " to " + numFriendlySoldiersAttackingClosest);
+        return numEnemySoldiersAttackingUs >= numFriendlySoldiersAttackingClosest;
     }
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {

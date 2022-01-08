@@ -277,6 +277,16 @@ public class Archon extends Robot {
         return counter;
     }
 
+    public int soldierMinerRatio(int mod, int counter) throws GameActionException {
+        if ((counter % mod) == (mod - 1)) {
+            counter = buildSoldier(counter);
+        }
+        else {
+            counter = buildMiner(counter);
+        }
+        return counter;
+    }
+
     public int SoldierBuilderRatio(int mod, int counter) throws GameActionException {
         switch(counter % mod) {
             case 0:
@@ -296,13 +306,14 @@ public class Archon extends Robot {
                 if (leadToUse < Util.LeadThreshold) {
                     break;
                 }
+                // chillingCounter = soldierMinerRatio(4, chillingCounter);
                 firstRounds();
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
-                if (leadToUse < Util.LeadThreshold) {
-                    break;
-                }
+                // if (leadToUse < Util.LeadThreshold) {
+                //     break;
+                // }
                 if(minerCount <= MIN_NUM_MINERS) {
                     chillingCounter = minerSoldier5050(chillingCounter);
                 }
@@ -342,7 +353,7 @@ public class Archon extends Robot {
         //     dir = rc.getLocation().directionTo(leadSource);
         // }
         buildRobot(toBuild,dir);
-
+        
     }
 
     public void updateLead() throws GameActionException {

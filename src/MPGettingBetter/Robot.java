@@ -65,6 +65,9 @@ public class Robot {
                 if (bot.getType() == RobotType.SOLDIER || bot.getType() == RobotType.WATCHTOWER || bot.getType() == RobotType.ARCHON) {
                     Comms.updateAvgEnemyLoc(bot.getLocation());
                 }
+                // if (!Comms.foundEnemySoldier && bot.getType() == RobotType.MINER) {
+                //     Comms.updateAvgEnemyLoc(bot.getLocation());
+                // }
             }
         }
 
@@ -73,7 +76,8 @@ public class Robot {
         currLoc = rc.getLocation();
         reportKilledArchons();
         tryToReportArchon();
-        Comms.broadcastEnemyFound();
+        Comms.broadcastEnemyFound(EnemySensable);
+        // Debug.println("enemy: " + Comms.foundEnemy + "; soldier: " + Comms.foundEnemySoldier);
         // initializeGlobals();
         // turnCount += 1;
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
