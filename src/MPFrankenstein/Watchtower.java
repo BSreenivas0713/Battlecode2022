@@ -38,13 +38,13 @@ public class Watchtower extends Robot {
             }
             else {
                 if(avgEnemyLoc != null) {
-                    Direction correctDir = currLoc.directionTo(avgEnemyLoc);
-                    tryMoveDest(Nav.greedyDirection(correctDir));
+                    Direction bestDir = Nav.getBestDir(avgEnemyLoc);
+                    tryMove(bestDir);
                     if(spinDirection == 0) {
-                        tryMoveDest(Nav.greedyDirection(Util.turnRight90(correctDir)));
+                        tryMoveDest(Nav.greedyDirection(Util.turnRight90(bestDir)));
                     }
                     else {
-                        tryMoveDest(Nav.greedyDirection(Util.turnLeft90(correctDir)));
+                        tryMoveDest(Nav.greedyDirection(Util.turnLeft90(bestDir)));
                     }
                 }
             }

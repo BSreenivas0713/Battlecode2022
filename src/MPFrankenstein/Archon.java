@@ -62,7 +62,7 @@ public class Archon extends Robot {
         builderCount = 0;
         findBestLeadSource();
         nonWallDirections = findnonWallDirections();
-        maxLeadUsedByArchons = 75 * (5 - turnNumber);
+        maxLeadUsedByArchons = 75 * ((1 + rc.getArchonCount()) - turnNumber);
         leadObesity = rc.getArchonCount() * 180 + maxLeadUsedByArchons;
         
         // System.out.println("nonWallDirections: " + nonWallDirections.toString());
@@ -132,7 +132,7 @@ public class Archon extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         clearAndResetHelpers();
-        Comms.resetAvgEnemyLoc(turnNumber);
+        Comms.resetAvgEnemyLoc();
         boolean underAttack = broadcastSoldierNear();
         updateLead();
         updateRobotCounts();
@@ -278,8 +278,8 @@ public class Archon extends Robot {
         return counter;
     }
 
-    public int SoldierBuilder11Ratio(int counter) throws GameActionException {
-        switch(counter % 2) {
+    public int SoldierBuilderRatio(int mod, int counter) throws GameActionException {
+        switch(counter % mod) {
             case 0:
                 counter = buildBuilder(counter);
                 break;
@@ -319,7 +319,7 @@ public class Archon extends Robot {
                 int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
                 int watchtowersPossible = leadForBuilders / 180;
                 if (/*watchtowersPossible > builderCount &&*/ builderCount <= MIN_NUM_MINERS) {
-                    obesityCounter = SoldierBuilder11Ratio(obesityCounter);
+                    obesityCounter = SoldierBuilderRatio(5, obesityCounter);
                 } else {
                     obesityCounter = buildSoldier(obesityCounter);
                     break;
@@ -367,7 +367,8 @@ public class Archon extends Robot {
     public void toggleState(boolean underAttack, boolean isObese) throws GameActionException {
         switch (currentState) {
             case INIT:
-                if(robotCounter >= 3 && Comms.foundEnemy) {
+                Debug.printString("lead obesity: " + leadObesity);
+                if((robotCounter >= 3 && Comms.foundEnemy)) {
                     changeState(State.CHILLING);
                 }
                 else if(rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
@@ -393,7 +394,7 @@ public class Archon extends Robot {
                 if (underAttack) {
                     stateStack.push(currentState);
                     changeState(State.UNDER_ATTACK);
-                } else if (rc.getTeamLeadAmount(rc.getTeam()) < 500) {
+                } else if (rc.getTeamLeadAmount(rc.getTeam()) < leadObesity) {
                     changeState(stateStack.pop());
                 }
                 break;
