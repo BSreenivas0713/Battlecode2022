@@ -304,6 +304,14 @@ public class Archon extends Robot {
                 if (leadToUse < Util.LeadThreshold) {
                     break;
                 }
+                if(minerCount <= MIN_NUM_MINERS) {
+                    chillingCounter = minerSoldier5050(chillingCounter);
+                }
+                else {
+                    chillingCounter = minerSoldier13Ratio(chillingCounter);
+                }
+                // Debug.printString("CHILLING state, last pay day: " + lastPayDay);
+                break;
             case UNDER_ATTACK:
                 Debug.printString("Under Attack");
                 if(minerCount <= MIN_NUM_MINERS) {
@@ -312,7 +320,6 @@ public class Archon extends Robot {
                 else {
                     chillingCounter = minerSoldier13Ratio(chillingCounter);
                 }
-                // Debug.printString("CHILLING state, last pay day: " + lastPayDay);
                 break;
             case OBESITY:
                 Debug.printString("Obesity");
