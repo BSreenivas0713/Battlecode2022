@@ -191,8 +191,9 @@ public class Soldier extends Robot {
         // Weight home Archon ever so slightly.
         // Only really has an effect when no soldiers are seen
         // Primarily for running towards other soldiers/home when running away from enemies.
-        overallFriendlySoldierDx += currLoc.directionTo(home).dx * (1000 / (currLoc.distanceSquaredTo(home) + 1));
-        overallFriendlySoldierDy += currLoc.directionTo(home).dy * (1000 / (currLoc.distanceSquaredTo(home) + 1));
+        overallFriendlySoldierDx += currLoc.directionTo(home).dx * (10000 / (currLoc.distanceSquaredTo(home) + 1));
+        overallFriendlySoldierDy += currLoc.directionTo(home).dy * (10000 / (currLoc.distanceSquaredTo(home) + 1));
+        numFriendlySoldiers++;
     }
 
     public boolean shouldRunAway() {
@@ -350,7 +351,8 @@ public class Soldier extends Robot {
         //     tryMoveDest(Nav.explore());
         // }
         if (avgEnemyLoc != null && currLoc.distanceSquaredTo(avgEnemyLoc) > visionRadiusSquared) {
-            Direction[] targets = Nav.greedyDirection(currLoc.directionTo(avgEnemyLoc));
+            Direction bestDir = Nav.getBestDir(avgEnemyLoc);
+            Direction[] targets = Util.getInOrderDirections(bestDir);
             tryMoveDest(targets);
         }
         else {
