@@ -62,6 +62,7 @@ public strictfp class RobotPlayer {
 
             try {
                 bot.takeTurn();
+                Debug.flush();
                 Clock.yield();
 
             } catch (Exception e) {
