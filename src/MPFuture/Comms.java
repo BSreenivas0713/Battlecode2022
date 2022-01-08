@@ -453,7 +453,6 @@ public class Comms {
                         CURR_ROUND_NUM_ENEMIES_IDX_3),
         };
     }
-
     public static MapLocation getClosestCluster(MapLocation currLoc) throws GameActionException {
         int numClusters = 0;
         for (int i = 0; i < 3; i++) {
@@ -465,6 +464,40 @@ public class Comms {
         MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
         MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
         MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
+
+        rc.setIndicatorDot(currAvgLoc1, 0, 0, 255);
+        rc.setIndicatorDot(currAvgLoc2, 0, 0, 255);
+        rc.setIndicatorDot(currAvgLoc3, 0, 0, 255);
+
+
+        MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
+        
+        MapLocation bestCluster = null;
+        int bestClusterDist = Integer.MAX_VALUE;
+
+        for (int clusterNum = 0; clusterNum < numClusters; clusterNum++) {
+            int currDist = currLoc.distanceSquaredTo(currAvgLocs[clusterNum]);
+            if(currDist < bestClusterDist) {
+                bestClusterDist = currDist;
+                bestCluster = currAvgLocs[clusterNum];
+            }
+        }
+        return bestCluster;
+    }
+    public static MapLocation getProjection(MapLocation currLoc) throws GameActionException {
+        int numClusters = 0;
+        for (int i = 0; i < 3; i++) {
+            if (rc.readSharedArray(i * 4 + LAST_ROUND_AVG_ENEMY_LOC_IDX_1) != 0) {
+                numClusters++;
+            }
+        }
+
+        MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
+        MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
+        MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
+
+
+
         MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
         int[] AX;
         int[] AB;

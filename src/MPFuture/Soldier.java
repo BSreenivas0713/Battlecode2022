@@ -54,7 +54,7 @@ public class Soldier extends Robot {
         //     rc.setIndicatorDot(avgEnemyLoc, 0, 255, 0);
         // }
         Debug.printString(avgEnemyLoc + "");
-        Debug.setIndicatorLine(Debug.INDICATORS, currLoc, avgEnemyLoc, 255, 255, 0);
+        // Debug.setIndicatorLine(Debug.INDICATORS, currLoc, avgEnemyLoc, 255, 255, 0);
         Comms.incrementRushSoldierCounter();
         trySwitchState();
         switch (currState) {
@@ -98,13 +98,13 @@ public class Soldier extends Robot {
     }
 
     public void trySwitchState() throws GameActionException {
-        // if >= 15 latticing soldiers, switch to rushing
         int maxHelpers;
         int bestDistance;
         maxHelpers = Comms.readMaxHelper();
         bestDistance = Util.MAP_MAX_DIST_SQUARED / 4;
         distressLocation = null;
         int distressLocationIdx = 0;
+
         for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
             int flag = rc.readSharedArray(x);
             if(Comms.getICFromFlag(flag) == Comms.InformationCategory.UNDER_ATTACK) {
@@ -113,8 +113,6 @@ public class Soldier extends Robot {
                 int distance = rc.getLocation().distanceSquaredTo(archonInTrouble);
                 // either there aren't enough helpers and you're on the right half of the map
                 // or you're close to the distressed archon already
-                // if ((Comms.getHelpersForArchon(locationIndex) < maxHelpers && distance < bestDistance) || 
-                //     distance < visionRadiusSquared) {
                 if (distance < bestDistance) {
                     distressLocationIdx = locationIndex;
                     currState = SoldierState.HELPING;
@@ -150,6 +148,9 @@ public class Soldier extends Robot {
         int leastDistance = Integer.MAX_VALUE;
         int currDistance;
         MapLocation loc;
+        numEnemySoldiers = 0;
+        overallEnemySoldierDx = 0;
+        overallEnemySoldierDy = 0;
 
         for (int i = EnemySensable.length - 1; i >= 0; i--) {
             robot = EnemySensable[i];
@@ -197,7 +198,8 @@ public class Soldier extends Robot {
     }
 
     public boolean shouldRunAway() {
-        return numEnemySoldiers > numFriendlySoldiers;
+        Debug.printString("enemy: " + numEnemySoldiers + ", friendly: " + numFriendlySoldiers);
+        return numEnemySoldiers >= numFriendlySoldiers;
     }
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {
@@ -206,7 +208,7 @@ public class Soldier extends Robot {
             MapLocation dest;
             if(shouldRunAway()) {
                 // Positive so that we move towards the point mass.
-                dest = currLoc.translate(overallFriendlySoldierDx, overallFriendlySoldierDy);
+                dest = currLoc.translate(-overallEnemySoldierDx, -overallEnemySoldierDy);//(overallFriendlySoldierDx, overallFriendlySoldierDy);
             } else {
                 dest = closestEnemy.getLocation();
             }

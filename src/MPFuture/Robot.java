@@ -62,7 +62,7 @@ public class Robot {
         }
         else {
             for (RobotInfo bot : EnemySensable) {
-                if (bot.getType() == RobotType.SOLDIER || bot.getType() == RobotType.WATCHTOWER) {
+                if (bot.getType() == RobotType.SOLDIER || bot.getType() == RobotType.WATCHTOWER || bot.getType() == RobotType.ARCHON) {
                     Comms.updateAvgEnemyLoc(bot.getLocation());
                 }
             }
@@ -219,13 +219,13 @@ public class Robot {
 
         // Prioritize these the least
         if(maybeLab != null) res = maybeLab;
-        if(maybeArchon != null) res = maybeArchon;
         if(maybeSage != null) res = maybeSage;
 
-        if(maybeSoldier != null) res = maybeSoldier;
-        if(maybeWatchtower != null) res = maybeWatchtower;
         if(maybeMiner != null) res = maybeMiner;
         if(maybeBuilder != null) res = maybeBuilder;
+        if(maybeArchon != null) res = maybeArchon;
+        if(maybeWatchtower != null) res = maybeWatchtower;
+        if(maybeSoldier != null) res = maybeSoldier;
 
         // A soldier is prioritized if either you or the enemy is
         // close to home or an enemy archon

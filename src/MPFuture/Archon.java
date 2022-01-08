@@ -211,7 +211,7 @@ public class Archon extends Robot {
         soldierCount = Comms.getRushSoldierCount();
         if ((soldierCount >= Util.SOLDIERS_NEEDED_TO_RUSH) && Comms.aliveEnemyArchonCount() > 0) {
             //tell soldiers near me to rush
-            nextSoldierFlag = Comms.encodeSoldierStateFlag(Comms.SoldierStateCategory.RUSH_SOLDIERS);
+            // nextSoldierFlag = Comms.encodeSoldierStateFlag(Comms.SoldierStateCategory.RUSH_SOLDIERS);
         }
         minerMiningCount = Comms.getMinerMiningCount();
         builderCount = Comms.getBuilderCount();
@@ -265,8 +265,8 @@ public class Archon extends Robot {
         return counter;
     }
 
-    public int minerSoldier13Ratio(int counter) throws GameActionException {
-        switch(counter % 4) {
+    public int minerSoldierRatio(int mod, int counter) throws GameActionException {
+        switch(counter % mod) {
             case 0:
                 counter = buildMiner(counter);
                 break;
@@ -307,18 +307,13 @@ public class Archon extends Robot {
                     chillingCounter = minerSoldier5050(chillingCounter);
                 }
                 else {
-                    chillingCounter = minerSoldier13Ratio(chillingCounter);
+                    chillingCounter = minerSoldierRatio(7, chillingCounter);
                 }
                 // Debug.printString("CHILLING state, last pay day: " + lastPayDay);
                 break;
             case UNDER_ATTACK:
                 Debug.printString("Under Attack");
-                if(minerCount <= MIN_NUM_MINERS) {
-                    chillingCounter = minerSoldier5050(chillingCounter);
-                }
-                else {
-                    chillingCounter = minerSoldier13Ratio(chillingCounter);
-                }
+                chillingCounter = buildSoldier(chillingCounter);
                 break;
             case OBESITY:
                 Debug.printString("Obesity");
