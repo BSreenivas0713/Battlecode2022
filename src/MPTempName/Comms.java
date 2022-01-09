@@ -38,6 +38,7 @@ public class Comms {
     static final int CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_3 = 34;
     static final int CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_3 = 35;
     static final int CURR_ROUND_NUM_ENEMIES_IDX_3 = 36;
+    static final int BUILD_GUESS_IDX = 37;
 
     // Setup flag masks
     // Bits 1-3 are friendly Archon count
@@ -80,6 +81,12 @@ public class Comms {
         DEFENSE_SOLDIERS,
         UNDER_ATTACK,
     }
+    public enum Buildable {
+        SOLDIER,
+        MINER, 
+        BUILDER,
+        SAGE,
+    }
 
     public enum SoldierStateCategory {
         EMPTY,
@@ -101,6 +108,18 @@ public class Comms {
     public static int encodeArchonFlag(InformationCategory cat) {
         return cat.ordinal();
     }
+    public static void encodeBuildGuess(int archonNum, Buildable buildCat) throws GameActionException{
+        int currFlagValue = rc.readSharedArray(BUILD_GUESS_IDX);
+        int bits = buildCat.ordinal() << ((archonNum - 1) * 2);
+        int clearedFlag = (~(3 << ((archonNum - 1) * 2))) & currFlagValue;
+        int newFlag = clearedFlag | bits;
+        rc.writeSharedArray(BUILD_GUESS_IDX, newFlag);
+    }
+    public static Buildable getBuildGuess(int archonNum) throws GameActionException {
+        int flag = rc.readSharedArray(BUILD_GUESS_IDX);
+        return Buildable.values()[flag & (3 << (2 * (archonNum - 1)))];
+        }
+        
 
     public static int encodeSoldierStateFlag(SoldierStateCategory cat) {
         return cat.ordinal();
@@ -452,6 +471,95 @@ public class Comms {
                         CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_3,
                         CURR_ROUND_NUM_ENEMIES_IDX_3),
         };
+    }
+
+    public static int findNext(int[] locList) {
+        if (locList[0] == -1) {return 0;}
+        if (locList[1] == -1) {return 1;}
+        if (locList[2] == -1) {return 2;}
+        if (locList[3] == -1) {return 3;}
+        else {return -1;}
+
+    }
+
+    public static boolean isIn(int[] locList, int loc) {
+        for(int i = 0; i < locList.length; i ++) {
+            if(loc == locList[i]) {return true;} 
+        }
+        return false;
+    }
+    public static int buildableCost(Buildable bot) {
+        switch (bot) {
+            case SOLDIER:
+                return 75;
+            case MINER: 
+                return 50;
+            case BUILDER:
+                return 40;
+            default: 
+                return -1;
+            }
+        }
+    public static boolean canBuildPrioritized(int archonNum, int leadAmount) throws GameActionException{
+        int[] order = getArchonOrderGivenClusters();
+        for (int i = 0; i < rc.getArchonCount(); i++) {
+            int currArchon = order[i];
+            Buildable bot = getBuildGuess(currArchon);
+            int cost = buildableCost(bot);
+            if (currArchon == archonNum) {
+                return leadAmount >= cost;
+            } else if (currArchon > archonNum) {
+                leadAmount -= cost;
+            }
+        }
+        return false;
+    }
+            
+        
+    public static int[] getArchonOrderGivenClusters() throws GameActionException {
+        MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
+        MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
+        MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
+
+        MapLocation ArchonLoc1 = locationFromFlag(rc.readSharedArray(1));
+        MapLocation ArchonLoc2 = locationFromFlag(rc.readSharedArray(2));
+        MapLocation ArchonLoc3 = locationFromFlag(rc.readSharedArray(3));
+        MapLocation ArchonLoc4 = locationFromFlag(rc.readSharedArray(4));
+
+
+        MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
+        MapLocation[] archonLocs = new MapLocation[]{ArchonLoc1, ArchonLoc2, ArchonLoc3,ArchonLoc4};
+
+        
+        int numClusters = 0;
+        for (int i = 0; i < 3; i++) {
+            if (rc.readSharedArray(i * 4 + LAST_ROUND_AVG_ENEMY_LOC_IDX_1) != 0) {
+                numClusters++;
+            }
+        }
+        int numArchons = rc.getArchonCount();
+        int[] closestArchonsToClusters = new int[]{-1,-1,-1,-1};
+        for (int clusterNum = 0; clusterNum < numClusters; clusterNum++) {
+            MapLocation currCluster = currAvgLocs[clusterNum];
+            int closestArchon = -1;
+            int bestDist = Integer.MAX_VALUE;
+            if(clusterNum > numArchons) {break;}
+            for(int archonNum = 0; archonNum < rc.getArchonCount(); archonNum++) {
+                MapLocation currArchon = archonLocs[archonNum];
+                int currDist = currArchon.distanceSquaredTo(currCluster);
+                if(currDist < bestDist) {
+                    bestDist = currDist;
+                    closestArchon = archonNum + 1;
+                }
+            }
+            if (!isIn(closestArchonsToClusters, closestArchon)) {closestArchonsToClusters[findNext(closestArchonsToClusters)] = closestArchon;}
+        }
+        for(int archonNum2 = 0; archonNum2 < numArchons; archonNum2 ++) {
+            if(!isIn(closestArchonsToClusters, archonNum2 + 1)) {
+                closestArchonsToClusters[findNext(closestArchonsToClusters)] = archonNum2 + 1;
+            }
+        }
+        return closestArchonsToClusters;
     }
     public static MapLocation getClosestCluster(MapLocation currLoc) throws GameActionException {
         int numClusters = 0;
