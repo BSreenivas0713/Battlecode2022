@@ -147,6 +147,10 @@ public class Archon extends Robot {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
     }
+
+
+    // pick a random lead ore for  a miner to go to, if spawned on this turn
+    //
     public void updateClosestLeadOre() throws GameActionException{
         MapLocation[] locs = rc.senseNearbyLocationsWithLead(visionRadiusSquared);
         // int closestLeadDist = Integer.MAX_VALUE;

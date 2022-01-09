@@ -230,6 +230,8 @@ public class Soldier extends Robot {
     }
 
     public boolean shouldRunAway() {
+        //Not only should there be no soldiers attacking us, but if we see 2 soldiers between our action radius and our vision radius, we should not go forward
+        //Consider changing the numFriendlies < numEnemies to <= and retesting
         Debug.printString("enemyAction: " + numEnemySoldiersAttackingUs + "enemy: " + numEnemies + "friends: " + numFriendlies);
         return numEnemySoldiersAttackingUs > 0 || (numFriendlies < numEnemies);
     }
@@ -248,6 +250,8 @@ public class Soldier extends Robot {
             }
             if(dest != null) {
                 Direction dir = Nav.getBestDir(dest);
+                //Don't go towards miners if it forces us to go to low passability squares(the formula I used is kind of arbitrary, so its definitely tweakable)
+                //keep in mind, however, that on Intersection its like passability 1 versus 85 so any formula thats halfway decent will work there
                 if(closestEnemy.getType() == RobotType.MINER && rc.senseRubble(currLoc.add(dir)) > (20 + 1.2 * rc.senseRubble(currLoc))) {
                     return false;
                 }

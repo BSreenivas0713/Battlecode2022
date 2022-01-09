@@ -26,7 +26,7 @@ public class Miner extends Robot {
         }
     }
 
-
+    //Update the location of the closest lead ore, return a list of all lead ores within action radius of Miner
     public int[] findLeadAndGold() throws GameActionException {
         goldSource = null;
         overallDX = 0;
@@ -109,6 +109,8 @@ public class Miner extends Robot {
             }
             boolean done = false;
             int numTimesMined = 0;
+            //Go through all lead deposits in action radius, and mine as much as possible (consider the case where two lead ores
+            //within action radius have sizes 3 and 4. We want to mine them both down to 1 in the same turn 
             for(int x = 0; x < 3; x ++) {
                 for (int y = 0; y < 3; y++) {
                     if(actionRadiusArr[3 *x + y] > 1) {
@@ -148,9 +150,11 @@ public class Miner extends Robot {
                 }
             }
         }
+        //no need to complicate things, just go towards the closest ore
         if(closestLead != null) {
             dir = Nav.greedyDirection(currLoc.directionTo(closestLead));
             str = "going towards lead at" + closestLead.toString();
+            //Consider getting rid of this minerCount if statment and retesting
             if(minerCount >= 4) {
                 dir = Nav.greedyDirection(DirectionAway);
                 str = "going away from other miners: " + DirectionAway.toString();
