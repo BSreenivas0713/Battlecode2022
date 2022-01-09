@@ -85,7 +85,6 @@ public class Soldier extends Robot {
                 }
                 break;
             case EXPLORING:
-                Debug.printString("Exploring");
                 tryAttackBestEnemy();
                 if (!tryMoveTowardsEnemy()) { 
                     soldierExplore();
@@ -241,9 +240,10 @@ public class Soldier extends Robot {
             if(shouldRunAway()) {
                 // Positive so that we move towards the point mass.
                 dest = currLoc.translate(-overallEnemySoldierDx, -overallEnemySoldierDy);//(overallFriendlySoldierDx, overallFriendlySoldierDy);
-                Debug.printString("Dest: " + dest);
+                Debug.printString("Running away, Dest: " + dest);
             } else {
                 dest = closestEnemy.getLocation();
+                Debug.printString("Going towards closest Enemy");
             }
             if(dest != null) {
                 Direction dir = Nav.getBestDir(dest);

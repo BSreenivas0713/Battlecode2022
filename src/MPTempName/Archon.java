@@ -369,7 +369,7 @@ public class Archon extends Robot {
         switch (currentState) {
             case INIT:
                 Debug.printString("lead obesity: " + leadObesity);
-                if((robotCounter >= 3 && Comms.foundEnemy) /*|| minerCount >= MIN_NUM_MINERS*/) {
+                if((robotCounter >= 3 && Comms.foundEnemy) || minerCount >= MIN_NUM_MINERS) {
                     changeState(State.CHILLING);
                 }
                 else if(rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
