@@ -311,9 +311,9 @@ public class Archon extends Robot {
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
-                // if (leadToUse < Util.LeadThreshold) {
-                //     break;
-                // }
+                if (leadToUse < Util.LeadThreshold) {
+                    break;
+                }
                 if(minerCount <= MIN_NUM_MINERS) {
                     chillingCounter = minerSoldier5050(chillingCounter);
                 }
