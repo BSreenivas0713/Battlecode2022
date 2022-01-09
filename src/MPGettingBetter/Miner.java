@@ -5,10 +5,10 @@ import MPGettingBetter.Debug.*;
 import MPGettingBetter.Util.*;
 
 public class Miner extends Robot {
-    int roundNumBorn;
-    int minerCount;
-    boolean explorer;
-    MapLocation unitLeadLoc;
+    static int roundNumBorn;
+    static int minerCount;
+    static boolean explorer;
+    static MapLocation unitLeadLoc;
 
     public Miner(RobotController r) throws GameActionException {
         super(r);

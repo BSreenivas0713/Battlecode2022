@@ -61,6 +61,7 @@ public class Robot {
             }
         }
         else {
+            Comms.setNeedToResetEnemyLocs();
             for (RobotInfo bot : EnemySensable) {
                 if (bot.getType() == RobotType.SOLDIER || bot.getType() == RobotType.WATCHTOWER || bot.getType() == RobotType.ARCHON) {
                     Comms.updateAvgEnemyLoc(bot.getLocation());

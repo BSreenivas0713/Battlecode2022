@@ -465,9 +465,9 @@ public class Comms {
         MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
         MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
 
-        rc.setIndicatorDot(currAvgLoc1, 0, 0, 255);
-        rc.setIndicatorDot(currAvgLoc2, 0, 0, 255);
-        rc.setIndicatorDot(currAvgLoc3, 0, 0, 255);
+        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc1, 0, 255, 0);
+        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc2, 0, 255, 0);
+        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc3, 0, 255, 0);
 
 
         MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
