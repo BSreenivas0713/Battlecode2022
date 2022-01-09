@@ -1,4 +1,4 @@
-package MPGettingBetter;
+package MPTempName;
 
 import battlecode.common.*;
 import java.util.Random;
