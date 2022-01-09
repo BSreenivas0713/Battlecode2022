@@ -40,7 +40,7 @@ public class Watchtower extends Robot {
                 if(avgEnemyLoc != null) {
                     Direction bestDir = Nav.getBestDir(avgEnemyLoc);
                     tryMove(bestDir);
-                    if(spinDirection == 0) {
+                    if(Math.random() < .5) {
                         tryMoveDest(Nav.greedyDirection(Util.turnRight90(bestDir)));
                     }
                     else {

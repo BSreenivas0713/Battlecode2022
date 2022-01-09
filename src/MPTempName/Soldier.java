@@ -230,7 +230,7 @@ public class Soldier extends Robot {
     }
 
     public boolean shouldRunAway() {
-        Debug.printString("enemy: " + numEnemySoldiersAttackingUs + ", friendly: " + numFriendlySoldiersAttackingClosest);
+        Debug.printString("enemy: " + numEnemySoldiersAttackingUs);
         return numEnemySoldiersAttackingUs > 0;
     }
 
@@ -241,6 +241,7 @@ public class Soldier extends Robot {
             if(shouldRunAway()) {
                 // Positive so that we move towards the point mass.
                 dest = currLoc.translate(-overallEnemySoldierDx, -overallEnemySoldierDy);//(overallFriendlySoldierDx, overallFriendlySoldierDy);
+                Debug.printString("Dest: " + dest);
             } else {
                 dest = closestEnemy.getLocation();
             }
