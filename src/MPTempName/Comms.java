@@ -117,9 +117,9 @@ public class Comms {
     }
     public static Buildable getBuildGuess(int archonNum) throws GameActionException {
         int flag = rc.readSharedArray(BUILD_GUESS_IDX);
-        return Buildable.values()[flag & (3 << (2 * (archonNum - 1)))];
-        }
-        
+        int offset = 2 * (archonNum - 1);
+        return Buildable.values()[(flag & (3 << offset)) >> offset];
+    }
 
     public static int encodeSoldierStateFlag(SoldierStateCategory cat) {
         return cat.ordinal();

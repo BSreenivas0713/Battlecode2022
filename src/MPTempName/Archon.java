@@ -116,6 +116,7 @@ public class Archon extends Robot {
         Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
         int leadAmount = rc.getTeamLeadAmount(rc.getTeam());
         if (currentState != State.INIT && !Comms.canBuildPrioritized(turnNumber, leadAmount)) {
+            Debug.printString("Can't build.");
             return false;
         }
         for(Direction dir : orderedDirs) {
