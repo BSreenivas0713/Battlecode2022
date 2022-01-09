@@ -62,17 +62,14 @@ public class Miner extends Robot {
         if(locs.length > 0) {
             goldSource = locs[0];
         }
-        RobotInfo[] sensableWithin8 = rc.senseNearbyRobots(8, rc.getTeam());
         RobotInfo possibleFriendly;
-        for (int i = sensableWithin8.length - 1; i >= 0; i--) {
-            possibleFriendly = sensableWithin8[i];
+        for (int i = FriendlySensable.length - 1; i >= 0; i--) {
+            possibleFriendly = FriendlySensable[i];
             loc = possibleFriendly.location;
             if (possibleFriendly.type == RobotType.MINER && !loc.equals(currLoc)) {
-                if(currLoc.distanceSquaredTo(loc) < 3) {
-                    minerCount ++;
-                    overallDX += currLoc.directionTo(possibleFriendly.getLocation()).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
-                    overallDY += currLoc.directionTo(possibleFriendly.getLocation()).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
-                }
+                minerCount ++;
+                overallDX += currLoc.directionTo(possibleFriendly.getLocation()).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
+                overallDY += currLoc.directionTo(possibleFriendly.getLocation()).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
             }
         }
         return actionRadiusArr;
@@ -101,8 +98,8 @@ public class Miner extends Robot {
             }
         }
         if(closestLead != null) {
-            // Debug.printString("Lead found: " + closestLead.toString());
-            Debug.printString(bigArrToString(actionRadiusArr));
+            Debug.printString("Lead found: " + closestLead.toString());
+            // Debug.printString(bigArrToString(actionRadiusArr));
             if(unitLeadLoc != null && shouldDepleteUnitLead() && rc.canMineLead(unitLeadLoc)) {
                 Debug.printString("Depleting unit lead");
                 rc.mineLead(unitLeadLoc);
@@ -138,8 +135,12 @@ public class Miner extends Robot {
         Direction[] dir = {};
         String str = "";
         if (!amMining) {
+
             dir = Nav.explore();
-            str = "Exploring";
+            str = "Exploring";            
+            if(currLoc.distanceSquaredTo(home) < visionRadiusSquared) {
+                
+            }
         }
 
         if(rc.getRoundNum() == roundNumBorn + 1) {
@@ -154,22 +155,22 @@ public class Miner extends Robot {
         if(closestLead != null) {
             dir = Nav.greedyDirection(currLoc.directionTo(closestLead));
             str = "going towards lead at" + closestLead.toString();
-            //Consider getting rid of this minerCount if statment and retesting
-            if(minerCount >= 4) {
+            if(minerCount >= 5) {
                 dir = Nav.greedyDirection(DirectionAway);
                 str = "going away from other miners: " + DirectionAway.toString();
             }
+            str += "miner count: " + minerCount;
         }
 
         RobotInfo closestEnemy = getClosestEnemy(RobotType.SOLDIER);
         if(closestEnemy != null) {
             dir = Nav.greedyDirection(currLoc.directionTo(closestEnemy.getLocation()).opposite());
-            str = "going away from enemy";
+            str = "going away from enemy soldier";
         }
         closestEnemy = getClosestEnemy(RobotType.WATCHTOWER);
         if(closestEnemy != null) {
             dir = Nav.greedyDirection(currLoc.directionTo(closestEnemy.getLocation()).opposite());
-            str = "going away from enemy";
+            str = "going away from enemy Watchtower";
         }
         
         if(goldSource != null) {
@@ -177,7 +178,7 @@ public class Miner extends Robot {
             str = "going toward gold";
         }
 
-        // Debug.printString(str);
+        Debug.printString(str);
         tryMoveDest(dir);
     }
 }

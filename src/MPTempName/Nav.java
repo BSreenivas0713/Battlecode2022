@@ -208,7 +208,9 @@ public class Nav {
             lastExploreDir = tempExploreDir;
             }
         }
-
+        if(lastExploreDir != null) {
+            Debug.printString("last Explore Dir: " + lastExploreDir);
+        }
         return greedyDirection(lastExploreDir);
     }
 
