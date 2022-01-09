@@ -228,10 +228,8 @@ public class Soldier extends Robot {
     }
 
     public boolean shouldRunAway() {
-        // Debug.printString(numEnemySoldiersAttackingUs + " to " + numFriendlySoldiersAttackingClosest);
-        // return numEnemySoldiersAttackingUs >= numFriendlySoldiersAttackingClosest;
-        Debug.printString("enemy: " + numEnemySoldiers + ", friendly: " + numFriendlySoldiers);
-        return numEnemySoldiers >= numFriendlySoldiers;
+        Debug.printString(numEnemySoldiersAttackingUs + " to " + numFriendlySoldiersAttackingClosest);
+        return numEnemySoldiersAttackingUs >= numFriendlySoldiersAttackingClosest;
     }
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {
