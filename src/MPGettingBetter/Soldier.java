@@ -105,41 +105,41 @@ public class Soldier extends Robot {
         distressLocation = null;
         int distressLocationIdx = 0;
 
-        for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
-            int flag = rc.readSharedArray(x);
-            if(Comms.getICFromFlag(flag) == Comms.InformationCategory.UNDER_ATTACK) {
-                int locationIndex = x - Comms.mapLocToFlag;
-                MapLocation archonInTrouble = Comms.locationFromFlag(rc.readSharedArray(locationIndex));
-                int distance = rc.getLocation().distanceSquaredTo(archonInTrouble);
-                // either there aren't enough helpers and you're on the right half of the map
-                // or you're close to the distressed archon already
-                if (distance < bestDistance) {
-                    distressLocationIdx = locationIndex;
-                    currState = SoldierState.HELPING;
-                    distressLocation = archonInTrouble;
-                }
-            }
-        }
-        if (distressLocation != null)  {
-            //only update counter for the final one you're gonna help
-            // Comms.incrementHelpersForArchon(distressLocationIdx);
-            return;
-        }
-        else if (currState != SoldierState.RUSHING && 
-            Comms.getSoldierCatFromFlag(rc.readSharedArray(Comms.SOLDIER_STATE_IDX)) == Comms.SoldierStateCategory.RUSH_SOLDIERS) {
-            currState = SoldierState.RUSHING;
-            MapLocation[] targetAndId = findWeakestArchon(Comms.enemyArchonCount());
-            target = targetAndId[0];
-            targetId = targetAndId[1].x;
-        }
-        else if (currState == SoldierState.RUSHING && Comms.isArchonDead(targetId)) {
-            target = null;
-            targetId = 0;
-            currState = SoldierState.EXPLORING;
-        }
-        else if(currState != SoldierState.RUSHING){
-            currState = SoldierState.EXPLORING;
-        }
+        // for(int x = Comms.firstArchonFlag; x < Comms.firstArchonFlag + 4; x++) {
+        //     int flag = rc.readSharedArray(x);
+        //     if(Comms.getICFromFlag(flag) == Comms.InformationCategory.UNDER_ATTACK) {
+        //         int locationIndex = x - Comms.mapLocToFlag;
+        //         MapLocation archonInTrouble = Comms.locationFromFlag(rc.readSharedArray(locationIndex));
+        //         int distance = rc.getLocation().distanceSquaredTo(archonInTrouble);
+        //         // either there aren't enough helpers and you're on the right half of the map
+        //         // or you're close to the distressed archon already
+        //         if (distance < bestDistance) {
+        //             distressLocationIdx = locationIndex;
+        //             currState = SoldierState.HELPING;
+        //             distressLocation = archonInTrouble;
+        //         }
+        //     }
+        // }
+        // if (distressLocation != null)  {
+        //     //only update counter for the final one you're gonna help
+        //     // Comms.incrementHelpersForArchon(distressLocationIdx);
+        //     return;
+        // }
+        // else if (currState != SoldierState.RUSHING && 
+        //     Comms.getSoldierCatFromFlag(rc.readSharedArray(Comms.SOLDIER_STATE_IDX)) == Comms.SoldierStateCategory.RUSH_SOLDIERS) {
+        //     currState = SoldierState.RUSHING;
+        //     MapLocation[] targetAndId = findWeakestArchon(Comms.enemyArchonCount());
+        //     target = targetAndId[0];
+        //     targetId = targetAndId[1].x;
+        // }
+        // else if (currState == SoldierState.RUSHING && Comms.isArchonDead(targetId)) {
+        //     target = null;
+        //     targetId = 0;
+        //     currState = SoldierState.EXPLORING;
+        // }
+        // else if(currState != SoldierState.RUSHING){
+        //     currState = SoldierState.EXPLORING;
+        // }
     }
 
     public RobotInfo getClosestEnemy() {
