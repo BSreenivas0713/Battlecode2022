@@ -40,8 +40,8 @@ public class Miner extends Robot {
         unitLeadLoc = null;
         for(int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
-            int leadDistToHomeDiff = currLoc.distanceSquaredTo(home) - loc.distanceSquaredTo(home);
             int leadAmount = rc.senseLead(loc);
+            int leadDistToHomeDiff = currLoc.distanceSquaredTo(home) - loc.distanceSquaredTo(home);
             int leadScore = getScore(leadDistToHomeDiff, leadAmount);
             if (leadAmount > 1){
                 if (leadSource == null) {

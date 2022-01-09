@@ -39,6 +39,7 @@ public class Archon extends Robot {
     static int leadObesity;
     static int maxLeadUsedByArchons;
     static int distressSemaphore = 0;
+    static MapLocation closestLeadOre;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -145,6 +146,7 @@ public class Archon extends Robot {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
     }
+
 
     public boolean shouldCallForHelp() throws GameActionException {
         // int numFriendlies = 0;
@@ -253,13 +255,13 @@ public class Archon extends Robot {
         return counter;
     }
 
-    public int minerSoldier5050(int counter) throws GameActionException {
-        switch(counter % 2) {
-            case 0:
-                counter = buildMiner(counter);
+    public int minerSoldier31(int counter) throws GameActionException {
+        switch(counter % 3) {
+            case 0: case 1:
+                counter = buildSoldier(counter);
                 break;
             default:
-                counter = buildSoldier(counter);
+                counter = buildMiner(counter);
                 break;
         }
         return counter;
@@ -267,7 +269,7 @@ public class Archon extends Robot {
 
     public int minerSoldierRatio(int mod, int counter) throws GameActionException {
         switch(counter % mod) {
-            case 0:
+            case (0):
                 counter = buildMiner(counter);
                 break;
             default:
@@ -303,8 +305,8 @@ public class Archon extends Robot {
                 if (leadToUse < Util.LeadThreshold) {
                     break;
                 }
-                if(minerCount <= MIN_NUM_MINERS) {
-                    chillingCounter = minerSoldier5050(chillingCounter);
+                if(minerCount <= MIN_NUM_MINERS && soldierCount >= minerCount) {
+                    chillingCounter = minerSoldier31(chillingCounter);
                 }
                 else {
                     chillingCounter = minerSoldierRatio(7, chillingCounter);

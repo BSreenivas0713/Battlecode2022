@@ -29,8 +29,9 @@ public class Soldier extends Robot {
     static int overallFriendlySoldierDy;
     static MapLocation avgEnemyLoc;
     static RobotInfo closestEnemy;
+    static int numFriendlies;
+    static int numEnemies;
     static int numEnemySoldiersAttackingUs;
-    static int numFriendlySoldiersAttackingClosest;
 
     public Soldier(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -203,13 +204,15 @@ public class Soldier extends Robot {
 
     public void resetShouldRunAway() throws GameActionException {
         numEnemySoldiersAttackingUs = 0;
-        numFriendlySoldiersAttackingClosest = 0;
+        numFriendlies = 0;
+        numEnemies = 0;
         MapLocation closestEnemySoldier = null;
         int closestSoldierDist = Integer.MAX_VALUE;
         for (RobotInfo bot : EnemySensable) {
             MapLocation candidateLoc = bot.getLocation();
             int candidateDist = currLoc.distanceSquaredTo(candidateLoc);
-            if (bot.getType() == RobotType.SOLDIER) {
+            if (bot.getType() == RobotType.SOLDIER || bot.getType() == RobotType.WATCHTOWER) {
+                numEnemies++;
                 if (candidateDist <= actionRadiusSquared) {
                     numEnemySoldiersAttackingUs++;
                 }
@@ -219,18 +222,16 @@ public class Soldier extends Robot {
                 }
             }
         }
-        if (closestEnemySoldier != null) {
-            for (RobotInfo bot : rc.senseNearbyRobots(closestEnemySoldier, actionRadiusSquared, rc.getTeam())) {
-                if (bot.getType() == RobotType.SOLDIER) {
-                    numFriendlySoldiersAttackingClosest++;
-                }
+        for (RobotInfo Fbot : FriendlySensable) {
+            if (Fbot.getType() == RobotType.SOLDIER || Fbot.getType() == RobotType.WATCHTOWER) {
+                numFriendlies++;
             }
         }
     }
 
     public boolean shouldRunAway() {
-        Debug.printString("enemy: " + numEnemySoldiersAttackingUs);
-        return numEnemySoldiersAttackingUs > 0;
+        Debug.printString("enemyAction: " + numEnemySoldiersAttackingUs + "enemy: " + numEnemies + "friends: " + numFriendlies);
+        return numEnemySoldiersAttackingUs > 0 || (numFriendlies < numEnemies);
     }
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {
@@ -247,10 +248,15 @@ public class Soldier extends Robot {
             }
             if(dest != null) {
                 Direction dir = Nav.getBestDir(dest);
-                Direction[] targetDirs = Util.getInOrderDirections(dir);
-                tryMoveDest(targetDirs);
+                if(closestEnemy.getType() == RobotType.MINER && rc.senseRubble(currLoc.add(dir)) > (20 + 1.2 * rc.senseRubble(currLoc))) {
+                    return false;
+                }
+                else {
+                    Direction[] targetDirs = Util.getInOrderDirections(dir);
+                    tryMoveDest(targetDirs);
+                    return true;
+                }
             }
-            return true;
         }
         return false;
     }
