@@ -1,9 +1,9 @@
-package MPGettingBetter;
+package MPTempName;
 
 import battlecode.common.*;
-import MPGettingBetter.Debug.*;
-import MPGettingBetter.Util.*;
-import MPGettingBetter.Comms.*;
+import MPTempName.Debug.*;
+import MPTempName.Util.*;
+import MPTempName.Comms.*;
 
 public class Soldier extends Robot {
     static enum SoldierState {
