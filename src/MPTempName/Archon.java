@@ -149,14 +149,18 @@ public class Archon extends Robot {
     }
     public void updateClosestLeadOre() throws GameActionException{
         MapLocation[] locs = rc.senseNearbyLocationsWithLead(visionRadiusSquared);
-        int closestLeadDist = Integer.MAX_VALUE;
+        // int closestLeadDist = Integer.MAX_VALUE;
         MapLocation closestLeadLoc = null;
-        for(MapLocation loc: locs) {
-            int currDist = currLoc.distanceSquaredTo(loc);
-            if(currDist < closestLeadDist && rc.senseLead(loc) > 1) {
-                closestLeadDist = currDist;
-                closestLeadLoc = loc;
-            }
+        // for(MapLocation loc: locs) {
+        //     int currDist = currLoc.distanceSquaredTo(loc);
+        //     if(currDist < closestLeadDist && rc.senseLead(loc) > 1 && !loc.equals(currLoc)) {
+        //         closestLeadDist = currDist;
+        //         closestLeadLoc = loc;
+        //     }
+        // }
+        if(locs.length != 0) {
+            int closestLeadLocIdx = Util.rng.nextInt(locs.length);
+            closestLeadLoc = locs[closestLeadLocIdx];
         }
         if (closestLeadLoc != null) {
             closestLeadOre = closestLeadLoc;
@@ -164,6 +168,7 @@ public class Archon extends Robot {
         else {
             closestLeadOre = currLoc.add(Util.randomDirection());
         }
+        Debug.printString("ore: " + closestLeadOre);
     }
 
     public boolean shouldCallForHelp() throws GameActionException {

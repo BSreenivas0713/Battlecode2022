@@ -162,6 +162,11 @@ public class Miner extends Robot {
             dir = Nav.greedyDirection(currLoc.directionTo(closestEnemy.getLocation()).opposite());
             str = "going away from enemy";
         }
+        closestEnemy = getClosestEnemy(RobotType.WATCHTOWER);
+        if(closestEnemy != null) {
+            dir = Nav.greedyDirection(currLoc.directionTo(closestEnemy.getLocation()).opposite());
+            str = "going away from enemy";
+        }
         
         if(goldSource != null) {
             dir = Nav.greedyDirection(currLoc.directionTo(goldSource));
