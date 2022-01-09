@@ -74,7 +74,6 @@ public class Comms {
 
     private static RobotController rc;
     public static boolean foundEnemy;
-    public static boolean foundEnemySoldier;
 
     public enum InformationCategory {
         EMPTY,
@@ -90,17 +89,13 @@ public class Comms {
     // Categories of information to tell the Archons
     public enum ArchonInfo {
         FOUND_ENEMY,
-        FOUND_ENEMY_SOLDIER
     }
 
-    public static int encodeArchonInfo(ArchonInfo cat) {
-        return 1 << cat.ordinal();
-    }
+    static final int FOUND_ENEMY_ARCHON_INFO = (1 << ArchonInfo.FOUND_ENEMY.ordinal());
 
     static void init(RobotController r) {
         rc = r;
         foundEnemy = false;
-        foundEnemySoldier = false;
     }
     
     public static int encodeArchonFlag(InformationCategory cat) {
@@ -366,25 +361,15 @@ public class Comms {
     }
 
     // Lets Archons know when the first enemy has been found
-    public static void broadcastEnemyFound(RobotInfo[] enemySensable) throws GameActionException {
-        if (!foundEnemySoldier) {
+    public static void broadcastEnemyFound() throws GameActionException {
+        if(!foundEnemy) {
             int archonInfo = rc.readSharedArray(ARCHON_COMM_IDX);
-            int foundEnemyArchonInfo = encodeArchonInfo(ArchonInfo.FOUND_ENEMY);
-            int foundEnemySoldierArchonInfo = encodeArchonInfo(ArchonInfo.FOUND_ENEMY_SOLDIER);
-            foundEnemy = (archonInfo & foundEnemyArchonInfo) == foundEnemyArchonInfo;
-            foundEnemySoldier = (archonInfo & foundEnemySoldierArchonInfo) == foundEnemySoldierArchonInfo;
-            if (!foundEnemySoldier) {
-                for (RobotInfo bot : enemySensable) {
-                    foundEnemy = true;
-                    archonInfo |= foundEnemyArchonInfo;
-                    if (bot.getType() == RobotType.SOLDIER) {
-                        foundEnemySoldier = true;
-                        archonInfo |= foundEnemySoldierArchonInfo;
-                        break;
-                    }
-                }
+            foundEnemy = (archonInfo & FOUND_ENEMY_ARCHON_INFO) == 1;
+            if(rc.senseNearbyRobots(rc.getType().visionRadiusSquared, 
+                rc.getTeam().opponent()).length > 0) {
+                foundEnemy = true;
+                Comms.writeIfChanged(ARCHON_COMM_IDX, archonInfo | FOUND_ENEMY_ARCHON_INFO);
             }
-            Comms.writeIfChanged(ARCHON_COMM_IDX, archonInfo);
         }
     }
 

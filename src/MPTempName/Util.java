@@ -90,4 +90,13 @@ public class Util {
         double amountLeftForMyTurn = 1.0 - ((double) thisArchon - 1.0) * myShare;
         return myShare / amountLeftForMyTurn;
     }
+
+    static int getInitNumMiners() {
+        if (MAP_AREA < 1500) {
+            return 6;
+        }
+        else {
+            return 12;
+        }
+    }
 }

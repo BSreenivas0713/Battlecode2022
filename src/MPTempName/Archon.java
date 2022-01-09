@@ -15,6 +15,7 @@ public class Archon extends Robot {
         INIT,
     };
 
+    static int INIT_NUM_MINERS;
     static int MAX_NUM_MINERS;
     static int MIN_NUM_MINERS;
 
@@ -44,10 +45,12 @@ public class Archon extends Robot {
         super(r);
         //writing all Archon locations immediately on round 0
         stateStack = new ArrayDeque<State>();
-        MAX_NUM_MINERS = Math.min(Util.MAX_MINERS,
-                                    rc.getMapWidth() * rc.getMapHeight() /
-                                    Util.MAX_MAP_SIZE_TO_MINER_RATIO);
+        // MAX_NUM_MINERS = Math.min(Util.MAX_MINERS,
+        //                             rc.getMapWidth() * rc.getMapHeight() /
+        //                             Util.MAX_MAP_SIZE_TO_MINER_RATIO);
+        MAX_NUM_MINERS = 20;
         MIN_NUM_MINERS = MAX_NUM_MINERS / 4;
+        INIT_NUM_MINERS = Util.getInitNumMiners();
         Debug.println("Max number of miners: " + MAX_NUM_MINERS+ ", Min number of miners: " + MIN_NUM_MINERS);
         int nextArchon = Comms.incrementFriendly();
         int myLocFlag = Comms.encodeLocation();
@@ -333,16 +336,27 @@ public class Archon extends Robot {
     }
 
     public void firstRounds() throws GameActionException {
-        RobotType toBuild = RobotType.MINER;
-        Direction dir = Util.randomDirection(nonWallDirections);
+        // RobotType toBuild = RobotType.MINER;
+        // Direction dir = Util.randomDirection(nonWallDirections);
         // if(leadSource == null) {
         //     dir = Util.randomDirection(nonWallDirections);
         // }
         // else {
         //     dir = rc.getLocation().directionTo(leadSource);
         // }
-        buildRobot(toBuild,dir);
-
+        // buildRobot(toBuild,dir);
+        if (minerCount < INIT_NUM_MINERS) {
+            chillingCounter = buildMiner(chillingCounter);
+        }
+        else if (soldierCount < INIT_NUM_MINERS) {
+            chillingCounter = buildSoldier(chillingCounter);
+        }
+        else if (minerCount < MAX_NUM_MINERS) {
+            chillingCounter = minerSoldier5050(chillingCounter);
+        }
+        else {
+            changeState(State.CHILLING);
+        }
     }
 
     public void updateLead() throws GameActionException {
@@ -369,10 +383,14 @@ public class Archon extends Robot {
         switch (currentState) {
             case INIT:
                 Debug.printString("lead obesity: " + leadObesity);
-                if((robotCounter >= 3 && Comms.foundEnemy) /*|| minerCount >= MIN_NUM_MINERS*/) {
-                    changeState(State.CHILLING);
-                }
-                else if(rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
+                // if((robotCounter >= 3 && Comms.foundEnemy) /*|| minerCount >= MIN_NUM_MINERS*/) {
+                //     changeState(State.CHILLING);
+                // }
+                // else if(rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
+                //     stateStack.push(State.CHILLING);
+                //     changeState(State.OBESITY);
+                // }
+                if(rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
                     stateStack.push(State.CHILLING);
                     changeState(State.OBESITY);
                 }
