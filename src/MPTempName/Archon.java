@@ -114,6 +114,10 @@ public class Archon extends Robot {
 
     public boolean buildRobot(RobotType toBuild, Direction mainDir) throws GameActionException {
         Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
+        int leadAmount = rc.getTeamLeadAmount(rc.getTeam());
+        if (currentState != State.INIT && !Comms.canBuildPrioritized(turnNumber, leadAmount)) {
+            return false;
+        }
         for(Direction dir : orderedDirs) {
             if (rc.canBuildRobot(toBuild, dir)){
                 rc.buildRobot(toBuild, dir);
@@ -284,10 +288,16 @@ public class Archon extends Robot {
 
     public int minerSoldier31(int counter) throws GameActionException {
         switch(counter % 3) {
-            case 0: case 1:
+            case 0: 
+                Comms.encodeBuildGuess(turnNumber, Buildable.SOLDIER);
+                counter = buildSoldier(counter);
+                break;
+            case 1:
+                Comms.encodeBuildGuess(turnNumber, Buildable.MINER);
                 counter = buildSoldier(counter);
                 break;
             default:
+                Comms.encodeBuildGuess(turnNumber, Buildable.SOLDIER);
                 counter = buildMiner(counter);
                 break;
         }
@@ -297,9 +307,15 @@ public class Archon extends Robot {
     public int minerSoldierRatio(int mod, int counter) throws GameActionException {
         switch(counter % mod) {
             case (0):
+                Comms.encodeBuildGuess(turnNumber, Buildable.SOLDIER);
                 counter = buildMiner(counter);
                 break;
             default:
+                if (counter % mod == mod - 1) {
+                    Comms.encodeBuildGuess(turnNumber, Buildable.MINER);
+                } else {
+                    Comms.encodeBuildGuess(turnNumber, Buildable.SOLDIER);
+                }
                 counter = buildSoldier(counter);
                 break;
         }
@@ -309,9 +325,15 @@ public class Archon extends Robot {
     public int SoldierBuilderRatio(int mod, int counter) throws GameActionException {
         switch(counter % mod) {
             case 0:
+                Comms.encodeBuildGuess(turnNumber, Buildable.SOLDIER);
                 counter = buildBuilder(counter);
                 break;
             default:
+                if (counter % mod == mod - 1) {
+                    Comms.encodeBuildGuess(turnNumber, Buildable.BUILDER);
+                } else {
+                    Comms.encodeBuildGuess(turnNumber, Buildable.SOLDIER);
+                }
                 counter = buildSoldier(counter);
                 break;
 

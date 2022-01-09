@@ -497,7 +497,7 @@ public class Comms {
             case BUILDER:
                 return 40;
             default: 
-                return -1;
+                return 0;
             }
         }
     public static boolean canBuildPrioritized(int archonNum, int leadAmount) throws GameActionException{
