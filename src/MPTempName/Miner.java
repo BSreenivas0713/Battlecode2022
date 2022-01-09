@@ -5,10 +5,14 @@ import MPTempName.Debug.*;
 import MPTempName.Util.*;
 
 public class Miner extends Robot {
-    int roundNumBorn;
-    int minerCount;
-    boolean explorer;
-    MapLocation unitLeadLoc;
+    static int roundNumBorn;
+    static int minerCount;
+    static boolean explorer;
+    static MapLocation unitLeadLoc;
+    static MapLocation closestLead;
+    static MapLocation goldSource;
+    static float overallDX;
+    static float overallDY;
 
     public Miner(RobotController r) throws GameActionException {
         super(r);
@@ -22,50 +26,35 @@ public class Miner extends Robot {
         }
     }
 
-    public int getScore(int diff, int leadAmount) {
-        return diff + (int)(leadAmount * .5);
-    }
 
-    public MapLocation[] findLeadAndGold() throws GameActionException {
-        MapLocation leadSource = null;
-        int bestLeadScore = -1;
-        MapLocation goldSource = null;
-        int totalLeadSourcesWithinDomain = 0;
-        int someoneClaimed = 0;
-        float overallDX = 0;
-        float overallDY = 0;
+    public int[] findLeadAndGold() throws GameActionException {
+        goldSource = null;
+        overallDX = 0;
+        overallDY = 0;
 // find the best lead source, prioritizing lead that is within your action radius
-        MapLocation[] locs = rc.senseNearbyLocationsWithLead(RobotType.MINER.visionRadiusSquared);
+        MapLocation[] locs = rc.senseNearbyLocationsWithLead(visionRadiusSquared);
         MapLocation loc;
         unitLeadLoc = null;
+        int[] actionRadiusArr = new int[9];
+        for (int x = 0; x < 3; x ++) {for (int y = 0; y < 3; y ++ ) {actionRadiusArr[3 * x + y] = 0;}}
+        closestLead = null;
+        minerCount = 0;
+        int distToClosestLead = Integer.MAX_VALUE;
         for(int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
             int leadAmount = rc.senseLead(loc);
-            int leadDistToHomeDiff = currLoc.distanceSquaredTo(home) - loc.distanceSquaredTo(home);
-            int leadScore = getScore(leadDistToHomeDiff, leadAmount);
             if (leadAmount > 1){
-                if (leadSource == null) {
-                    leadSource = loc;
-                    bestLeadScore = leadScore;
+                int currDist = currLoc.distanceSquaredTo(loc);
+                if(currDist < distToClosestLead) {
+                    distToClosestLead = currDist;
+                    closestLead = loc;
+                    
                 }
-                else if (leadSource.isWithinDistanceSquared(currLoc, actionRadiusSquared)) {
-                    if (bestLeadScore < leadScore && loc.isWithinDistanceSquared(currLoc, actionRadiusSquared)) {
-                        leadSource = loc;
-                        bestLeadScore = leadScore;
-                    }
-                }
-                else {
-                    if (bestLeadScore < leadScore || loc.isWithinDistanceSquared(currLoc, actionRadiusSquared)) {
-                        leadSource = loc;
-                        bestLeadScore = leadScore;
-                    }
+                if (currDist <= actionRadiusSquared) {
+                    actionRadiusArr[(1 + (loc.x - currLoc.x)) * 3  + (1 + (loc.y - currLoc.y))] = leadAmount;
                 }
             } else {
                 unitLeadLoc = loc;
-            }
-            
-            if (leadAmount > 0 && loc.isWithinDistanceSquared(currLoc, Util.MinerDomain)) {
-                totalLeadSourcesWithinDomain ++;            
             }
         }
 
@@ -73,7 +62,6 @@ public class Miner extends Robot {
         if(locs.length > 0) {
             goldSource = locs[0];
         }
-
         RobotInfo[] sensableWithin8 = rc.senseNearbyRobots(8, rc.getTeam());
         RobotInfo possibleFriendly;
         for (int i = sensableWithin8.length - 1; i >= 0; i--) {
@@ -85,16 +73,9 @@ public class Miner extends Robot {
                     overallDX += currLoc.directionTo(possibleFriendly.getLocation()).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
                     overallDY += currLoc.directionTo(possibleFriendly.getLocation()).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
                 }
-
-                if(rc.senseLead(loc) > 0) {
-                    someoneClaimed = 1;
-                }
             }
         }
-        return new MapLocation[]{leadSource, goldSource, 
-               new MapLocation(totalLeadSourcesWithinDomain, someoneClaimed), 
-               new MapLocation((int)(overallDX), (int)(overallDY)),
-               };
+        return actionRadiusArr;
     }
 
     // Deplete unit lead sources if far away from home and more enemies than friends
@@ -102,41 +83,59 @@ public class Miner extends Robot {
         return EnemySensable.length > FriendlySensable.length &&
             !currLoc.isWithinDistanceSquared(home, Util.MIN_DIST_TO_DEPLETE_UNIT_LEAD);
     }
+    public String bigArrToString(int[] bigArr) {
+        return "[ " + "[ " + bigArr[0] + " " + bigArr[1] + " " + bigArr[2] + " ]," + "[ " + bigArr[3] + " " + bigArr[4] + " "  + bigArr[5] + " ]," + "[ "+  bigArr[6] + " " + bigArr[7] + " "  + bigArr[8] + " ]," + "]";
+    }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         Comms.incrementMinerCounter();
         // Try to mine on squares around us.
         boolean amMining = false;
-        MapLocation[] LeadGoldList = findLeadAndGold();
-        MapLocation leadSource = LeadGoldList[0];
-        MapLocation goldSource = LeadGoldList[1];
-        int totalLeadSourcesWithinDomain = LeadGoldList[2].x;
-        int someoneClaimed = LeadGoldList[2].y;
-        Direction DirectionAway = currLoc.directionTo(currLoc.translate(LeadGoldList[3].x, LeadGoldList[3].y)).opposite();
+        int[] actionRadiusArr = findLeadAndGold();
+        Direction DirectionAway = currLoc.directionTo(currLoc.translate((int)overallDX, (int)overallDY)).opposite();
         if(goldSource != null) {
             Debug.printString("Gold found");
             while(rc.canMineGold(goldSource)) {
                 rc.mineGold(goldSource);
             }
         }
-        if(leadSource != null) {
-            Debug.printString("Lead found: " + leadSource.toString());
+        if(closestLead != null) {
+            // Debug.printString("Lead found: " + closestLead.toString());
+            Debug.printString(bigArrToString(actionRadiusArr));
             if(unitLeadLoc != null && shouldDepleteUnitLead() && rc.canMineLead(unitLeadLoc)) {
                 Debug.printString("Depleting unit lead");
                 rc.mineLead(unitLeadLoc);
             }
-            while(rc.canMineLead(leadSource) && rc.senseLead(leadSource) > 1) {
-                Comms.incrementMinerMiningCounter();
-                rc.mineLead(leadSource);
-                amMining = true;
+            boolean done = false;
+            int numTimesMined = 0;
+            for(int x = 0; x < 3; x ++) {
+                for (int y = 0; y < 3; y++) {
+                    if(actionRadiusArr[3 *x + y] > 1) {
+                        MapLocation leadSource = currLoc.translate(x - 1, y - 1);
+                        int supposedLeadValue = actionRadiusArr[3 * x + y];
+                        while(rc.canMineLead(leadSource) && supposedLeadValue != 1) {
+                            rc.mineLead(leadSource);
+                            numTimesMined++;
+                            supposedLeadValue--;
+                            // if(rc.getRoundNum() < 20) {
+                            //     System.out.println(Integer.toString(numTimesMined) + " " + Integer.toString(supposedLeadValue) + " " + Integer.toString(x) + " " + Integer.toString(y) + " ");
+                            // }
+                            amMining = true;
+                        }
+                        if(numTimesMined == 5) {
+                            done = true;
+                        }
+                    }
+                    if(done) {break;}
+                }
+                if(done) {break;}
             }
+            
         }
         Direction[] dir = {};
         String str = "";
-        Debug.printString("Domain: " + totalLeadSourcesWithinDomain);
-
-        if (!amMining && (totalLeadSourcesWithinDomain < 15 || someoneClaimed == 1)  && !explorer) {
+        if (!amMining) {
             dir = Nav.explore();
             str = "Exploring";
         }
@@ -149,13 +148,12 @@ public class Miner extends Robot {
                 }
             }
         }
-
-        if(leadSource != null) {
-            dir = Nav.greedyDirection(currLoc.directionTo(leadSource));
-            str = "going towards lead";
-            if(minerCount >= 4 && someoneClaimed == 1 && amMining) {
+        if(closestLead != null) {
+            dir = Nav.greedyDirection(currLoc.directionTo(closestLead));
+            str = "going towards lead at" + closestLead.toString();
+            if(minerCount >= 4) {
                 dir = Nav.greedyDirection(DirectionAway);
-                str = "going away from other miners: " + DirectionAway.toString() + " " + Integer.toString(LeadGoldList[3].x) + " " + Integer.toString(LeadGoldList[3].y);
+                str = "going away from other miners: " + DirectionAway.toString();
             }
         }
 
@@ -170,7 +168,7 @@ public class Miner extends Robot {
             str = "going toward gold";
         }
 
-        Debug.printString(str);
+        // Debug.printString(str);
         tryMoveDest(dir);
     }
 }

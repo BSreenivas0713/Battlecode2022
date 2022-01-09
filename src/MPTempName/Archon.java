@@ -137,6 +137,7 @@ public class Archon extends Robot {
         boolean underAttack = broadcastSoldierNear();
         updateLead();
         updateRobotCounts();
+        updateClosestLeadOre();
         boolean isObese = checkForObesity();
         toggleState(underAttack, isObese);
         doStateAction();
@@ -146,7 +147,24 @@ public class Archon extends Robot {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
     }
-
+    public void updateClosestLeadOre() throws GameActionException{
+        MapLocation[] locs = rc.senseNearbyLocationsWithLead(visionRadiusSquared);
+        int closestLeadDist = Integer.MAX_VALUE;
+        MapLocation closestLeadLoc = null;
+        for(MapLocation loc: locs) {
+            int currDist = currLoc.distanceSquaredTo(loc);
+            if(currDist < closestLeadDist && rc.senseLead(loc) > 1) {
+                closestLeadDist = currDist;
+                closestLeadLoc = loc;
+            }
+        }
+        if (closestLeadLoc != null) {
+            closestLeadOre = closestLeadLoc;
+        }
+        else {
+            closestLeadOre = currLoc.add(Util.randomDirection());
+        }
+    }
 
     public boolean shouldCallForHelp() throws GameActionException {
         // int numFriendlies = 0;
@@ -226,7 +244,7 @@ public class Archon extends Robot {
     public int buildMiner(int counter) throws GameActionException {
         if (minerCount < MAX_NUM_MINERS) {
             Debug.printString("Building miner");
-            if(buildRobot(RobotType.MINER, Util.randomDirection())){
+            if(buildRobot(RobotType.MINER, currLoc.directionTo(closestLeadOre))){
                 counter++;
             }
         }
@@ -336,13 +354,7 @@ public class Archon extends Robot {
 
     public void firstRounds() throws GameActionException {
         RobotType toBuild = RobotType.MINER;
-        Direction dir = Util.randomDirection(nonWallDirections);
-        // if(leadSource == null) {
-        //     dir = Util.randomDirection(nonWallDirections);
-        // }
-        // else {
-        //     dir = rc.getLocation().directionTo(leadSource);
-        // }
+        Direction dir = currLoc.directionTo(closestLeadOre);
         buildRobot(toBuild,dir);
 
     }
