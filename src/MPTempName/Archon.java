@@ -42,6 +42,7 @@ public class Archon extends Robot {
     static int maxLeadUsedByArchons;
     static int distressSemaphore = 0;
     static MapLocation closestLeadOre;
+    static Buildable nextBuild = Buildable.MINER;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -116,8 +117,16 @@ public class Archon extends Robot {
 
     public boolean buildRobot(RobotType toBuild, Direction mainDir) throws GameActionException {
         Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
+        if (!Comms.canBuildPrioritized(turnNumber)) {
+            Debug.printString("Not my turn.");
+            return false;
+        } else {
+            Debug.printString("My turn.");
+        }
         for(Direction dir : orderedDirs) {
             if (rc.canBuildRobot(toBuild, dir)){
+                Comms.useLead(toBuild);
+                Comms.encodeBuildGuess(turnNumber, nextBuild);
                 rc.buildRobot(toBuild, dir);
                 RobotInfo robot = rc.senseRobotAtLocation(rc.getLocation().add(dir));
                 //in future, add info about this new robot to maps
@@ -134,6 +143,10 @@ public class Archon extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        if (turnNumber == 1) {
+            Comms.clearUsedLead();
+            Comms.clearBuildGuesses();
+        }
         clearAndResetHelpers();
         Comms.resetAvgEnemyLoc();
         boolean underAttack = false;
@@ -285,10 +298,16 @@ public class Archon extends Robot {
 
     public int minerSoldier31(int counter) throws GameActionException {
         switch(counter % 3) {
-            case 0: case 1:
+            case 0: 
+                nextBuild = Buildable.SOLDIER;
+                counter = buildSoldier(counter);
+                break;
+            case 1:
+                nextBuild = Buildable.MINER;
                 counter = buildSoldier(counter);
                 break;
             default:
+                nextBuild = Buildable.SOLDIER;
                 counter = buildMiner(counter);
                 break;
         }
@@ -298,9 +317,15 @@ public class Archon extends Robot {
     public int minerSoldierRatio(int mod, int counter) throws GameActionException {
         switch(counter % mod) {
             case (0):
+                nextBuild = Buildable.SOLDIER;
                 counter = buildMiner(counter);
                 break;
             default:
+                if (counter % mod == mod - 1) {
+                    nextBuild = Buildable.MINER;
+                } else {
+                    nextBuild = Buildable.SOLDIER;
+                }
                 counter = buildSoldier(counter);
                 break;
         }
@@ -310,9 +335,15 @@ public class Archon extends Robot {
     public int SoldierBuilderRatio(int mod, int counter) throws GameActionException {
         switch(counter % mod) {
             case 0:
+                nextBuild = Buildable.SOLDIER;
                 counter = buildBuilder(counter);
                 break;
             default:
+                if (counter % mod == mod - 1) {
+                    nextBuild = Buildable.BUILDER;
+                } else {
+                    nextBuild = Buildable.SOLDIER;
+                }
                 counter = buildSoldier(counter);
                 break;
 
@@ -323,16 +354,16 @@ public class Archon extends Robot {
         switch(currentState) {
             case INIT:
                 Debug.printString("Init");
-                if (leadToUse < Util.LeadThreshold) {
+                /*if (leadToUse < Util.LeadThreshold) {
                     break;
-                }
+                }*/
                 firstRounds();
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
-                if (leadToUse < Util.LeadThreshold) {
+                /*if (leadToUse < Util.LeadThreshold) {
                     break;
-                }
+                }*/
                 if(minerCount <= MIN_NUM_MINERS && soldierCount >= minerCount) {
                     chillingCounter = minerSoldier31(chillingCounter);
                 }
@@ -365,6 +396,7 @@ public class Archon extends Robot {
     public void firstRounds() throws GameActionException {
         RobotType toBuild = RobotType.MINER;
         Direction dir = currLoc.directionTo(closestLeadOre);
+        nextBuild = Buildable.MINER;
         if(buildRobot(toBuild,dir)) {
             numMinersBuilt++;
             nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
