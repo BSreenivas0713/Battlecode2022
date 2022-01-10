@@ -108,6 +108,44 @@ public class Comms {
     public static int encodeArchonFlag(InformationCategory cat) {
         return cat.ordinal();
     }
+
+    // Turn last into second last, second last into third last.
+    // Take the archon that just went and make it the last.
+    // Set the special bit to 1 to indicate someone already got the win this round.
+    public static void updateMostRecentArchons(int archonNum) throws GameActionException {
+        int oldFlag = rc.readSharedArray(BUILD_GUESS_IDX);
+        int guesses = oldFlag & 255;
+        int last = archonNum - 1;
+        int secondLast = (oldFlag >> 8) & 3; // old last
+        int thirdLast = (oldFlag >> 10) & 3; // old second last
+        int newFlag = guesses | (thirdLast << 12) | (secondLast << 10) | (last << 8) | (1 << 14);
+        if (oldFlag != newFlag) {
+            rc.writeSharedArray(BUILD_GUESS_IDX, newFlag);
+        }
+    }
+
+    // Get a list of the last three chosen.
+    public static int[] lastArchonsChosen() throws GameActionException {
+        int flag = rc.readSharedArray(BUILD_GUESS_IDX);
+        int [] result = new int [] {(flag >> 8) & 3, (flag >> 10) & 3, (flag >> 12) & 3};
+        for (int i = 0; i < 3; i++) {
+            result[i] = result[i] + 1;
+        }
+        return result;
+    }
+
+    // Check the bit to see if someone was already chosen this round.
+    public static boolean lastArchonsIsUpdated() throws GameActionException {
+        return ((rc.readSharedArray(BUILD_GUESS_IDX) >> 14) & 1) == 1;
+    }
+
+    // If you are the last Archon, turn off the bit for the next round.
+    public static void lastArchonsSetUpdated() throws GameActionException {
+        int oldFlag = rc.readSharedArray(BUILD_GUESS_IDX);
+        int mask = ~(1 << 14);
+        writeIfChanged(BUILD_GUESS_IDX, oldFlag & mask);
+    }
+
     public static void encodeBuildGuess(int archonNum, Buildable buildCat) throws GameActionException{
         int currFlagValue = rc.readSharedArray(BUILD_GUESS_IDX);
         int bits = buildCat.ordinal() << ((archonNum - 1) * 2);
@@ -483,7 +521,7 @@ public class Comms {
     }
 
     public static boolean isIn(int[] locList, int loc) {
-        for(int i = 0; i < locList.length; i ++) {
+        for(int i = 0; i < 4; i ++) {
             if(loc == locList[i]) {return true;} 
         }
         return false;
@@ -500,7 +538,7 @@ public class Comms {
                 return 0;
             }
         }
-    public static boolean canBuildPrioritized(int archonNum, int leadAmount) throws GameActionException{
+    public static boolean canBuildPrioritizedOLD(int archonNum, int leadAmount) throws GameActionException{
         int[] order = getArchonOrderGivenClusters();
         for (int i = 0; i < rc.getArchonCount(); i++) {
             int currArchon = order[i];
@@ -514,7 +552,165 @@ public class Comms {
         }
         return false;
     }
-            
+          
+    public static boolean canBuildPrioritized(int archonNum) throws GameActionException {
+        int numArchons = rc.getArchonCount();
+        boolean alreadySplit = lastArchonsIsUpdated();
+        int[] order = getArchonOrderGivenClusters();
+        int[] lastOnes = lastArchonsChosen();
+        int numImportant = order[4];
+        /*if (rc.getRoundNum() > 200 && rc.getRoundNum() < 250) {
+            System.out.println("There are " + numImportant + " important Archons.");
+            System.out.print("The order is [");
+            for (int i = 0; i < numArchons; i++) {
+                System.out.print(order[i] + ",");
+            }
+            System.out.println("]");
+        }*/
+        int leadNeeded = 0;
+        int totalLeadNeeded = 0;
+        boolean weAreImportant = false;
+
+        // Count the lead needed by important Archons
+        for (int i = 0; i < numImportant; i++) {
+            int currArchon = order[i];
+            Buildable bot = getBuildGuess(currArchon);
+            int cost = buildableCost(bot);
+            if (currArchon > archonNum) {
+                leadNeeded += cost;
+                totalLeadNeeded += cost;
+            } else if (currArchon == archonNum) {
+                weAreImportant = true;
+                leadNeeded += cost;
+                totalLeadNeeded += cost;
+            }
+        }
+        // Count the lead needed by all Archons
+        for (int i = numImportant; i < numArchons; i++) {
+            int currArchon = order[i];
+            Buildable bot = getBuildGuess(currArchon);
+            int cost = buildableCost(bot);
+            if (currArchon > archonNum) {
+                totalLeadNeeded += cost;
+            } else if (currArchon == archonNum) {
+                totalLeadNeeded += cost;
+            }
+        }
+
+        // If we have enough for everybody, build. If we have
+        // enough for ones near clusters, build if we are near one.
+        int ourLead = rc.getTeamLeadAmount(rc.getTeam());
+        if (ourLead >= totalLeadNeeded) {
+            return true;
+        } else if (!weAreImportant) {
+            return false;
+        } else if (ourLead >= leadNeeded) {
+            return true;
+        }
+        // If we've already chosen one to take all the marbles, go for it
+        if (alreadySplit) {
+            if (archonNum == numArchons) {
+                lastArchonsSetUpdated();
+            }
+            return true;
+        }
+
+        // If we are here, then there is only enough lead for one, and that one
+        // has not been chosen yet
+        int bestArchon = 0;
+        switch (numImportant) {
+            // In case 1, there is one important one, and we are important.
+            // So...it's us. Return true.
+            case 1:
+                updateMostRecentArchons(archonNum);
+                if (archonNum == numArchons) {
+                    lastArchonsSetUpdated();
+                }
+                return true;
+            // In case 2, there are two important ones, and we're one of them.
+            case 2:
+                int otherImportant = 0;
+                // Find the other one
+                for (int i = 0; i < numImportant; i++) {
+                    if (order[i] != archonNum) {
+                        otherImportant = order[i];
+                        break;
+                    }
+                }
+                // Loop through most recent ones, figure out which one of us moved last
+                for (int i = 0; i < 3; i++) {
+                    if (lastOnes[i] == otherImportant) {
+                        bestArchon = archonNum;
+                        break;
+                    } else if (lastOnes[i] == archonNum) {
+                        bestArchon = otherImportant;
+                        break;
+                    }
+                }
+                // Use lead if we are older
+                if (bestArchon == 0 || bestArchon == archonNum) {
+                    updateMostRecentArchons(archonNum);
+                    if (archonNum == numArchons) {
+                        lastArchonsSetUpdated();
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            // In case 3 we do the same thing but must check for all three.
+            case 3:
+                int secondImportant = 0;
+                int thirdImportant = 0;
+                for (int i = 0; i < numImportant; i++) {
+                    if (order[i] != archonNum) {
+                        secondImportant = order[i];
+                        break;
+                    }
+                }
+                for (int i = 0; i < numImportant; i++) {
+                    if (order[i] != archonNum && order[i] != secondImportant) {
+                        thirdImportant = order[i];
+                        break;
+                    }
+                }
+                for (int i = 0; i < 3; i++) {
+                    if (lastOnes[i] == archonNum) {
+                        for (int j = i; j < 3; j++) {
+                            if (lastOnes[i] == secondImportant) {
+                                bestArchon = thirdImportant;
+                                break;
+                            } else if (lastOnes[i] == thirdImportant) {
+                                bestArchon = secondImportant;
+                                break;
+                            }
+                        }
+                        break;
+                    } else if (lastOnes[i] == secondImportant) {
+                        for (int j = i; j < 3; j++) {
+                            if (lastOnes[i] == archonNum) {
+                                bestArchon = thirdImportant;
+                                break;
+                            } else if (lastOnes[i] == thirdImportant) {
+                                bestArchon = archonNum;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                if (bestArchon == 0 || bestArchon == archonNum) {
+                    updateMostRecentArchons(archonNum);
+                    if (archonNum == numArchons) {
+                        lastArchonsSetUpdated();
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            default:
+                return false;
+        }
+    }
         
     public static int[] getArchonOrderGivenClusters() throws GameActionException {
         MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
@@ -538,7 +734,7 @@ public class Comms {
             }
         }
         int numArchons = rc.getArchonCount();
-        int[] closestArchonsToClusters = new int[]{-1,-1,-1,-1};
+        int[] closestArchonsToClusters = new int[]{-1,-1,-1,-1, 0};
         for (int clusterNum = 0; clusterNum < numClusters; clusterNum++) {
             MapLocation currCluster = currAvgLocs[clusterNum];
             int closestArchon = -1;
@@ -552,7 +748,10 @@ public class Comms {
                     closestArchon = archonNum + 1;
                 }
             }
-            if (!isIn(closestArchonsToClusters, closestArchon)) {closestArchonsToClusters[findNext(closestArchonsToClusters)] = closestArchon;}
+            if (!isIn(closestArchonsToClusters, closestArchon)) {
+                closestArchonsToClusters[4] = closestArchonsToClusters[4] + 1;
+                closestArchonsToClusters[findNext(closestArchonsToClusters)] = closestArchon;
+            }
         }
         for(int archonNum2 = 0; archonNum2 < numArchons; archonNum2 ++) {
             if(!isIn(closestArchonsToClusters, archonNum2 + 1)) {

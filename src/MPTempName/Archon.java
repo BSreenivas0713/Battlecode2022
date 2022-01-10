@@ -114,8 +114,7 @@ public class Archon extends Robot {
 
     public boolean buildRobot(RobotType toBuild, Direction mainDir) throws GameActionException {
         Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
-        int leadAmount = rc.getTeamLeadAmount(rc.getTeam());
-        if (currentState != State.INIT && !Comms.canBuildPrioritized(turnNumber, leadAmount)) {
+        if (currentState != State.INIT && !Comms.canBuildPrioritized(turnNumber)) {
             Debug.printString("Can't build.");
             return false;
         }
@@ -345,16 +344,16 @@ public class Archon extends Robot {
         switch(currentState) {
             case INIT:
                 Debug.printString("Init");
-                if (leadToUse < Util.LeadThreshold) {
+                /*if (leadToUse < Util.LeadThreshold) {
                     break;
-                }
+                }*/
                 firstRounds();
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
-                if (leadToUse < Util.LeadThreshold) {
+                /*if (leadToUse < Util.LeadThreshold) {
                     break;
-                }
+                }*/
                 if(minerCount <= MIN_NUM_MINERS && soldierCount >= minerCount) {
                     chillingCounter = minerSoldier31(chillingCounter);
                 }
