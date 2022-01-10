@@ -6,21 +6,11 @@ import battlecode.common.RobotController;
 
 public class BFSUnrolled {
 
-    RobotController rc;
+    static RobotController rc;
 
-    BFSUnrolled(RobotController rc){
-        this.rc = rc;
+    public static void init(RobotController r) {
+        rc = r;
     }
-
-    static MapLocation l19;
-    static double v19;
-    static Direction d19;
-    static double p19;
-
-    static MapLocation l29;
-    static double v29;
-    static Direction d29;
-    static double p29;
 
     static MapLocation l30;
     static double v30;
@@ -46,16 +36,6 @@ public class BFSUnrolled {
     static double v34;
     static Direction d34;
     static double p34;
-
-    static MapLocation l35;
-    static double v35;
-    static Direction d35;
-    static double p35;
-
-    static MapLocation l41;
-    static double v41;
-    static Direction d41;
-    static double p41;
 
     static MapLocation l42;
     static double v42;
@@ -91,11 +71,6 @@ public class BFSUnrolled {
     static double v48;
     static Direction d48;
     static double p48;
-
-    static MapLocation l49;
-    static double v49;
-    static Direction d49;
-    static double p49;
 
     static MapLocation l54;
     static double v54;
@@ -187,11 +162,6 @@ public class BFSUnrolled {
     static Direction d75;
     static double p75;
 
-    static MapLocation l79;
-    static double v79;
-    static Direction d79;
-    static double p79;
-
     static MapLocation l80;
     static double v80;
     static Direction d80;
@@ -236,11 +206,6 @@ public class BFSUnrolled {
     static double v88;
     static Direction d88;
     static double p88;
-
-    static MapLocation l89;
-    static double v89;
-    static Direction d89;
-    static double p89;
 
     static MapLocation l93;
     static double v93;
@@ -332,11 +297,6 @@ public class BFSUnrolled {
     static Direction d114;
     static double p114;
 
-    static MapLocation l119;
-    static double v119;
-    static Direction d119;
-    static double p119;
-
     static MapLocation l120;
     static double v120;
     static Direction d120;
@@ -372,16 +332,6 @@ public class BFSUnrolled {
     static Direction d126;
     static double p126;
 
-    static MapLocation l127;
-    static double v127;
-    static Direction d127;
-    static double p127;
-
-    static MapLocation l133;
-    static double v133;
-    static Direction d133;
-    static double p133;
-
     static MapLocation l134;
     static double v134;
     static Direction d134;
@@ -407,18 +357,8 @@ public class BFSUnrolled {
     static Direction d138;
     static double p138;
 
-    static MapLocation l139;
-    static double v139;
-    static Direction d139;
-    static double p139;
 
-    static MapLocation l149;
-    static double v149;
-    static Direction d149;
-    static double p149;
-
-
-    Direction getBestDir(MapLocation target){
+    public static Direction getBestDir(MapLocation target){
         l84 = rc.getLocation();
         v84 = 0;
         l71 = l84.add(Direction.WEST);
@@ -583,204 +523,136 @@ public class BFSUnrolled {
         l62 = l75.add(Direction.WEST);
         v62 = 1000000;
         d62 = null;
-        l49 = l62.add(Direction.WEST);
-        v49 = 1000000;
-        d49 = null;
-        l35 = l49.add(Direction.SOUTHWEST);
-        v35 = 1000000;
-        d35 = null;
-        l34 = l35.add(Direction.SOUTH);
+        l34 = l48.add(Direction.SOUTHWEST);
         v34 = 1000000;
         d34 = null;
         l33 = l34.add(Direction.SOUTH);
         v33 = 1000000;
         d33 = null;
-        l19 = l33.add(Direction.SOUTHWEST);
-        v19 = 1000000;
-        d19 = null;
-        l31 = l19.add(Direction.SOUTHEAST);
+        l31 = l32.add(Direction.SOUTH);
         v31 = 1000000;
         d31 = null;
         l30 = l31.add(Direction.SOUTH);
         v30 = 1000000;
         d30 = null;
-        l29 = l30.add(Direction.SOUTH);
-        v29 = 1000000;
-        d29 = null;
-        l41 = l29.add(Direction.SOUTHEAST);
-        v41 = 1000000;
-        d41 = null;
-        l54 = l41.add(Direction.EAST);
+        l54 = l42.add(Direction.SOUTHEAST);
         v54 = 1000000;
         d54 = null;
         l67 = l54.add(Direction.EAST);
         v67 = 1000000;
         d67 = null;
-        l79 = l67.add(Direction.SOUTHEAST);
-        v79 = 1000000;
-        d79 = null;
-        l93 = l79.add(Direction.NORTHEAST);
+        l93 = l80.add(Direction.EAST);
         v93 = 1000000;
         d93 = null;
         l106 = l93.add(Direction.EAST);
         v106 = 1000000;
         d106 = null;
-        l119 = l106.add(Direction.EAST);
-        v119 = 1000000;
-        d119 = null;
-        l133 = l119.add(Direction.NORTHEAST);
-        v133 = 1000000;
-        d133 = null;
-        l134 = l133.add(Direction.NORTH);
+        l134 = l122.add(Direction.SOUTHEAST);
         v134 = 1000000;
         d134 = null;
         l135 = l134.add(Direction.NORTH);
         v135 = 1000000;
         d135 = null;
-        l149 = l135.add(Direction.NORTHEAST);
-        v149 = 1000000;
-        d149 = null;
-        l137 = l149.add(Direction.NORTHWEST);
+        l137 = l136.add(Direction.NORTH);
         v137 = 1000000;
         d137 = null;
         l138 = l137.add(Direction.NORTH);
         v138 = 1000000;
         d138 = null;
-        l139 = l138.add(Direction.NORTH);
-        v139 = 1000000;
-        d139 = null;
-        l127 = l139.add(Direction.NORTHWEST);
-        v127 = 1000000;
-        d127 = null;
-        l114 = l127.add(Direction.WEST);
+        l114 = l113.add(Direction.NORTH);
         v114 = 1000000;
         d114 = null;
         l101 = l114.add(Direction.WEST);
         v101 = 1000000;
         d101 = null;
-        l89 = l101.add(Direction.NORTHWEST);
-        v89 = 1000000;
-        d89 = null;
 
         try {
-            if (rc.canSenseLocation(l71)) {
-                if (!rc.isLocationOccupied(l71)) {
-                    p71 = 1.0 + rc.senseRubble(l71) / 10.0;
-                    if (v71 > v84 + p71) {
-                        v71 = v84 + p71;
-                        d71 = Direction.WEST;
-                    }
+            if (rc.canMove(Direction.WEST)) {
+                p71 = 1.0 + rc.senseRubble(l71) / 10.0;
+                v71 = p71;
+                d71 = Direction.WEST;
+            }
+            if (rc.canMove(Direction.SOUTH)) {
+                p83 = 1.0 + rc.senseRubble(l83) / 10.0;
+                v83 = p83;
+                d83 = Direction.SOUTH;
+                if (v83 > v71 + p83) {
+                    v83 = v71 + p83;
+                    d83 = d71;
                 }
             }
-            if (rc.canSenseLocation(l83)) {
-                if (!rc.isLocationOccupied(l83)) {
-                    p83 = 1.0 + rc.senseRubble(l83) / 10.0;
-                    if (v83 > v84 + p83) {
-                        v83 = v84 + p83;
-                        d83 = Direction.SOUTH;
-                    }
-                    if (v83 > v71 + p83) {
-                        v83 = v71 + p83;
-                        d83 = d71;
-                    }
+            if (rc.canMove(Direction.NORTH)) {
+                p85 = 1.0 + rc.senseRubble(l85) / 10.0;
+                v85 = p85;
+                d85 = Direction.NORTH;
+                if (v85 > v71 + p85) {
+                    v85 = v71 + p85;
+                    d85 = d71;
                 }
             }
-            if (rc.canSenseLocation(l85)) {
-                if (!rc.isLocationOccupied(l85)) {
-                    p85 = 1.0 + rc.senseRubble(l85) / 10.0;
-                    if (v85 > v84 + p85) {
-                        v85 = v84 + p85;
-                        d85 = Direction.NORTH;
-                    }
-                    if (v85 > v71 + p85) {
-                        v85 = v71 + p85;
-                        d85 = d71;
-                    }
+            if (rc.canMove(Direction.EAST)) {
+                p97 = 1.0 + rc.senseRubble(l97) / 10.0;
+                v97 = p97;
+                d97 = Direction.EAST;
+                if (v97 > v85 + p97) {
+                    v97 = v85 + p97;
+                    d97 = d85;
+                }
+                if (v97 > v83 + p97) {
+                    v97 = v83 + p97;
+                    d97 = d83;
                 }
             }
-            if (rc.canSenseLocation(l97)) {
-                if (!rc.isLocationOccupied(l97)) {
-                    p97 = 1.0 + rc.senseRubble(l97) / 10.0;
-                    if (v97 > v84 + p97) {
-                        v97 = v84 + p97;
-                        d97 = Direction.EAST;
-                    }
-                    if (v97 > v85 + p97) {
-                        v97 = v85 + p97;
-                        d97 = d85;
-                    }
-                    if (v97 > v83 + p97) {
-                        v97 = v83 + p97;
-                        d97 = d83;
-                    }
+            if (rc.canMove(Direction.SOUTHWEST)) {
+                p70 = 1.0 + rc.senseRubble(l70) / 10.0;
+                v70 = p70;
+                d70 = Direction.SOUTHWEST;
+                if (v70 > v71 + p70) {
+                    v70 = v71 + p70;
+                    d70 = d71;
+                }
+                if (v70 > v83 + p70) {
+                    v70 = v83 + p70;
+                    d70 = d83;
                 }
             }
-            if (rc.canSenseLocation(l70)) {
-                if (!rc.isLocationOccupied(l70)) {
-                    p70 = 1.0 + rc.senseRubble(l70) / 10.0;
-                    if (v70 > v84 + p70) {
-                        v70 = v84 + p70;
-                        d70 = Direction.SOUTHWEST;
-                    }
-                    if (v70 > v71 + p70) {
-                        v70 = v71 + p70;
-                        d70 = d71;
-                    }
-                    if (v70 > v83 + p70) {
-                        v70 = v83 + p70;
-                        d70 = d83;
-                    }
+            if (rc.canMove(Direction.NORTHWEST)) {
+                p72 = 1.0 + rc.senseRubble(l72) / 10.0;
+                v72 = p72;
+                d72 = Direction.NORTHWEST;
+                if (v72 > v71 + p72) {
+                    v72 = v71 + p72;
+                    d72 = d71;
+                }
+                if (v72 > v85 + p72) {
+                    v72 = v85 + p72;
+                    d72 = d85;
                 }
             }
-            if (rc.canSenseLocation(l72)) {
-                if (!rc.isLocationOccupied(l72)) {
-                    p72 = 1.0 + rc.senseRubble(l72) / 10.0;
-                    if (v72 > v84 + p72) {
-                        v72 = v84 + p72;
-                        d72 = Direction.NORTHWEST;
-                    }
-                    if (v72 > v71 + p72) {
-                        v72 = v71 + p72;
-                        d72 = d71;
-                    }
-                    if (v72 > v85 + p72) {
-                        v72 = v85 + p72;
-                        d72 = d85;
-                    }
+            if (rc.canMove(Direction.SOUTHEAST)) {
+                p96 = 1.0 + rc.senseRubble(l96) / 10.0;
+                v96 = p96;
+                d96 = Direction.SOUTHEAST;
+                if (v96 > v97 + p96) {
+                    v96 = v97 + p96;
+                    d96 = d97;
+                }
+                if (v96 > v83 + p96) {
+                    v96 = v83 + p96;
+                    d96 = d83;
                 }
             }
-            if (rc.canSenseLocation(l96)) {
-                if (!rc.isLocationOccupied(l96)) {
-                    p96 = 1.0 + rc.senseRubble(l96) / 10.0;
-                    if (v96 > v84 + p96) {
-                        v96 = v84 + p96;
-                        d96 = Direction.SOUTHEAST;
-                    }
-                    if (v96 > v97 + p96) {
-                        v96 = v97 + p96;
-                        d96 = d97;
-                    }
-                    if (v96 > v83 + p96) {
-                        v96 = v83 + p96;
-                        d96 = d83;
-                    }
+            if (rc.canMove(Direction.NORTHEAST)) {
+                p98 = 1.0 + rc.senseRubble(l98) / 10.0;
+                v98 = p98;
+                d98 = Direction.NORTHEAST;
+                if (v98 > v85 + p98) {
+                    v98 = v85 + p98;
+                    d98 = d85;
                 }
-            }
-            if (rc.canSenseLocation(l98)) {
-                if (!rc.isLocationOccupied(l98)) {
-                    p98 = 1.0 + rc.senseRubble(l98) / 10.0;
-                    if (v98 > v84 + p98) {
-                        v98 = v84 + p98;
-                        d98 = Direction.NORTHEAST;
-                    }
-                    if (v98 > v85 + p98) {
-                        v98 = v85 + p98;
-                        d98 = d85;
-                    }
-                    if (v98 > v97 + p98) {
-                        v98 = v97 + p98;
-                        d98 = d97;
-                    }
+                if (v98 > v97 + p98) {
+                    v98 = v97 + p98;
+                    d98 = d97;
                 }
             }
             if (rc.canSenseLocation(l58)) {
@@ -1811,216 +1683,12 @@ public class BFSUnrolled {
                     d138 = d126;
                 }
             }
-            if (rc.canSenseLocation(l19)) {
-                p19 = 1.0 + rc.senseRubble(l19) / 10.0;
-                if (v19 > v32 + p19) {
-                    v19 = v32 + p19;
-                    d19 = d32;
-                }
-                if (v19 > v31 + p19) {
-                    v19 = v31 + p19;
-                    d19 = d31;
-                }
-                if (v19 > v33 + p19) {
-                    v19 = v33 + p19;
-                    d19 = d33;
-                }
-            }
-            if (rc.canSenseLocation(l29)) {
-                p29 = 1.0 + rc.senseRubble(l29) / 10.0;
-                if (v29 > v43 + p29) {
-                    v29 = v43 + p29;
-                    d29 = d43;
-                }
-                if (v29 > v42 + p29) {
-                    v29 = v42 + p29;
-                    d29 = d42;
-                }
-                if (v29 > v30 + p29) {
-                    v29 = v30 + p29;
-                    d29 = d30;
-                }
-            }
-            if (rc.canSenseLocation(l35)) {
-                p35 = 1.0 + rc.senseRubble(l35) / 10.0;
-                if (v35 > v47 + p35) {
-                    v35 = v47 + p35;
-                    d35 = d47;
-                }
-                if (v35 > v48 + p35) {
-                    v35 = v48 + p35;
-                    d35 = d48;
-                }
-                if (v35 > v34 + p35) {
-                    v35 = v34 + p35;
-                    d35 = d34;
-                }
-            }
-            if (rc.canSenseLocation(l41)) {
-                p41 = 1.0 + rc.senseRubble(l41) / 10.0;
-                if (v41 > v55 + p41) {
-                    v41 = v55 + p41;
-                    d41 = d55;
-                }
-                if (v41 > v42 + p41) {
-                    v41 = v42 + p41;
-                    d41 = d42;
-                }
-                if (v41 > v54 + p41) {
-                    v41 = v54 + p41;
-                    d41 = d54;
-                }
-                if (v41 > v29 + p41) {
-                    v41 = v29 + p41;
-                    d41 = d29;
-                }
-            }
-            if (rc.canSenseLocation(l49)) {
-                p49 = 1.0 + rc.senseRubble(l49) / 10.0;
-                if (v49 > v61 + p49) {
-                    v49 = v61 + p49;
-                    d49 = d61;
-                }
-                if (v49 > v48 + p49) {
-                    v49 = v48 + p49;
-                    d49 = d48;
-                }
-                if (v49 > v62 + p49) {
-                    v49 = v62 + p49;
-                    d49 = d62;
-                }
-                if (v49 > v35 + p49) {
-                    v49 = v35 + p49;
-                    d49 = d35;
-                }
-            }
-            if (rc.canSenseLocation(l79)) {
-                p79 = 1.0 + rc.senseRubble(l79) / 10.0;
-                if (v79 > v80 + p79) {
-                    v79 = v80 + p79;
-                    d79 = d80;
-                }
-                if (v79 > v67 + p79) {
-                    v79 = v67 + p79;
-                    d79 = d67;
-                }
-                if (v79 > v93 + p79) {
-                    v79 = v93 + p79;
-                    d79 = d93;
-                }
-            }
-            if (rc.canSenseLocation(l89)) {
-                p89 = 1.0 + rc.senseRubble(l89) / 10.0;
-                if (v89 > v88 + p89) {
-                    v89 = v88 + p89;
-                    d89 = d88;
-                }
-                if (v89 > v75 + p89) {
-                    v89 = v75 + p89;
-                    d89 = d75;
-                }
-                if (v89 > v101 + p89) {
-                    v89 = v101 + p89;
-                    d89 = d101;
-                }
-            }
-            if (rc.canSenseLocation(l119)) {
-                p119 = 1.0 + rc.senseRubble(l119) / 10.0;
-                if (v119 > v107 + p119) {
-                    v119 = v107 + p119;
-                    d119 = d107;
-                }
-                if (v119 > v120 + p119) {
-                    v119 = v120 + p119;
-                    d119 = d120;
-                }
-                if (v119 > v106 + p119) {
-                    v119 = v106 + p119;
-                    d119 = d106;
-                }
-            }
-            if (rc.canSenseLocation(l127)) {
-                p127 = 1.0 + rc.senseRubble(l127) / 10.0;
-                if (v127 > v113 + p127) {
-                    v127 = v113 + p127;
-                    d127 = d113;
-                }
-                if (v127 > v126 + p127) {
-                    v127 = v126 + p127;
-                    d127 = d126;
-                }
-                if (v127 > v114 + p127) {
-                    v127 = v114 + p127;
-                    d127 = d114;
-                }
-            }
-            if (rc.canSenseLocation(l133)) {
-                p133 = 1.0 + rc.senseRubble(l133) / 10.0;
-                if (v133 > v121 + p133) {
-                    v133 = v121 + p133;
-                    d133 = d121;
-                }
-                if (v133 > v120 + p133) {
-                    v133 = v120 + p133;
-                    d133 = d120;
-                }
-                if (v133 > v134 + p133) {
-                    v133 = v134 + p133;
-                    d133 = d134;
-                }
-                if (v133 > v119 + p133) {
-                    v133 = v119 + p133;
-                    d133 = d119;
-                }
-            }
-            if (rc.canSenseLocation(l139)) {
-                p139 = 1.0 + rc.senseRubble(l139) / 10.0;
-                if (v139 > v125 + p139) {
-                    v139 = v125 + p139;
-                    d139 = d125;
-                }
-                if (v139 > v126 + p139) {
-                    v139 = v126 + p139;
-                    d139 = d126;
-                }
-                if (v139 > v138 + p139) {
-                    v139 = v138 + p139;
-                    d139 = d138;
-                }
-                if (v139 > v127 + p139) {
-                    v139 = v127 + p139;
-                    d139 = d127;
-                }
-            }
-            if (rc.canSenseLocation(l149)) {
-                p149 = 1.0 + rc.senseRubble(l149) / 10.0;
-                if (v149 > v136 + p149) {
-                    v149 = v136 + p149;
-                    d149 = d136;
-                }
-                if (v149 > v137 + p149) {
-                    v149 = v137 + p149;
-                    d149 = d137;
-                }
-                if (v149 > v135 + p149) {
-                    v149 = v135 + p149;
-                    d149 = d135;
-                }
-            }
 
             int dx = target.x - l84.x;
             int dy = target.y - l84.y;
             switch (dx) {
-                case -5:
-                    switch (dy) {
-                        case 0:
-                            return d19;
-                    }
-                    break;
                 case -4:
                     switch (dy) {
-                        case -3:
-                            return d29;
                         case -2:
                             return d30;
                         case -1:
@@ -2031,14 +1699,10 @@ public class BFSUnrolled {
                             return d33;
                         case 2:
                             return d34;
-                        case 3:
-                            return d35;
                     }
                     break;
                 case -3:
                     switch (dy) {
-                        case -4:
-                            return d41;
                         case -3:
                             return d42;
                         case -2:
@@ -2053,8 +1717,6 @@ public class BFSUnrolled {
                             return d47;
                         case 3:
                             return d48;
-                        case 4:
-                            return d49;
                     }
                     break;
                 case -2:
@@ -2103,8 +1765,6 @@ public class BFSUnrolled {
                     break;
                 case 0:
                     switch (dy) {
-                        case -5:
-                            return d79;
                         case -4:
                             return d80;
                         case -3:
@@ -2123,8 +1783,6 @@ public class BFSUnrolled {
                             return d87;
                         case 4:
                             return d88;
-                        case 5:
-                            return d89;
                     }
                     break;
                 case 1:
@@ -2173,8 +1831,6 @@ public class BFSUnrolled {
                     break;
                 case 3:
                     switch (dy) {
-                        case -4:
-                            return d119;
                         case -3:
                             return d120;
                         case -2:
@@ -2189,14 +1845,10 @@ public class BFSUnrolled {
                             return d125;
                         case 3:
                             return d126;
-                        case 4:
-                            return d127;
                     }
                     break;
                 case 4:
                     switch (dy) {
-                        case -3:
-                            return d133;
                         case -2:
                             return d134;
                         case -1:
@@ -2207,14 +1859,6 @@ public class BFSUnrolled {
                             return d137;
                         case 2:
                             return d138;
-                        case 3:
-                            return d139;
-                    }
-                    break;
-                case 5:
-                    switch (dy) {
-                        case 0:
-                            return d149;
                     }
                     break;
             }
@@ -2223,16 +1867,6 @@ public class BFSUnrolled {
             double bestEstimation = 0;
             double initialDist = Math.sqrt(l84.distanceSquaredTo(target));
 
-            double dist19 = (initialDist - Math.sqrt(l19.distanceSquaredTo(target))) / v19;
-            if (dist19 > bestEstimation) {
-                bestEstimation = dist19;
-                ans = d19;
-            }
-            double dist29 = (initialDist - Math.sqrt(l29.distanceSquaredTo(target))) / v29;
-            if (dist29 > bestEstimation) {
-                bestEstimation = dist29;
-                ans = d29;
-            }
             double dist30 = (initialDist - Math.sqrt(l30.distanceSquaredTo(target))) / v30;
             if (dist30 > bestEstimation) {
                 bestEstimation = dist30;
@@ -2258,16 +1892,6 @@ public class BFSUnrolled {
                 bestEstimation = dist34;
                 ans = d34;
             }
-            double dist35 = (initialDist - Math.sqrt(l35.distanceSquaredTo(target))) / v35;
-            if (dist35 > bestEstimation) {
-                bestEstimation = dist35;
-                ans = d35;
-            }
-            double dist41 = (initialDist - Math.sqrt(l41.distanceSquaredTo(target))) / v41;
-            if (dist41 > bestEstimation) {
-                bestEstimation = dist41;
-                ans = d41;
-            }
             double dist42 = (initialDist - Math.sqrt(l42.distanceSquaredTo(target))) / v42;
             if (dist42 > bestEstimation) {
                 bestEstimation = dist42;
@@ -2277,11 +1901,6 @@ public class BFSUnrolled {
             if (dist48 > bestEstimation) {
                 bestEstimation = dist48;
                 ans = d48;
-            }
-            double dist49 = (initialDist - Math.sqrt(l49.distanceSquaredTo(target))) / v49;
-            if (dist49 > bestEstimation) {
-                bestEstimation = dist49;
-                ans = d49;
             }
             double dist54 = (initialDist - Math.sqrt(l54.distanceSquaredTo(target))) / v54;
             if (dist54 > bestEstimation) {
@@ -2303,11 +1922,6 @@ public class BFSUnrolled {
                 bestEstimation = dist75;
                 ans = d75;
             }
-            double dist79 = (initialDist - Math.sqrt(l79.distanceSquaredTo(target))) / v79;
-            if (dist79 > bestEstimation) {
-                bestEstimation = dist79;
-                ans = d79;
-            }
             double dist80 = (initialDist - Math.sqrt(l80.distanceSquaredTo(target))) / v80;
             if (dist80 > bestEstimation) {
                 bestEstimation = dist80;
@@ -2317,11 +1931,6 @@ public class BFSUnrolled {
             if (dist88 > bestEstimation) {
                 bestEstimation = dist88;
                 ans = d88;
-            }
-            double dist89 = (initialDist - Math.sqrt(l89.distanceSquaredTo(target))) / v89;
-            if (dist89 > bestEstimation) {
-                bestEstimation = dist89;
-                ans = d89;
             }
             double dist93 = (initialDist - Math.sqrt(l93.distanceSquaredTo(target))) / v93;
             if (dist93 > bestEstimation) {
@@ -2343,11 +1952,6 @@ public class BFSUnrolled {
                 bestEstimation = dist114;
                 ans = d114;
             }
-            double dist119 = (initialDist - Math.sqrt(l119.distanceSquaredTo(target))) / v119;
-            if (dist119 > bestEstimation) {
-                bestEstimation = dist119;
-                ans = d119;
-            }
             double dist120 = (initialDist - Math.sqrt(l120.distanceSquaredTo(target))) / v120;
             if (dist120 > bestEstimation) {
                 bestEstimation = dist120;
@@ -2357,16 +1961,6 @@ public class BFSUnrolled {
             if (dist126 > bestEstimation) {
                 bestEstimation = dist126;
                 ans = d126;
-            }
-            double dist127 = (initialDist - Math.sqrt(l127.distanceSquaredTo(target))) / v127;
-            if (dist127 > bestEstimation) {
-                bestEstimation = dist127;
-                ans = d127;
-            }
-            double dist133 = (initialDist - Math.sqrt(l133.distanceSquaredTo(target))) / v133;
-            if (dist133 > bestEstimation) {
-                bestEstimation = dist133;
-                ans = d133;
             }
             double dist134 = (initialDist - Math.sqrt(l134.distanceSquaredTo(target))) / v134;
             if (dist134 > bestEstimation) {
@@ -2392,16 +1986,6 @@ public class BFSUnrolled {
             if (dist138 > bestEstimation) {
                 bestEstimation = dist138;
                 ans = d138;
-            }
-            double dist139 = (initialDist - Math.sqrt(l139.distanceSquaredTo(target))) / v139;
-            if (dist139 > bestEstimation) {
-                bestEstimation = dist139;
-                ans = d139;
-            }
-            double dist149 = (initialDist - Math.sqrt(l149.distanceSquaredTo(target))) / v149;
-            if (dist149 > bestEstimation) {
-                bestEstimation = dist149;
-                ans = d149;
             }
             return ans;
         } catch (Exception e){

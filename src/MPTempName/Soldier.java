@@ -252,7 +252,9 @@ public class Soldier extends Robot {
                 Direction dir = Nav.getBestDir(dest);
                 //Don't go towards miners if it forces us to go to low passability squares(the formula I used is kind of arbitrary, so its definitely tweakable)
                 //keep in mind, however, that on Intersection its like passability 1 versus 85 so any formula thats halfway decent will work there
-                if(closestEnemy.getType() == RobotType.MINER && rc.senseRubble(currLoc.add(dir)) > (20 + 1.2 * rc.senseRubble(currLoc))) {
+                MapLocation targetLoc = currLoc.add(dir);
+                if(closestEnemy.getType() == RobotType.MINER && rc.onTheMap(targetLoc) && 
+                    rc.senseRubble(targetLoc) > (20 + 1.2 * rc.senseRubble(currLoc))) {
                     return false;
                 }
                 else {
