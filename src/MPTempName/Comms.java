@@ -39,6 +39,7 @@ public class Comms {
     static final int CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_3 = 35;
     static final int CURR_ROUND_NUM_ENEMIES_IDX_3 = 36;
     static final int BUILD_GUESS_IDX = 37;
+    static final int LEAD_SPENT_IDX = 38;
 
     // Setup flag masks
     // Bits 1-3 are friendly Archon count
@@ -118,7 +119,7 @@ public class Comms {
         int last = archonNum - 1;
         int secondLast = (oldFlag >> 8) & 3; // old last
         int thirdLast = (oldFlag >> 10) & 3; // old second last
-        int newFlag = guesses | (thirdLast << 12) | (secondLast << 10) | (last << 8) | (1 << 14);
+        int newFlag = guesses | (thirdLast << 12) | (secondLast << 10) | (last << 8);
         if (oldFlag != newFlag) {
             rc.writeSharedArray(BUILD_GUESS_IDX, newFlag);
         }
@@ -134,18 +135,6 @@ public class Comms {
         return result;
     }
 
-    // Check the bit to see if someone was already chosen this round.
-    public static boolean lastArchonsIsUpdated() throws GameActionException {
-        return ((rc.readSharedArray(BUILD_GUESS_IDX) >> 14) & 1) == 1;
-    }
-
-    // If you are the last Archon, turn off the bit for the next round.
-    public static void lastArchonsSetUpdated() throws GameActionException {
-        int oldFlag = rc.readSharedArray(BUILD_GUESS_IDX);
-        int mask = ~(1 << 14);
-        writeIfChanged(BUILD_GUESS_IDX, oldFlag & mask);
-    }
-
     public static void encodeBuildGuess(int archonNum, Buildable buildCat) throws GameActionException{
         int currFlagValue = rc.readSharedArray(BUILD_GUESS_IDX);
         int bits = buildCat.ordinal() << ((archonNum - 1) * 2);
@@ -157,6 +146,27 @@ public class Comms {
         int flag = rc.readSharedArray(BUILD_GUESS_IDX);
         int offset = 2 * (archonNum - 1);
         return Buildable.values()[(flag & (3 << offset)) >> offset];
+    }
+    public static void useLead(RobotType bot) throws GameActionException {
+        int leadAmount = 0;
+        switch (bot) {
+            case MINER:
+                leadAmount = buildableCost(Buildable.MINER);
+                break;
+            case SOLDIER:
+                leadAmount = buildableCost(Buildable.SOLDIER);
+                break;
+            case BUILDER:
+                leadAmount = buildableCost(Buildable.BUILDER);
+                break;
+            default:
+                break;
+        }
+        int oldFlag = rc.readSharedArray(LEAD_SPENT_IDX);
+        rc.writeSharedArray(LEAD_SPENT_IDX, oldFlag + leadAmount);
+    }
+    public static void clearUsedLead() throws GameActionException {
+        writeIfChanged(LEAD_SPENT_IDX, 0);
     }
 
     public static int encodeSoldierStateFlag(SoldierStateCategory cat) {
@@ -538,178 +548,168 @@ public class Comms {
                 return 0;
             }
         }
-    public static boolean canBuildPrioritizedOLD(int archonNum, int leadAmount) throws GameActionException{
-        int[] order = getArchonOrderGivenClusters();
-        for (int i = 0; i < rc.getArchonCount(); i++) {
-            int currArchon = order[i];
-            Buildable bot = getBuildGuess(currArchon);
-            int cost = buildableCost(bot);
-            if (currArchon == archonNum) {
-                return leadAmount >= cost;
-            } else if (currArchon > archonNum) {
-                leadAmount -= cost;
-            }
-        }
-        return false;
-    }
-          
     public static boolean canBuildPrioritized(int archonNum) throws GameActionException {
-        int numArchons = rc.getArchonCount();
-        boolean alreadySplit = lastArchonsIsUpdated();
         int[] order = getArchonOrderGivenClusters();
         int[] lastOnes = lastArchonsChosen();
         int numImportant = order[4];
         /*if (rc.getRoundNum() > 200 && rc.getRoundNum() < 250) {
-            System.out.println("There are " + numImportant + " important Archons.");
-            System.out.print("The order is [");
-            for (int i = 0; i < numArchons; i++) {
-                System.out.print(order[i] + ",");
-            }
-            System.out.println("]");
+            System.out.println("[" + order[0] + "," + order[1] + "," + order[2] + "," + order[3] + "]");
+            System.out.println("[" + lastOnes[0] + "," + lastOnes[1] + "," + lastOnes[2] + "]");
+            System.out.println(numImportant);
         }*/
+        int ourLead = rc.getTeamLeadAmount(rc.getTeam());
+        ourLead += rc.readSharedArray(LEAD_SPENT_IDX);
         int leadNeeded = 0;
-        int totalLeadNeeded = 0;
-        boolean weAreImportant = false;
 
         // Count the lead needed by important Archons
         for (int i = 0; i < numImportant; i++) {
             int currArchon = order[i];
             Buildable bot = getBuildGuess(currArchon);
             int cost = buildableCost(bot);
-            if (currArchon > archonNum) {
-                leadNeeded += cost;
-                totalLeadNeeded += cost;
-            } else if (currArchon == archonNum) {
-                weAreImportant = true;
-                leadNeeded += cost;
-                totalLeadNeeded += cost;
-            }
+            leadNeeded += cost;
         }
-        // Count the lead needed by all Archons
-        for (int i = numImportant; i < numArchons; i++) {
-            int currArchon = order[i];
+
+        int[] newOrder = new int [] {0, 0, 0, 0};
+        // If we don't have enough lead for important Archons, we
+        // need to use the token ring.
+        if (leadNeeded > ourLead) {
+            /*if (rc.getRoundNum() > 200 && rc.getRoundNum() < 250) {
+                System.out.println("Not enough lead.");
+            }*/
+            for (int i = numImportant; i < rc.getArchonCount(); i++) {
+                newOrder[i] = order[i];
+            }
+
+            if (numImportant == 1) {
+                newOrder[0] = order[0];
+            } else if (numImportant == 2) {
+                boolean found = false;
+                for (int i = 0; i < 3; i++) {
+                    if (lastOnes[i] == order[0]) {
+                        newOrder[0] = order[1];
+                        newOrder[1] = order[0];
+                        found = true;
+                        break;
+                    } else if (lastOnes[i] == order[1]) {
+                        newOrder[0] = order[0];
+                        newOrder[1] = order[1];
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    newOrder[0] = order[0];
+                    newOrder[1] = order[1];
+                }
+            } else {
+                boolean found = false;
+                for (int i = 0; i < 3; i++) {
+                    if (lastOnes[i] == order[0]) {
+                        boolean foundSecond = false;
+                        for (int j = i; j < 3; j++) {
+                            if (lastOnes[j] == order[1]) {
+                                newOrder[0] = order[2];
+                                newOrder[1] = order[1];
+                                newOrder[2] = order[0];
+                                foundSecond = true;
+                                break;
+                            } else if (lastOnes[j] == order[2]) {
+                                newOrder[0] = order[1];
+                                newOrder[1] = order[2];
+                                newOrder[2] = order[0];
+                                foundSecond = true;
+                                break;
+                            }
+                        }
+                        if (!foundSecond) {
+                            newOrder[0] = order[1];
+                            newOrder[1] = order[2];
+                            newOrder[2] = order[0];
+                        }
+                        found = true;
+                        break;
+                    } else if (lastOnes[i] == order[1]) {
+                        boolean foundSecond = false;
+                        for (int j = i; j < 3; j++) {
+                            if (lastOnes[j] == order[0]) {
+                                newOrder[0] = order[2];
+                                newOrder[1] = order[0];
+                                newOrder[2] = order[1];
+                                foundSecond = true;
+                                break;
+                            } else if (lastOnes[j] == order[2]) {
+                                newOrder[0] = order[0];
+                                newOrder[1] = order[2];
+                                newOrder[2] = order[1];
+                                foundSecond = true;
+                                break;
+                            }
+                        }
+                        if (!foundSecond) {
+                            newOrder[0] = order[0];
+                            newOrder[1] = order[2];
+                            newOrder[2] = order[1];
+                        }
+                        found = true;
+                        break;
+                    } else if (lastOnes[i] == order[2]) {
+                        boolean foundSecond = false;
+                        for (int j = i; j < 3; j++) {
+                            if (lastOnes[j] == order[0]) {
+                                newOrder[0] = order[1];
+                                newOrder[1] = order[0];
+                                newOrder[2] = order[2];
+                                foundSecond = true;
+                                break;
+                            } else if (lastOnes[j] == order[1]) {
+                                newOrder[0] = order[0];
+                                newOrder[1] = order[1];
+                                newOrder[2] = order[2];
+                                foundSecond = true;
+                                break;
+                            }
+                        }
+                        if (!foundSecond) {
+                            newOrder[0] = order[0];
+                            newOrder[1] = order[1];
+                            newOrder[2] = order[2];
+                        }
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    newOrder[0] = order[0];
+                    newOrder[1] = order[1];
+                    newOrder[2] = order[2];
+                }
+            }
+            if (archonNum == rc.getArchonCount()) {
+                updateMostRecentArchons(newOrder[0]);
+            }
+        } else {
+            /*if (rc.getRoundNum() > 200 && rc.getRoundNum() < 250) {
+                System.out.println("Enough lead.");
+            }*/
+            newOrder = order;
+        }
+
+        /*if (rc.getRoundNum() > 200 && rc.getRoundNum() < 250) {
+            System.out.println("[" + newOrder[0] + "," + newOrder[1] + "," + newOrder[2] + "," + newOrder[3] + "]");
+        }*/
+
+        // With the new priority list, proceed by
+        // assigning lead to the highest priority Archons
+        for (int i = 0; i < rc.getArchonCount(); i++) {
+            int currArchon = newOrder[i];
             Buildable bot = getBuildGuess(currArchon);
             int cost = buildableCost(bot);
-            if (currArchon > archonNum) {
-                totalLeadNeeded += cost;
-            } else if (currArchon == archonNum) {
-                totalLeadNeeded += cost;
+            if (currArchon == archonNum) {
+                return ourLead >= cost;
+            } else {
+                ourLead -= cost;
             }
         }
-
-        // If we have enough for everybody, build. If we have
-        // enough for ones near clusters, build if we are near one.
-        int ourLead = rc.getTeamLeadAmount(rc.getTeam());
-        if (ourLead >= totalLeadNeeded) {
-            return true;
-        } else if (!weAreImportant) {
-            return false;
-        } else if (ourLead >= leadNeeded) {
-            return true;
-        }
-        // If we've already chosen one to take all the marbles, go for it
-        if (alreadySplit) {
-            if (archonNum == numArchons) {
-                lastArchonsSetUpdated();
-            }
-            return true;
-        }
-
-        // If we are here, then there is only enough lead for one, and that one
-        // has not been chosen yet
-        int bestArchon = 0;
-        switch (numImportant) {
-            // In case 1, there is one important one, and we are important.
-            // So...it's us. Return true.
-            case 1:
-                updateMostRecentArchons(archonNum);
-                if (archonNum == numArchons) {
-                    lastArchonsSetUpdated();
-                }
-                return true;
-            // In case 2, there are two important ones, and we're one of them.
-            case 2:
-                int otherImportant = 0;
-                // Find the other one
-                for (int i = 0; i < numImportant; i++) {
-                    if (order[i] != archonNum) {
-                        otherImportant = order[i];
-                        break;
-                    }
-                }
-                // Loop through most recent ones, figure out which one of us moved last
-                for (int i = 0; i < 3; i++) {
-                    if (lastOnes[i] == otherImportant) {
-                        bestArchon = archonNum;
-                        break;
-                    } else if (lastOnes[i] == archonNum) {
-                        bestArchon = otherImportant;
-                        break;
-                    }
-                }
-                // Use lead if we are older
-                if (bestArchon == 0 || bestArchon == archonNum) {
-                    updateMostRecentArchons(archonNum);
-                    if (archonNum == numArchons) {
-                        lastArchonsSetUpdated();
-                    }
-                    return true;
-                } else {
-                    return false;
-                }
-            // In case 3 we do the same thing but must check for all three.
-            case 3:
-                int secondImportant = 0;
-                int thirdImportant = 0;
-                for (int i = 0; i < numImportant; i++) {
-                    if (order[i] != archonNum) {
-                        secondImportant = order[i];
-                        break;
-                    }
-                }
-                for (int i = 0; i < numImportant; i++) {
-                    if (order[i] != archonNum && order[i] != secondImportant) {
-                        thirdImportant = order[i];
-                        break;
-                    }
-                }
-                for (int i = 0; i < 3; i++) {
-                    if (lastOnes[i] == archonNum) {
-                        for (int j = i; j < 3; j++) {
-                            if (lastOnes[i] == secondImportant) {
-                                bestArchon = thirdImportant;
-                                break;
-                            } else if (lastOnes[i] == thirdImportant) {
-                                bestArchon = secondImportant;
-                                break;
-                            }
-                        }
-                        break;
-                    } else if (lastOnes[i] == secondImportant) {
-                        for (int j = i; j < 3; j++) {
-                            if (lastOnes[i] == archonNum) {
-                                bestArchon = thirdImportant;
-                                break;
-                            } else if (lastOnes[i] == thirdImportant) {
-                                bestArchon = archonNum;
-                                break;
-                            }
-                        }
-                        break;
-                    }
-                }
-                if (bestArchon == 0 || bestArchon == archonNum) {
-                    updateMostRecentArchons(archonNum);
-                    if (archonNum == numArchons) {
-                        lastArchonsSetUpdated();
-                    }
-                    return true;
-                } else {
-                    return false;
-                }
-            default:
-                return false;
-        }
+        return false;
     }
         
     public static int[] getArchonOrderGivenClusters() throws GameActionException {

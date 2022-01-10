@@ -120,6 +120,7 @@ public class Archon extends Robot {
         }
         for(Direction dir : orderedDirs) {
             if (rc.canBuildRobot(toBuild, dir)){
+                Comms.useLead(toBuild);
                 rc.buildRobot(toBuild, dir);
                 RobotInfo robot = rc.senseRobotAtLocation(rc.getLocation().add(dir));
                 //in future, add info about this new robot to maps
@@ -136,6 +137,9 @@ public class Archon extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        if (turnNumber == 1) {
+            Comms.clearUsedLead();
+        }
         clearAndResetHelpers();
         Comms.resetAvgEnemyLoc();
         boolean underAttack = broadcastSoldierNear();
