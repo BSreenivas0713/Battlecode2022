@@ -8,6 +8,7 @@ import MPTempName.fast.FasterQueue;
 public class Nav {
     static RobotController rc;
 
+    static MapLocation lastCurrLoc;
     static MapLocation lastDest;
     static int closestDistanceToDest;
     static int turnsSinceClosestDistanceDecreased;
@@ -28,11 +29,65 @@ public class Nav {
         lastExploreDir = null;
     }
 
+    // @requires loc is adjacent to currLoc
+    public static Direction[] getDirsToAdjSquares(MapLocation loc) {
+        switch(rc.getLocation().directionTo(loc)) {
+            case SOUTH:
+                return new Direction[]{Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.SOUTHEAST, Direction.SOUTHWEST};
+            case NORTH:
+                return new Direction[]{Direction.NORTH, Direction.EAST, Direction.WEST, Direction.NORTHEAST, Direction.NORTHWEST};
+            case EAST:
+                return new Direction[]{Direction.EAST, Direction.NORTH, Direction.SOUTH, Direction.NORTHEAST, Direction.SOUTHEAST};
+            case WEST:
+                return new Direction[]{Direction.WEST, Direction.NORTH, Direction.SOUTH, Direction.NORTHWEST, Direction.SOUTHWEST};
+            case NORTHEAST:
+                return new Direction[]{Direction.NORTHEAST, Direction.NORTH, Direction.EAST};
+            case SOUTHEAST:
+                return new Direction[]{Direction.SOUTHEAST, Direction.SOUTH, Direction.EAST};
+            case SOUTHWEST:
+                return new Direction[]{Direction.SOUTHWEST, Direction.SOUTH, Direction.WEST};
+            case NORTHWEST:
+                return new Direction[]{Direction.NORTHWEST, Direction.NORTH, Direction.WEST};
+            default:
+                return new Direction[]{};
+        }
+    }
+
+    // Only checks squares next to current location for better rubble.
+    // I don't think it's really worth it to check other ones.
+    public static Direction navToBetterRubbleSquareAdjacentTo(MapLocation dest) throws GameActionException {
+        int minRubble = rc.senseRubble(rc.getLocation());
+        MapLocation currLoc = rc.getLocation();
+        MapLocation bestLoc = currLoc;
+        MapLocation loc;
+        int rubble;
+        for(int i = Util.directions.length - 1; --i >= 0;) {
+            loc = dest.add(Util.directions[i]);
+            if(rc.canSenseLocation(loc)) {
+                rubble = rc.senseRubble(loc);
+                if(rubble < minRubble) {
+                    minRubble = rubble;
+                    bestLoc = loc;
+                }
+            }
+        }
+
+        Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 51, 204, 255);
+        if(dest.equals(currLoc)) {
+            return Direction.CENTER;
+        }
+        Direction dir = Nav.navTo(dest);
+        return dir == null ? Direction.CENTER : dir;
+    }
+
     static Direction getBestDir(MapLocation dest) throws GameActionException {
         if(!rc.isMovementReady())
             return Direction.CENTER;
 
         MapLocation currLoc = rc.getLocation();
+
+        if(currLoc.isAdjacentTo(dest))
+            return navToBetterRubbleSquareAdjacentTo(dest);
 
         if(!dest.equals(lastDest)) {
             lastDest = dest;
@@ -275,7 +330,7 @@ public class Nav {
         }
 
         if(lastExploreDir != null) {
-            Debug.printString("last Explore Dir: " + lastExploreDir);
+            Debug.printString("Exploring " + lastExploreDir);
         }
         return greedyDirection(rotateAwayFromWallIfNecessary(lastExploreDir));
     }
