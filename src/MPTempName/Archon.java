@@ -23,6 +23,8 @@ public class Archon extends Robot {
     static int obesityCounter; 
     static int minerCount;
     static int minerMiningCount;
+    static int numMinersBuilt;
+    static int minerDirOffset;
     static int soldierCount;
     static int builderCount;
     static State currentState;
@@ -65,7 +67,7 @@ public class Archon extends Robot {
         nonWallDirections = findnonWallDirections();
         maxLeadUsedByArchons = 75 * ((1 + rc.getArchonCount()) - turnNumber);
         leadObesity = rc.getArchonCount() * 180 + maxLeadUsedByArchons;
-        
+        minerDirOffset = Util.rng.nextInt(8);
         // System.out.println("nonWallDirections: " + nonWallDirections.toString());
     }
 
@@ -142,7 +144,7 @@ public class Archon extends Robot {
         }
         clearAndResetHelpers();
         Comms.resetAvgEnemyLoc();
-        boolean underAttack = broadcastSoldierNear();
+        boolean underAttack = false;
         updateLead();
         updateRobotCounts();
         updateClosestLeadOre();
@@ -236,6 +238,7 @@ public class Archon extends Robot {
             return false;
         }
     }
+
     public void updateRobotCounts() throws GameActionException {
         minerCount = Comms.getMinerCount();
         // update soldiers within sensing radius count
@@ -263,6 +266,8 @@ public class Archon extends Robot {
             Debug.printString("Building miner");
             if(buildRobot(RobotType.MINER, currLoc.directionTo(closestLeadOre))){
                 counter++;
+                numMinersBuilt++;
+                nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
             }
         }
         else {
@@ -390,7 +395,10 @@ public class Archon extends Robot {
     public void firstRounds() throws GameActionException {
         RobotType toBuild = RobotType.MINER;
         Direction dir = currLoc.directionTo(closestLeadOre);
-        buildRobot(toBuild,dir);
+        if(buildRobot(toBuild,dir)) {
+            numMinersBuilt++;
+            nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
+        }
 
     }
 

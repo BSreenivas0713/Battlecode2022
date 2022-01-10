@@ -19,6 +19,17 @@ public class Util {
         Direction.NORTHWEST,
     };
 
+    static final Direction[] exploreDirections = {
+        Direction.NORTH,
+        Direction.SOUTHEAST,
+        Direction.SOUTHWEST,
+        Direction.NORTHWEST,
+        Direction.EAST,
+        Direction.SOUTH,
+        Direction.NORTHEAST,
+        Direction.WEST,
+    };
+
     static final int LeadThreshold = 50;
     static final int ArchonStraightVisionRange = 5;
     static final int ArchonDiagVisionRange = 4;
@@ -30,6 +41,8 @@ public class Util {
     
     private static RobotController rc;
     static int SOLDIERS_NEEDED_TO_RUSH;
+    static int MAP_WIDTH;
+    static int MAP_HEIGHT;
     static int MAP_AREA;
     static int MAP_MAX_DIST_SQUARED;
 
@@ -42,8 +55,10 @@ public class Util {
 
     static void init(RobotController r) {
         rc = r;
-        rng = new Random(rc.getRoundNum());
-        MAP_AREA = rc.getMapHeight() * rc.getMapWidth();
+        rng = new Random(rc.getRoundNum()*23981 + rc.getID()*10289);
+        MAP_HEIGHT = rc.getMapHeight();
+        MAP_WIDTH = rc.getMapWidth();
+        MAP_AREA = MAP_HEIGHT * MAP_WIDTH;
         // if (MAP_AREA <= 1500) {
         //     SOLDIERS_NEEDED_TO_RUSH = 10;
         // } else if (MAP_AREA <= 2500) {
@@ -52,7 +67,8 @@ public class Util {
         //     SOLDIERS_NEEDED_TO_RUSH = 30;
         // }
         SOLDIERS_NEEDED_TO_RUSH = 30;
-        MAP_MAX_DIST_SQUARED = rc.getMapHeight() * rc.getMapHeight() + rc.getMapWidth() * rc.getMapWidth();
+
+        MAP_MAX_DIST_SQUARED = MAP_HEIGHT * MAP_HEIGHT + MAP_WIDTH * MAP_WIDTH;
     }
     static MapLocation[] makePattern(MapLocation loc) {
         return new MapLocation[] {loc.translate(2, 0),
@@ -89,5 +105,10 @@ public class Util {
         double myShare = upForGrabs / (double) numArchons;
         double amountLeftForMyTurn = 1.0 - ((double) thisArchon - 1.0) * myShare;
         return myShare / amountLeftForMyTurn;
+    }
+
+    public static boolean onTheMap(MapLocation location) {
+        return 0 <= location.x && location.x < MAP_WIDTH &&
+                0 <= location.y && location.y < MAP_HEIGHT;
     }
 }
