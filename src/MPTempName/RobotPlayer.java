@@ -40,11 +40,17 @@ public strictfp class RobotPlayer {
             }
         }
 
+        InformationCategory ic = Comms.getICFromFlag(dataFlag);
         switch (rc.getType()) {
             case ARCHON:     bot = new Archon(rc);  break;
-            case MINER:      bot = new Miner(rc);  break;
+            case MINER:
+                bot = new Miner(rc);
+                if(ic == InformationCategory.DIRECTION) {
+                    Nav.lastExploreDir = Comms.decodeArchonFlagDirection(dataFlag);
+                    Debug.printString("Dir: " + Nav.lastExploreDir);
+                }
+                break;
             case SOLDIER:
-                InformationCategory ic = Comms.getICFromFlag(dataFlag);
                 if (ic == InformationCategory.DEFENSE_SOLDIERS) {
                     bot = new DefenseSoldier(rc, homeFlagIdx);
                 } else {

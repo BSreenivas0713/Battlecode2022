@@ -63,6 +63,8 @@ public class Comms {
     static final int HEALTH_BUCKET_SIZE = 80;
     static final int NUM_HEALTH_BUCKETS = 16;
     static final int DEAD_ARCHON_FLAG = 65535;
+    static final int ARCHON_FLAG_LOC_OFFSET = 4;
+    static final int ARCHON_FLAG_IC_MASK = 0xF;
 
     static final int ID_MASK = 15;
     static final int ID_OFFSET_1 = 0;
@@ -79,6 +81,7 @@ public class Comms {
         EMPTY,
         DEFENSE_SOLDIERS,
         UNDER_ATTACK,
+        DIRECTION,
     }
 
     public enum SoldierStateCategory {
@@ -102,12 +105,28 @@ public class Comms {
         return cat.ordinal();
     }
 
+    public static int encodeArchonFlag(InformationCategory cat, MapLocation loc) {
+        return (encodeLocation(loc) << ARCHON_FLAG_LOC_OFFSET) | cat.ordinal();
+    }
+
+    public static int encodeArchonFlag(InformationCategory cat, Direction dir) {
+        return (dir.ordinal() << ARCHON_FLAG_LOC_OFFSET) | cat.ordinal();
+    }
+
+    public static MapLocation decodeArchonFlagLocation(int flag) {
+        return locationFromFlag(flag >> ARCHON_FLAG_LOC_OFFSET);
+    }
+
+    public static Direction decodeArchonFlagDirection(int flag) {
+        return Direction.values()[(flag >> ARCHON_FLAG_LOC_OFFSET)];
+    }
+
     public static int encodeSoldierStateFlag(SoldierStateCategory cat) {
         return cat.ordinal();
     }
 
     public static InformationCategory getICFromFlag(int flag) {
-        return InformationCategory.values()[flag];
+        return InformationCategory.values()[flag & ARCHON_FLAG_IC_MASK];
     }
 
     public static SoldierStateCategory getSoldierCatFromFlag(int flag) {

@@ -17,6 +17,8 @@ public class Nav {
     static final int EXPLORE_BOREDOM = 20;
     static int boredom;
 
+    static final int MIN_DIST_FROM_WALL = 3;
+
     static void init(RobotController r) {
         rc = r;
         bfs = new BFSUnrolled(r);
@@ -61,6 +63,56 @@ public class Nav {
         }
     }
 
+    // Don't continue in this explore dir if it will bring you too close to a wall.
+    public static boolean isValidExploreDir(Direction dir) {
+        switch(dir) {
+            case NORTH: case SOUTH: case EAST: case WEST:
+                return Util.onTheMap(rc.getLocation().translate(dir.dx * 5, dir.dy * 5));
+            case NORTHEAST: case NORTHWEST: case SOUTHEAST: case SOUTHWEST:
+                return Util.onTheMap(rc.getLocation().translate(dir.dx * 4, dir.dy * 4));
+            case CENTER:
+                // Should not happen
+                return true;
+        }
+        return false;
+    }
+
+    public static void pickNewExploreDir() {
+        Direction[] newDirChoices = {
+            // Util.turnLeft90(lastExploreDir),
+            lastExploreDir.rotateLeft(),
+            lastExploreDir,
+            lastExploreDir.rotateRight(),
+            // Util.turnRight90(lastExploreDir),
+        };
+
+        Direction[] validDirs = new Direction[5];
+        int numValidDirs = 0;
+        for(Direction dir : newDirChoices) {
+            if(isValidExploreDir(dir)) {
+                validDirs[numValidDirs++] = dir;
+            }
+        }
+
+        if(numValidDirs > 0) {
+            lastExploreDir = validDirs[Util.rng.nextInt(numValidDirs)];
+        } else {
+            // This can happen if you're going straight into a corner or wall
+            // In this case, we choose from close to the opposite current explore dir
+            switch(Util.rng.nextInt(3)) {
+                case 0:
+                    lastExploreDir = lastExploreDir.opposite().rotateLeft();
+                    break;
+                case 1:
+                    lastExploreDir = lastExploreDir.opposite().rotateRight();
+                    break;
+                default:
+                    lastExploreDir = lastExploreDir.opposite();
+                    break;
+            }
+        }
+    }
+
 	public static Direction[] explorePathfinding() throws GameActionException {
         // Debug.println(Debug.PATHFINDING, "Exploring");
         if(!rc.isMovementReady())
@@ -74,32 +126,13 @@ public class Nav {
         // Pick a kinda new direction if you've gone in the same direction for a while
 		if(boredom >= EXPLORE_BOREDOM) {
             boredom = 0;
-            Direction[] newDirChoices = {
-                lastExploreDir.rotateLeft(),
-                lastExploreDir,
-                lastExploreDir.rotateRight(),
-            };
-			lastExploreDir = newDirChoices[(int) (Math.random() * newDirChoices.length)];
+            pickNewExploreDir();
 		}
         boredom++;
 
         // Pick a new direction if you ran into a wall.
-        if(!rc.onTheMap(rc.getLocation().add(lastExploreDir))) {
-            // lastExploreDir = lastExploreDir.opposite();
-            Direction tempExploreDir = null;
-            if((int) (Math.random() * 2) == 0) {
-                tempExploreDir = Util.turnLeft90(lastExploreDir);
-                if(!rc.onTheMap(rc.getLocation().add(tempExploreDir))) {
-                    tempExploreDir = Util.turnRight90(lastExploreDir);
-                }
-            }
-            else {
-                tempExploreDir = Util.turnRight90(lastExploreDir);
-                if(!rc.onTheMap(rc.getLocation().add(tempExploreDir))) {
-                    tempExploreDir = Util.turnLeft90(lastExploreDir);
-                }
-            lastExploreDir = tempExploreDir;
-            }
+        if(!isValidExploreDir(lastExploreDir)) {
+            pickNewExploreDir();
         }
 
         MapLocation target = rc.getLocation().translate(lastExploreDir.getDeltaX() * 5, 
@@ -164,6 +197,46 @@ public class Nav {
         return dirs;
     }
 
+    // If you're traveling south *right* next to a wall, you should go southwest/east for a turn
+    public static Direction rotateAwayFromWallIfNecessary(Direction dir) {
+        MapLocation currLoc = rc.getLocation();
+        switch(dir) {
+            case SOUTH:
+                if(currLoc.x < MIN_DIST_FROM_WALL) {
+                    return dir.rotateLeft();
+                }
+                if(Util.MAP_WIDTH - currLoc.x < MIN_DIST_FROM_WALL) {
+                    return dir.rotateRight();
+                }
+                break;
+            case NORTH:
+                if(currLoc.x < MIN_DIST_FROM_WALL) {
+                    return dir.rotateRight();
+                }
+                if(Util.MAP_WIDTH - currLoc.x < MIN_DIST_FROM_WALL) {
+                    return dir.rotateLeft();
+                }
+                break;
+            case WEST:
+                if(currLoc.y < MIN_DIST_FROM_WALL) {
+                    return dir.rotateRight();
+                }
+                if(Util.MAP_HEIGHT - currLoc.y < MIN_DIST_FROM_WALL) {
+                    return dir.rotateLeft();
+                }
+                break;
+            case EAST:
+                if(currLoc.y < MIN_DIST_FROM_WALL) {
+                    return dir.rotateLeft();
+                }
+                if(Util.MAP_HEIGHT - currLoc.y < MIN_DIST_FROM_WALL) {
+                    return dir.rotateRight();
+                }
+                break;
+        }
+        return dir;
+    }
+
     public static Direction[] exploreGreedy() throws GameActionException {
         // Debug.println(Debug.INFO, "Exploring");
         if(!rc.isMovementReady())
@@ -183,35 +256,19 @@ public class Nav {
 		if(boredom >= EXPLORE_BOREDOM) {
             // Debug.println(Debug.INFO, "changing last Explore Dir because of boredom");
             boredom = 0;
-            Direction[] newDirChoices = {
-                lastExploreDir.rotateLeft(),
-                lastExploreDir,
-                lastExploreDir.rotateRight()};
-			lastExploreDir = newDirChoices[(int) (Math.random() * newDirChoices.length)];
+            pickNewExploreDir();
 		}
         boredom++;
         
-		if(!rc.onTheMap(rc.getLocation().add(lastExploreDir))) {
-            // Debug.println(Debug.INFO, "changing last Explore Dir because of a wall");
-            Direction tempExploreDir = null;
-            if((int) (Math.random() * 2) == 0) {
-                tempExploreDir = Util.turnLeft90(lastExploreDir);
-                if(!rc.onTheMap(rc.getLocation().add(tempExploreDir))) {
-                    tempExploreDir = Util.turnRight90(lastExploreDir);
-                }
-            }
-            else {
-                tempExploreDir = Util.turnRight90(lastExploreDir);
-                if(!rc.onTheMap(rc.getLocation().add(tempExploreDir))) {
-                    tempExploreDir = Util.turnLeft90(lastExploreDir);
-                }
-            lastExploreDir = tempExploreDir;
-            }
+        // Pick a new direction if you ran into a wall.
+        if(!isValidExploreDir(lastExploreDir)) {
+            pickNewExploreDir();
         }
+
         if(lastExploreDir != null) {
             Debug.printString("last Explore Dir: " + lastExploreDir);
         }
-        return greedyDirection(lastExploreDir);
+        return greedyDirection(rotateAwayFromWallIfNecessary(lastExploreDir));
     }
 
     public static Direction[] explore() throws GameActionException {

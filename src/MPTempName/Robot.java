@@ -16,6 +16,8 @@ public class Robot {
     static int visionRadiusSquared;
     static int homeFlagIdx;
     static int nextSoldierFlag;
+    static int nextFlag;
+    static int defaultFlag;
     // This is the order of priorities to attack enemies
     static RobotInfo maybeArchon = null;
     static RobotInfo maybeWatchtower = null;
@@ -58,6 +60,10 @@ public class Robot {
         if (rc.getType() == RobotType.ARCHON) {
             if (rc.readSharedArray(Comms.SOLDIER_STATE_IDX) != nextSoldierFlag) {
                 rc.writeSharedArray(Comms.SOLDIER_STATE_IDX, nextSoldierFlag);
+            }
+            if(rc.readSharedArray(homeFlagIdx) != nextFlag) {
+                rc.writeSharedArray(homeFlagIdx, nextFlag);
+                nextFlag = defaultFlag;
             }
         }
         else {
