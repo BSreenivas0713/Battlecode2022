@@ -107,7 +107,7 @@ public class Robot {
      * Prioritizes attacking enemies in the given order.
      * Prioritizes attacking lower health enemies.
      */
-    public void loadEnemies() {
+    public void loadEnemies(RobotInfo[] enemies) {
         maybeArchon = null;
         maybeWatchtower = null;
         maybeSage = null;
@@ -116,8 +116,6 @@ public class Robot {
         maybeMiner = null;
         maybeLab = null;
 
-        Team opponent = rc.getTeam().opponent();
-        RobotInfo[] enemies = rc.senseNearbyRobots(actionRadiusSquared, opponent);
         RobotInfo enemy;
         for (int i = enemies.length - 1; i >= 0; i--) {
             enemy = enemies[i];
@@ -225,7 +223,11 @@ public class Robot {
      * Unless you're close enough to an Archon, then prioritize soldiers.
      */
     public RobotInfo getBestEnemy() throws GameActionException {
-        loadEnemies();
+        return getBestEnemy(rc.senseNearbyRobots(actionRadiusSquared, rc.getTeam().opponent()));
+    }
+
+    public RobotInfo getBestEnemy(RobotInfo[] sensable) throws GameActionException {
+        loadEnemies(sensable);
 
         RobotInfo res = null;
 
