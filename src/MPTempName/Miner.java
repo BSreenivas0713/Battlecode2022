@@ -9,7 +9,7 @@ public class Miner extends Robot {
     static int minerCount;
     static boolean explorer;
     static MapLocation unitLeadLoc;
-    static MapLocation closestLead;
+    static MapLocation bestLead;
     static MapLocation goldSource;
     static float overallDX;
     static float overallDY;
@@ -37,17 +37,18 @@ public class Miner extends Robot {
         unitLeadLoc = null;
         int[] actionRadiusArr = new int[9];
         for (int x = 0; x < 3; x ++) {for (int y = 0; y < 3; y ++ ) {actionRadiusArr[3 * x + y] = 0;}}
-        closestLead = null;
+        bestLead = null;
         minerCount = 0;
-        int distToClosestLead = Integer.MAX_VALUE;
+        double bestScore = Integer.MIN_VALUE;
         for(int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
             int leadAmount = rc.senseLead(loc);
             if (leadAmount > 1){
                 int currDist = currLoc.distanceSquaredTo(loc);
-                if(currDist < distToClosestLead) {
-                    distToClosestLead = currDist;
-                    closestLead = loc;
+                double currScore = getLeadDistTradeoffScore(currDist, leadAmount);
+                if(currScore > bestScore) {
+                    bestScore = currScore;
+                    bestLead = loc;
                     
                 }
                 if (currDist <= actionRadiusSquared) {
@@ -97,8 +98,8 @@ public class Miner extends Robot {
                 rc.mineGold(goldSource);
             }
         }
-        if(closestLead != null) {
-            Debug.printString("Lead found: " + closestLead.toString());
+        if(bestLead != null) {
+            Debug.printString("Lead found: " + bestLead.toString());
             // Debug.printString(bigArrToString(actionRadiusArr));
             if(unitLeadLoc != null && shouldDepleteUnitLead() && rc.canMineLead(unitLeadLoc)) {
                 Debug.printString("Depleting unit lead");
@@ -152,9 +153,9 @@ public class Miner extends Robot {
             }
         }
         //no need to complicate things, just go towards the closest ore
-        if(closestLead != null) {
-            dir = Nav.greedyDirection(currLoc.directionTo(closestLead));
-            str = "going towards lead at" + closestLead.toString();
+        if(bestLead != null) {
+            dir = Util.getInOrderDirections(Nav.getBestDir(bestLead));
+            str = "going towards lead at" + bestLead.toString();
             if(minerCount >= 5) {
                 dir = Nav.greedyDirection(DirectionAway);
                 str = "going away from other miners: " + DirectionAway.toString();

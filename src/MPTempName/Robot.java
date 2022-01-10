@@ -50,6 +50,10 @@ public class Robot {
             home = rc.getLocation();
         }
     }
+    public double getLeadDistTradeoffScore(int radiusSquared, int leadAmount) {
+        if(radiusSquared == 0 && leadAmount > 1){return Integer.MAX_VALUE;}
+        return (float)leadAmount - Math.sqrt((double) radiusSquared) * 5;
+    }
 
     public void takeTurn() throws GameActionException {
         turnCount += 1;
