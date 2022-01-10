@@ -99,49 +99,35 @@ public class Miner extends Robot {
             }
         }
         if(bestLead != null) {
-            Debug.printString("Lead found: " + bestLead.toString());
+            Debug.printString("Lead: " + bestLead.toString());
             // Debug.printString(bigArrToString(actionRadiusArr));
             if(unitLeadLoc != null && shouldDepleteUnitLead() && rc.canMineLead(unitLeadLoc)) {
                 Debug.printString("Depleting unit lead");
                 rc.mineLead(unitLeadLoc);
             }
             boolean done = false;
-            int numTimesMined = 0;
             //Go through all lead deposits in action radius, and mine as much as possible (consider the case where two lead ores
             //within action radius have sizes 3 and 4. We want to mine them both down to 1 in the same turn 
-            for(int x = 0; x < 3; x ++) {
-                for (int y = 0; y < 3; y++) {
+            for(int x = 0; x < 3 && rc.isActionReady(); x ++) {
+                for (int y = 0; y < 3 && rc.isActionReady(); y++) {
                     if(actionRadiusArr[3 *x + y] > 1) {
                         MapLocation leadSource = currLoc.translate(x - 1, y - 1);
-                        int supposedLeadValue = actionRadiusArr[3 * x + y];
-                        while(rc.canMineLead(leadSource) && supposedLeadValue != 1) {
+                        while(rc.canMineLead(leadSource) && actionRadiusArr[3 * x + y] != 1) {
                             rc.mineLead(leadSource);
-                            numTimesMined++;
-                            supposedLeadValue--;
-                            // if(rc.getRoundNum() < 20) {
-                            //     System.out.println(Integer.toString(numTimesMined) + " " + Integer.toString(supposedLeadValue) + " " + Integer.toString(x) + " " + Integer.toString(y) + " ");
-                            // }
+                            actionRadiusArr[3 * x + y]--;
                             amMining = true;
                         }
-                        if(numTimesMined == 5) {
-                            done = true;
-                        }
                     }
-                    if(done) {break;}
                 }
-                if(done) {break;}
             }
-            
         }
+
         Direction[] dir = {};
         String str = "";
-        if (!amMining) {
-
+        boolean canMine = rc.senseNearbyLocationsWithLead(2, 2).length > 0;
+        if (!amMining && !canMine) {
             dir = Nav.explore();
-            str = "Exploring";            
-            if(currLoc.distanceSquaredTo(home) < visionRadiusSquared) {
-                
-            }
+            str = "Exploring";
         }
 
         if(rc.getRoundNum() == roundNumBorn + 1) {
@@ -155,12 +141,22 @@ public class Miner extends Robot {
         //no need to complicate things, just go towards the closest ore
         if(bestLead != null) {
             dir = Util.getInOrderDirections(Nav.getBestDir(bestLead));
-            str = "going towards lead at" + bestLead.toString();
+            str = "going towards lead";
             if(minerCount >= 5) {
-                dir = Nav.greedyDirection(DirectionAway);
-                str = "going away from other miners: " + DirectionAway.toString();
+                // Move away if you can still mine any lead at the new location.
+                Direction[] possibleDirs = Nav.greedyDirection(DirectionAway);
+                for(Direction possibleDir : possibleDirs) {
+                    if(rc.canMove(possibleDir)) {
+                        MapLocation newLoc = rc.adjacentLocation(possibleDir);
+                        if(rc.senseNearbyLocationsWithLead(newLoc, 2, 2).length > 0) {
+                            dir = possibleDirs;
+                            str = "going away from other miners: " + DirectionAway.toString();
+                        }
+                        break;
+                    }
+                }
             }
-            str += "miner count: " + minerCount;
+            str += " #Miners: " + minerCount;
         }
 
         RobotInfo closestEnemy = getClosestEnemy(RobotType.SOLDIER);
