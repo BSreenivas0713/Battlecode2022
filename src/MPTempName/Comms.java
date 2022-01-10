@@ -585,9 +585,9 @@ public class Comms {
         int[] order = getArchonOrderGivenClusters();
         int[] lastOnes = lastArchonsChosen();
         int numImportant = order[4];
-        /*if (rc.getRoundNum() > 200 && rc.getRoundNum() < 250) {
-            System.out.println("[" + order[0] + "," + order[1] + "," + order[2] + "," + order[3] + "]");
-            System.out.println("[" + lastOnes[0] + "," + lastOnes[1] + "," + lastOnes[2] + "]");
+        /*if (rc.getRoundNum() > 320 && rc.getRoundNum() < 330) {
+            System.out.println("Order: [" + order[0] + "," + order[1] + "," + order[2] + "," + order[3] + "]");
+            System.out.println("Recents: [" + lastOnes[0] + "," + lastOnes[1] + "," + lastOnes[2] + "]");
             System.out.println(numImportant);
         }*/
         int ourLead = rc.getTeamLeadAmount(rc.getTeam());
@@ -606,7 +606,7 @@ public class Comms {
         // If we don't have enough lead for important Archons, we
         // need to use the token ring.
         if (leadNeeded > ourLead) {
-            /*if (rc.getRoundNum() > 200 && rc.getRoundNum() < 250) {
+            /*if (rc.getRoundNum() > 320 && rc.getRoundNum() < 330) {
                 System.out.println("Not enough lead.");
             }*/
             for (int i = numImportant; i < rc.getArchonCount(); i++) {
@@ -627,6 +627,7 @@ public class Comms {
                         newOrder[0] = order[0];
                         newOrder[1] = order[1];
                         found = true;
+                        break;
                     }
                 }
                 if (!found) {
@@ -717,17 +718,26 @@ public class Comms {
                 }
             }
             if (archonNum == rc.getArchonCount()) {
-                updateMostRecentArchons(newOrder[0]);
+                if (ourLead >= buildableCost(getBuildGuess(newOrder[0]))) {
+                    /*if (rc.getRoundNum() > 320 && rc.getRoundNum() < 330) {
+                        System.out.println("Updating most recent.");
+                    }*/
+                    updateMostRecentArchons(newOrder[0]);
+                } else {
+                    /*if (rc.getRoundNum() > 320 && rc.getRoundNum() < 330) {
+                        System.out.println("Not updating most recent.");
+                    }*/
+                }
             }
         } else {
-            /*if (rc.getRoundNum() > 200 && rc.getRoundNum() < 250) {
+            /*if (rc.getRoundNum() > 320 && rc.getRoundNum() < 330) {
                 System.out.println("Enough lead.");
             }*/
             newOrder = order;
         }
 
-        /*if (rc.getRoundNum() > 200 && rc.getRoundNum() < 250) {
-            System.out.println("[" + newOrder[0] + "," + newOrder[1] + "," + newOrder[2] + "," + newOrder[3] + "]");
+        /*if (rc.getRoundNum() > 320 && rc.getRoundNum() < 330) {
+            System.out.println("New Order: [" + newOrder[0] + "," + newOrder[1] + "," + newOrder[2] + "," + newOrder[3] + "]");
         }*/
 
         // With the new priority list, proceed by
