@@ -1,21 +1,18 @@
-package MPTempName;
+package MPTempName.bfs;
 
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
-public class BFSUnrolled {
+public class BFSUnrolled18 {
 
     static RobotController rc;
+    // Includes a ~200 BC cushion
+    public static final int MIN_BC_TO_USE = 4100;
 
     public static void init(RobotController r) {
         rc = r;
     }
-
-    static MapLocation l30;
-    static double v30;
-    static Direction d30;
-    static double p30;
 
     static MapLocation l31;
     static double v31;
@@ -31,11 +28,6 @@ public class BFSUnrolled {
     static double v33;
     static Direction d33;
     static double p33;
-
-    static MapLocation l34;
-    static double v34;
-    static Direction d34;
-    static double p34;
 
     static MapLocation l42;
     static double v42;
@@ -72,11 +64,6 @@ public class BFSUnrolled {
     static Direction d48;
     static double p48;
 
-    static MapLocation l54;
-    static double v54;
-    static Direction d54;
-    static double p54;
-
     static MapLocation l55;
     static double v55;
     static Direction d55;
@@ -111,11 +98,6 @@ public class BFSUnrolled {
     static double v61;
     static Direction d61;
     static double p61;
-
-    static MapLocation l62;
-    static double v62;
-    static Direction d62;
-    static double p62;
 
     static MapLocation l67;
     static double v67;
@@ -252,11 +234,6 @@ public class BFSUnrolled {
     static Direction d101;
     static double p101;
 
-    static MapLocation l106;
-    static double v106;
-    static Direction d106;
-    static double p106;
-
     static MapLocation l107;
     static double v107;
     static Direction d107;
@@ -291,11 +268,6 @@ public class BFSUnrolled {
     static double v113;
     static Direction d113;
     static double p113;
-
-    static MapLocation l114;
-    static double v114;
-    static Direction d114;
-    static double p114;
 
     static MapLocation l120;
     static double v120;
@@ -332,11 +304,6 @@ public class BFSUnrolled {
     static Direction d126;
     static double p126;
 
-    static MapLocation l134;
-    static double v134;
-    static Direction d134;
-    static double p134;
-
     static MapLocation l135;
     static double v135;
     static Direction d135;
@@ -351,11 +318,6 @@ public class BFSUnrolled {
     static double v137;
     static Direction d137;
     static double p137;
-
-    static MapLocation l138;
-    static double v138;
-    static Direction d138;
-    static double p138;
 
 
     public static Direction getBestDir(MapLocation target){
@@ -520,49 +482,25 @@ public class BFSUnrolled {
         l75 = l88.add(Direction.WEST);
         v75 = 1000000;
         d75 = null;
-        l62 = l75.add(Direction.WEST);
-        v62 = 1000000;
-        d62 = null;
-        l34 = l48.add(Direction.SOUTHWEST);
-        v34 = 1000000;
-        d34 = null;
-        l33 = l34.add(Direction.SOUTH);
+        l33 = l32.add(Direction.NORTH);
         v33 = 1000000;
         d33 = null;
         l31 = l32.add(Direction.SOUTH);
         v31 = 1000000;
         d31 = null;
-        l30 = l31.add(Direction.SOUTH);
-        v30 = 1000000;
-        d30 = null;
-        l54 = l42.add(Direction.SOUTHEAST);
-        v54 = 1000000;
-        d54 = null;
-        l67 = l54.add(Direction.EAST);
+        l67 = l68.add(Direction.SOUTH);
         v67 = 1000000;
         d67 = null;
         l93 = l80.add(Direction.EAST);
         v93 = 1000000;
         d93 = null;
-        l106 = l93.add(Direction.EAST);
-        v106 = 1000000;
-        d106 = null;
-        l134 = l122.add(Direction.SOUTHEAST);
-        v134 = 1000000;
-        d134 = null;
-        l135 = l134.add(Direction.NORTH);
+        l135 = l136.add(Direction.SOUTH);
         v135 = 1000000;
         d135 = null;
         l137 = l136.add(Direction.NORTH);
         v137 = 1000000;
         d137 = null;
-        l138 = l137.add(Direction.NORTH);
-        v138 = 1000000;
-        d138 = null;
-        l114 = l113.add(Direction.NORTH);
-        v114 = 1000000;
-        d114 = null;
-        l101 = l114.add(Direction.WEST);
+        l101 = l100.add(Direction.NORTH);
         v101 = 1000000;
         d101 = null;
 
@@ -1531,174 +1469,18 @@ public class BFSUnrolled {
                     d126 = d125;
                 }
             }
-            if (rc.canSenseLocation(l30)) {
-                p30 = 1.0 + rc.senseRubble(l30) / 10.0;
-                if (v30 > v44 + p30) {
-                    v30 = v44 + p30;
-                    d30 = d44;
-                }
-                if (v30 > v43 + p30) {
-                    v30 = v43 + p30;
-                    d30 = d43;
-                }
-                if (v30 > v31 + p30) {
-                    v30 = v31 + p30;
-                    d30 = d31;
-                }
-                if (v30 > v42 + p30) {
-                    v30 = v42 + p30;
-                    d30 = d42;
-                }
-            }
-            if (rc.canSenseLocation(l34)) {
-                p34 = 1.0 + rc.senseRubble(l34) / 10.0;
-                if (v34 > v46 + p34) {
-                    v34 = v46 + p34;
-                    d34 = d46;
-                }
-                if (v34 > v47 + p34) {
-                    v34 = v47 + p34;
-                    d34 = d47;
-                }
-                if (v34 > v33 + p34) {
-                    v34 = v33 + p34;
-                    d34 = d33;
-                }
-                if (v34 > v48 + p34) {
-                    v34 = v48 + p34;
-                    d34 = d48;
-                }
-            }
-            if (rc.canSenseLocation(l54)) {
-                p54 = 1.0 + rc.senseRubble(l54) / 10.0;
-                if (v54 > v68 + p54) {
-                    v54 = v68 + p54;
-                    d54 = d68;
-                }
-                if (v54 > v55 + p54) {
-                    v54 = v55 + p54;
-                    d54 = d55;
-                }
-                if (v54 > v67 + p54) {
-                    v54 = v67 + p54;
-                    d54 = d67;
-                }
-                if (v54 > v42 + p54) {
-                    v54 = v42 + p54;
-                    d54 = d42;
-                }
-            }
-            if (rc.canSenseLocation(l62)) {
-                p62 = 1.0 + rc.senseRubble(l62) / 10.0;
-                if (v62 > v74 + p62) {
-                    v62 = v74 + p62;
-                    d62 = d74;
-                }
-                if (v62 > v61 + p62) {
-                    v62 = v61 + p62;
-                    d62 = d61;
-                }
-                if (v62 > v75 + p62) {
-                    v62 = v75 + p62;
-                    d62 = d75;
-                }
-                if (v62 > v48 + p62) {
-                    v62 = v48 + p62;
-                    d62 = d48;
-                }
-            }
-            if (rc.canSenseLocation(l106)) {
-                p106 = 1.0 + rc.senseRubble(l106) / 10.0;
-                if (v106 > v94 + p106) {
-                    v106 = v94 + p106;
-                    d106 = d94;
-                }
-                if (v106 > v107 + p106) {
-                    v106 = v107 + p106;
-                    d106 = d107;
-                }
-                if (v106 > v93 + p106) {
-                    v106 = v93 + p106;
-                    d106 = d93;
-                }
-                if (v106 > v120 + p106) {
-                    v106 = v120 + p106;
-                    d106 = d120;
-                }
-            }
-            if (rc.canSenseLocation(l114)) {
-                p114 = 1.0 + rc.senseRubble(l114) / 10.0;
-                if (v114 > v100 + p114) {
-                    v114 = v100 + p114;
-                    d114 = d100;
-                }
-                if (v114 > v113 + p114) {
-                    v114 = v113 + p114;
-                    d114 = d113;
-                }
-                if (v114 > v101 + p114) {
-                    v114 = v101 + p114;
-                    d114 = d101;
-                }
-                if (v114 > v126 + p114) {
-                    v114 = v126 + p114;
-                    d114 = d126;
-                }
-            }
-            if (rc.canSenseLocation(l134)) {
-                p134 = 1.0 + rc.senseRubble(l134) / 10.0;
-                if (v134 > v122 + p134) {
-                    v134 = v122 + p134;
-                    d134 = d122;
-                }
-                if (v134 > v121 + p134) {
-                    v134 = v121 + p134;
-                    d134 = d121;
-                }
-                if (v134 > v135 + p134) {
-                    v134 = v135 + p134;
-                    d134 = d135;
-                }
-                if (v134 > v120 + p134) {
-                    v134 = v120 + p134;
-                    d134 = d120;
-                }
-            }
-            if (rc.canSenseLocation(l138)) {
-                p138 = 1.0 + rc.senseRubble(l138) / 10.0;
-                if (v138 > v124 + p138) {
-                    v138 = v124 + p138;
-                    d138 = d124;
-                }
-                if (v138 > v125 + p138) {
-                    v138 = v125 + p138;
-                    d138 = d125;
-                }
-                if (v138 > v137 + p138) {
-                    v138 = v137 + p138;
-                    d138 = d137;
-                }
-                if (v138 > v126 + p138) {
-                    v138 = v126 + p138;
-                    d138 = d126;
-                }
-            }
 
             int dx = target.x - l84.x;
             int dy = target.y - l84.y;
             switch (dx) {
                 case -4:
                     switch (dy) {
-                        case -2:
-                            return d30;
                         case -1:
                             return d31;
                         case 0:
                             return d32;
                         case 1:
                             return d33;
-                        case 2:
-                            return d34;
                     }
                     break;
                 case -3:
@@ -1721,8 +1503,6 @@ public class BFSUnrolled {
                     break;
                 case -2:
                     switch (dy) {
-                        case -4:
-                            return d54;
                         case -3:
                             return d55;
                         case -2:
@@ -1737,8 +1517,6 @@ public class BFSUnrolled {
                             return d60;
                         case 3:
                             return d61;
-                        case 4:
-                            return d62;
                     }
                     break;
                 case -1:
@@ -1809,8 +1587,6 @@ public class BFSUnrolled {
                     break;
                 case 2:
                     switch (dy) {
-                        case -4:
-                            return d106;
                         case -3:
                             return d107;
                         case -2:
@@ -1825,8 +1601,6 @@ public class BFSUnrolled {
                             return d112;
                         case 3:
                             return d113;
-                        case 4:
-                            return d114;
                     }
                     break;
                 case 3:
@@ -1849,16 +1623,12 @@ public class BFSUnrolled {
                     break;
                 case 4:
                     switch (dy) {
-                        case -2:
-                            return d134;
                         case -1:
                             return d135;
                         case 0:
                             return d136;
                         case 1:
                             return d137;
-                        case 2:
-                            return d138;
                     }
                     break;
             }
@@ -1867,11 +1637,6 @@ public class BFSUnrolled {
             double bestEstimation = 0;
             double initialDist = Math.sqrt(l84.distanceSquaredTo(target));
 
-            double dist30 = (initialDist - Math.sqrt(l30.distanceSquaredTo(target))) / v30;
-            if (dist30 > bestEstimation) {
-                bestEstimation = dist30;
-                ans = d30;
-            }
             double dist31 = (initialDist - Math.sqrt(l31.distanceSquaredTo(target))) / v31;
             if (dist31 > bestEstimation) {
                 bestEstimation = dist31;
@@ -1887,30 +1652,35 @@ public class BFSUnrolled {
                 bestEstimation = dist33;
                 ans = d33;
             }
-            double dist34 = (initialDist - Math.sqrt(l34.distanceSquaredTo(target))) / v34;
-            if (dist34 > bestEstimation) {
-                bestEstimation = dist34;
-                ans = d34;
-            }
             double dist42 = (initialDist - Math.sqrt(l42.distanceSquaredTo(target))) / v42;
             if (dist42 > bestEstimation) {
                 bestEstimation = dist42;
                 ans = d42;
+            }
+            double dist43 = (initialDist - Math.sqrt(l43.distanceSquaredTo(target))) / v43;
+            if (dist43 > bestEstimation) {
+                bestEstimation = dist43;
+                ans = d43;
+            }
+            double dist47 = (initialDist - Math.sqrt(l47.distanceSquaredTo(target))) / v47;
+            if (dist47 > bestEstimation) {
+                bestEstimation = dist47;
+                ans = d47;
             }
             double dist48 = (initialDist - Math.sqrt(l48.distanceSquaredTo(target))) / v48;
             if (dist48 > bestEstimation) {
                 bestEstimation = dist48;
                 ans = d48;
             }
-            double dist54 = (initialDist - Math.sqrt(l54.distanceSquaredTo(target))) / v54;
-            if (dist54 > bestEstimation) {
-                bestEstimation = dist54;
-                ans = d54;
+            double dist55 = (initialDist - Math.sqrt(l55.distanceSquaredTo(target))) / v55;
+            if (dist55 > bestEstimation) {
+                bestEstimation = dist55;
+                ans = d55;
             }
-            double dist62 = (initialDist - Math.sqrt(l62.distanceSquaredTo(target))) / v62;
-            if (dist62 > bestEstimation) {
-                bestEstimation = dist62;
-                ans = d62;
+            double dist61 = (initialDist - Math.sqrt(l61.distanceSquaredTo(target))) / v61;
+            if (dist61 > bestEstimation) {
+                bestEstimation = dist61;
+                ans = d61;
             }
             double dist67 = (initialDist - Math.sqrt(l67.distanceSquaredTo(target))) / v67;
             if (dist67 > bestEstimation) {
@@ -1942,30 +1712,35 @@ public class BFSUnrolled {
                 bestEstimation = dist101;
                 ans = d101;
             }
-            double dist106 = (initialDist - Math.sqrt(l106.distanceSquaredTo(target))) / v106;
-            if (dist106 > bestEstimation) {
-                bestEstimation = dist106;
-                ans = d106;
+            double dist107 = (initialDist - Math.sqrt(l107.distanceSquaredTo(target))) / v107;
+            if (dist107 > bestEstimation) {
+                bestEstimation = dist107;
+                ans = d107;
             }
-            double dist114 = (initialDist - Math.sqrt(l114.distanceSquaredTo(target))) / v114;
-            if (dist114 > bestEstimation) {
-                bestEstimation = dist114;
-                ans = d114;
+            double dist113 = (initialDist - Math.sqrt(l113.distanceSquaredTo(target))) / v113;
+            if (dist113 > bestEstimation) {
+                bestEstimation = dist113;
+                ans = d113;
             }
             double dist120 = (initialDist - Math.sqrt(l120.distanceSquaredTo(target))) / v120;
             if (dist120 > bestEstimation) {
                 bestEstimation = dist120;
                 ans = d120;
             }
+            double dist121 = (initialDist - Math.sqrt(l121.distanceSquaredTo(target))) / v121;
+            if (dist121 > bestEstimation) {
+                bestEstimation = dist121;
+                ans = d121;
+            }
+            double dist125 = (initialDist - Math.sqrt(l125.distanceSquaredTo(target))) / v125;
+            if (dist125 > bestEstimation) {
+                bestEstimation = dist125;
+                ans = d125;
+            }
             double dist126 = (initialDist - Math.sqrt(l126.distanceSquaredTo(target))) / v126;
             if (dist126 > bestEstimation) {
                 bestEstimation = dist126;
                 ans = d126;
-            }
-            double dist134 = (initialDist - Math.sqrt(l134.distanceSquaredTo(target))) / v134;
-            if (dist134 > bestEstimation) {
-                bestEstimation = dist134;
-                ans = d134;
             }
             double dist135 = (initialDist - Math.sqrt(l135.distanceSquaredTo(target))) / v135;
             if (dist135 > bestEstimation) {
@@ -1982,18 +1757,10 @@ public class BFSUnrolled {
                 bestEstimation = dist137;
                 ans = d137;
             }
-            double dist138 = (initialDist - Math.sqrt(l138.distanceSquaredTo(target))) / v138;
-            if (dist138 > bestEstimation) {
-                bestEstimation = dist138;
-                ans = d138;
-            }
             return ans;
         } catch (Exception e){
             e.printStackTrace();
         }
         return null;
     }
-
-
-
 }
