@@ -111,4 +111,163 @@ public class Util {
         return 0 <= location.x && location.x < MAP_WIDTH &&
                 0 <= location.y && location.y < MAP_HEIGHT;
     }
+
+    public static MapLocation[] guessEnemyLoc(MapLocation ourLoc) throws GameActionException {
+        MapLocation[] results;
+        int height = rc.getMapHeight();
+        int width = rc.getMapWidth();
+        MapLocation verticalFlip = new MapLocation(ourLoc.x, rc.getMapHeight() - ourLoc.y);
+        MapLocation horizontalFlip = new MapLocation(rc.getMapWidth() - ourLoc.x, ourLoc.y);
+        if (height == width) {
+            results = new MapLocation[]{verticalFlip, horizontalFlip};
+        } else {
+            MapLocation rotation = new MapLocation(ourLoc.y, ourLoc.x);
+            results = new MapLocation[]{verticalFlip, horizontalFlip, rotation};
+        }
+        return results;
+    }
+
+    public static MapLocation[] removeDupes(MapLocation[] original) {
+        int count = 0;
+        boolean[] test = new boolean[original.length];
+        for (int i = 0; i < original.length; i++) {
+            test[i] = true;
+        }
+        for (int i = 0; i < original.length; i++) {
+            if (test[i]) {
+                for (int j = i; j < original.length; j++) {
+                    if (original[j].equals(original[i])) {
+                        test[j] = false;
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < original.length; i++) {
+            if (test[i]) {count++;}
+        }
+        MapLocation[] result = new MapLocation[count];
+        int current = 0;
+        for (int i = 0; i < original.length; i++) {
+            if (test[i]) {
+                result[current] = original[i];
+                current++;
+            }
+        }
+        return result;
+    }
+
+    public static MapLocation[] guessEnemyLocs() throws GameActionException {
+        int height = rc.getMapHeight();
+        int width = rc.getMapWidth();
+        boolean isSquare = height == width;
+        MapLocation[] locs1 = guessEnemyLoc(Comms.locationFromFlag(rc.readSharedArray(1)));
+        MapLocation[] locs2 = guessEnemyLoc(Comms.locationFromFlag(rc.readSharedArray(2)));
+        MapLocation[] locs3 = guessEnemyLoc(Comms.locationFromFlag(rc.readSharedArray(3)));
+        MapLocation[] locs4 = guessEnemyLoc(Comms.locationFromFlag(rc.readSharedArray(4)));
+        MapLocation[] result; 
+        switch (rc.getArchonCount()) {
+            case 1:
+                return locs1;
+            case 2:
+                if (isSquare) {
+                    result = new MapLocation[4];
+                    result[0] = locs1[0];
+                    result[1] = locs1[1];
+                    result[2] = locs2[0];
+                    result[3] = locs2[1];
+                } else {
+                    result = new MapLocation[6];
+                    result[0] = locs1[0];
+                    result[1] = locs1[1];
+                    result[2] = locs1[2];
+                    result[3] = locs2[0];
+                    result[4] = locs2[1];
+                    result[5] = locs2[2];
+                }
+                return removeDupes(result);
+            case 3:
+                if (isSquare) {
+                    result = new MapLocation[6];
+                    result[0] = locs1[0];
+                    result[1] = locs1[1];
+                    result[2] = locs2[0];
+                    result[3] = locs2[1];
+                    result[4] = locs3[0];
+                    result[5] = locs3[1];
+                } else {
+                    result = new MapLocation[9];
+                    result[0] = locs1[0];
+                    result[1] = locs1[1];
+                    result[2] = locs1[2];
+                    result[3] = locs2[0];
+                    result[4] = locs2[1];
+                    result[5] = locs2[2];
+                    result[6] = locs3[0];
+                    result[7] = locs3[1];
+                    result[8] = locs3[2];
+                }
+                return removeDupes(result);
+            case 4:
+                if (isSquare) {
+                    result = new MapLocation[8];
+                    result[0] = locs1[0];
+                    result[1] = locs1[1];
+                    result[2] = locs2[0];
+                    result[3] = locs2[1];
+                    result[4] = locs3[0];
+                    result[5] = locs3[1];
+                    result[6] = locs4[0];
+                    result[7] = locs4[1];
+                } else {
+                    result = new MapLocation[12];
+                    result[0] = locs1[0];
+                    result[1] = locs1[1];
+                    result[2] = locs1[2];
+                    result[3] = locs2[0];
+                    result[4] = locs2[1];
+                    result[5] = locs2[2];
+                    result[6] = locs3[0];
+                    result[7] = locs3[1];
+                    result[8] = locs3[2];
+                    result[9] = locs4[0];
+                    result[10] = locs4[1];
+                    result[11] = locs4[2];
+                }
+                return removeDupes(result);
+            default:
+                return new MapLocation[]{};
+        }
+    }
+
+    public static MapLocation[] narrowToThree(MapLocation[] all) {
+        if (all.length <= 3) {
+            return all;
+        }
+        MapLocation[] clusters = new MapLocation[3];
+        int[] counts = new int[]{1, 1, 1};
+        for (int i = 0; i < 3; i++) {
+            clusters[i] = all[i];
+        }
+        for (int i = 3; i < all.length; i++) {
+            int closest = -1;
+            int closestDist = Integer.MAX_VALUE;
+            MapLocation test = all[i];
+            for (int j = 0; j < 3; j++) {
+                MapLocation cluster = clusters[j];
+                int distance = cluster.distanceSquaredTo(test);
+                if (distance < closestDist) {
+                    closestDist = distance;
+                    closest = j;
+                }
+            }
+            MapLocation bestCluster = clusters[closest];
+            int count = counts[closest];
+            int newX = (bestCluster.x * count + test.x) / (count + 1);
+            int newY = (bestCluster.y * count + test.y) / (count + 1);
+            MapLocation newCluster = new MapLocation(newX, newY);
+            clusters[closest] = newCluster;
+            counts[closest] = count + 1;
+        }
+        return clusters;
+    }
 }
