@@ -7,8 +7,6 @@ import MPTempName.fast.FasterQueue;
 public class Nav {
     static RobotController rc;
 
-    static BFSUnrolled bfs;
-
     static MapLocation lastDest;
     static int closestDistanceToDest;
     static int turnsSinceClosestDistanceDecreased;
@@ -21,13 +19,16 @@ public class Nav {
 
     static void init(RobotController r) {
         rc = r;
-        bfs = new BFSUnrolled(r);
+        BFSUnrolled.init(rc);
         closestDistanceToDest = Integer.MAX_VALUE;
         turnsSinceClosestDistanceDecreased = 0;
         lastExploreDir = null;
     }
 
     static Direction getBestDir(MapLocation dest) throws GameActionException {
+        if(!rc.isMovementReady())
+            return Direction.CENTER;
+
         MapLocation currLoc = rc.getLocation();
 
         if(!dest.equals(lastDest)) {
@@ -56,8 +57,8 @@ public class Nav {
     }
 
     public static Direction navTo(MapLocation dest) throws GameActionException {
-        if(Clock.getBytecodesLeft() > 6000) {
-            return bfs.getBestDir(dest);
+        if(Clock.getBytecodesLeft() > 4800) {
+            return BFSUnrolled.getBestDir(dest);
         } else {
             return getGreedyDirection(rc.getLocation().directionTo(dest));
         }
