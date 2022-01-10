@@ -102,16 +102,15 @@ public class Nav {
         } else {
             turnsSinceClosestDistanceDecreased++;
         }
-
+        
         if(turnsSinceClosestDistanceDecreased >= 3) {
             Debug.println(Debug.PATHFINDING, "BFS failed to get closer in two turns: Falling back to directionTo");
             return currLoc.directionTo(dest);
         } else {
             Debug.println(Debug.PATHFINDING, "Doing BFS normally");
         }
-
         Direction dir = Nav.navTo(dest);
-        return dir == null ? currLoc.directionTo(dest) : dir;
+        return dir == null ? Util.getFirstValidInOrderDirection(currLoc.directionTo(dest)) : dir;
     }
 
     public static Direction navTo(MapLocation dest) throws GameActionException {
@@ -209,7 +208,7 @@ public class Nav {
         if(bestDirs.length > 0) {
             return bestDirs[0];
         } else {
-            return dir;
+            return Util.getFirstValidInOrderDirection(dir);
         }
     }
     
@@ -239,6 +238,7 @@ public class Nav {
             numToInsert++;
             rightRubble = rc.senseRubble(rightLoc);
         }
+        Debug.printString("numIns: " + numToInsert);
 
         // Hard coded 3 length array sort lol
         Direction[] orderedDirs = new Direction[3];

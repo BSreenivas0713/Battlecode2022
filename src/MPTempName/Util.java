@@ -92,6 +92,14 @@ public class Util {
         return new Direction[]{target_dir, target_dir.rotateRight(), target_dir.rotateLeft(), 
             target_dir.rotateRight().rotateRight(), target_dir.rotateLeft().rotateLeft()};
     }
+    static Direction getFirstValidInOrderDirection(Direction dir){
+        for(Direction newDir : Util.getInOrderDirections(dir)) {
+            if(rc.canMove(newDir)) {
+                return newDir;
+            }
+        }
+        return dir;
+    }
 
     static Direction randomDirection() {
         return directions[Util.rng.nextInt(Util.directions.length)];

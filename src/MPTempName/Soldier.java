@@ -60,7 +60,7 @@ public class Soldier extends Robot {
         // if(avgEnemyLoc != null) {
         //     rc.setIndicatorDot(avgEnemyLoc, 0, 255, 0);
         // }
-        Debug.printString(avgEnemyLoc + "");
+        // Debug.printString(avgEnemyLoc + "");
         // Debug.setIndicatorLine(Debug.INDICATORS, currLoc, avgEnemyLoc, 255, 255, 0);
         Comms.incrementRushSoldierCounter();
         trySwitchState();
@@ -167,10 +167,10 @@ public class Soldier extends Robot {
                 closestRobot = robot;
             }
 
-            if(robot.type == RobotType.SOLDIER && currDistance < actionRadiusSquared) {
+            if(robot.type == RobotType.SOLDIER && currDistance <= actionRadiusSquared) {
                 numEnemySoldiers++;
-                overallEnemySoldierDx += currLoc.directionTo(loc).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
-                overallEnemySoldierDy += currLoc.directionTo(loc).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
+                overallEnemySoldierDx += currLoc.directionTo(loc).dx * (100 / (currLoc.distanceSquaredTo(loc)));
+                overallEnemySoldierDy += currLoc.directionTo(loc).dy * (100 / (currLoc.distanceSquaredTo(loc)));
             }
         }
 
@@ -190,16 +190,16 @@ public class Soldier extends Robot {
             loc = friend.location;
             if (friend.getType() == RobotType.SOLDIER) {
                 numFriendlySoldiers++;
-                overallFriendlySoldierDx += currLoc.directionTo(loc).dx * (10000 / (currLoc.distanceSquaredTo(loc) + 1));
-                overallFriendlySoldierDy += currLoc.directionTo(loc).dy * (10000 / (currLoc.distanceSquaredTo(loc) + 1));
+                overallFriendlySoldierDx += currLoc.directionTo(loc).dx * (100 / (currLoc.distanceSquaredTo(loc) + 1));
+                overallFriendlySoldierDy += currLoc.directionTo(loc).dy * (100 / (currLoc.distanceSquaredTo(loc) + 1));
             }
         }
 
         // Weight home Archon ever so slightly.
         // Only really has an effect when no soldiers are seen
         // Primarily for running towards other soldiers/home when running away from enemies.
-        overallFriendlySoldierDx += currLoc.directionTo(home).dx * (10000 / (currLoc.distanceSquaredTo(home) + 1));
-        overallFriendlySoldierDy += currLoc.directionTo(home).dy * (10000 / (currLoc.distanceSquaredTo(home) + 1));
+        overallFriendlySoldierDx += currLoc.directionTo(home).dx * (100 / (currLoc.distanceSquaredTo(home) + 1));
+        overallFriendlySoldierDy += currLoc.directionTo(home).dy * (100 / (currLoc.distanceSquaredTo(home) + 1));
         numFriendlySoldiers++;
     }
 
@@ -223,9 +223,16 @@ public class Soldier extends Robot {
                 }
             }
         }
+        MapLocation closestEnemyLocation = currLoc;
+        if(closestAttackingEnemy != null) {
+            closestEnemyLocation = closestAttackingEnemy;
+        }
         for (RobotInfo Fbot : FriendlySensable) {
-            if (Fbot.getType() == RobotType.SOLDIER || Fbot.getType() == RobotType.WATCHTOWER) {
-                numFriendlies++;
+            RobotType FbotType = Fbot.getType();
+            if (FbotType == RobotType.SOLDIER || FbotType == RobotType.WATCHTOWER) {
+                if((Fbot.getLocation()).distanceSquaredTo(closestEnemyLocation) <= FbotType.visionRadiusSquared) {
+                    numFriendlies++;
+                }
             }
         }
     }
@@ -233,30 +240,59 @@ public class Soldier extends Robot {
     public boolean shouldRunAway() {
         //Not only should there be no soldiers attacking us, but if we see 2 soldiers between our action radius and our vision radius, we should not go forward
         //Consider changing the numFriendlies < numEnemies to <= and retesting
-        Debug.printString("enemyAction: " + numEnemySoldiersAttackingUs + "enemy: " + numEnemies + "friends: " + numFriendlies);
+        // Debug.printString("enemyAction: " + numEnemySoldiersAttackingUs + "enemy: " + numEnemies + "friends: " + numFriendlies);
         return numEnemySoldiersAttackingUs > 0 || (numFriendlies < numEnemies);
     }
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {
         // move towards it if found
+        boolean alreadyCalculated = false;
         if (closestEnemy != null) {
             MapLocation dest;
+            Direction dir = null;
             if(shouldRunAway()) {
                 // Positive so that we move towards the point mass.
                 dest = currLoc.translate(-overallEnemySoldierDx, -overallEnemySoldierDy);//(overallFriendlySoldierDx, overallFriendlySoldierDy);
-                Debug.printString("Running away, Dest: " + dest);
+                dir = Nav.getBestDir(dest);
+                alreadyCalculated = true;
+                MapLocation targetLoc = currLoc.add(dir);
+                int locRubble = rc.senseRubble(targetLoc);
+                int currRubble = rc.senseRubble(currLoc);
+                if(rc.onTheMap(targetLoc) && locRubble > (20 + 1.2 * currRubble)) {
+                    Debug.printString("moving Away bad");
+                    return true;
+                }
+                Debug.printString("RA, Dest: " + dir);
             } else {
                 dest = closestEnemy.getLocation();
-                Debug.printString("Going towards closest Enemy");
+
+                // Debug.printString("Going towards closest Enemy");
             }
             if(dest != null) {
-                Direction dir = Nav.getBestDir(dest);
+                if(!alreadyCalculated) {
+                    dir = Nav.getBestDir(dest);
+                }
                 //Don't go towards miners if it forces us to go to low passability squares(the formula I used is kind of arbitrary, so its definitely tweakable)
                 //keep in mind, however, that on Intersection its like passability 1 versus 85 so any formula thats halfway decent will work there
                 MapLocation targetLoc = currLoc.add(dir);
-                if(closestEnemy.getType() == RobotType.MINER && rc.onTheMap(targetLoc) &&
-                    rc.senseRubble(targetLoc) > (20 + 1.2 * rc.senseRubble(currLoc))) {
-                    return false;
+                RobotType closestEnemyType = closestEnemy.getType();
+                if(closestEnemyType == RobotType.MINER || closestEnemyType == RobotType.ARCHON || closestEnemyType == RobotType.BUILDER) {
+                    //rubble check
+                    int locRubble = rc.senseRubble(targetLoc);
+                    int currRubble = rc.senseRubble(currLoc);
+                    if(rc.onTheMap(targetLoc) && locRubble > (20 + 1.2 * currRubble)) {
+                        return true;
+                    }
+                    //We're already close to a non-attacking enemy, and moving would put us in lower passability
+                    int distanceNeeded = 5;
+                    //This can be changed if Archons start running away from us
+                    if(closestEnemyType == RobotType.ARCHON) {distanceNeeded = actionRadiusSquared;}
+                    if(currLoc.distanceSquaredTo(targetLoc) <= distanceNeeded && locRubble > currRubble) {
+                        return true;
+                    }
+                    Direction[] targetDirs = Util.getInOrderDirections(dir);
+                    tryMoveDest(targetDirs);
+                    return true;
                 }
                 else {
                     Direction[] targetDirs = Util.getInOrderDirections(dir);
