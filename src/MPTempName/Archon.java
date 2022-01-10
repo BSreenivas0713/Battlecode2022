@@ -50,8 +50,8 @@ public class Archon extends Robot {
         MAX_NUM_MINERS = Math.min(Util.MAX_MINERS,
                                     rc.getMapWidth() * rc.getMapHeight() /
                                     Util.MAX_MAP_SIZE_TO_MINER_RATIO);
-        MIN_NUM_MINERS = MAX_NUM_MINERS / 4;
-        // Debug.println("Max number of miners: " + MAX_NUM_MINERS+ ", Min number of miners: " + MIN_NUM_MINERS);
+        MIN_NUM_MINERS = MAX_NUM_MINERS / 5;
+        Debug.println("Min number of miners: " + MIN_NUM_MINERS);
         int nextArchon = Comms.incrementFriendly();
         int myLocFlag = Comms.encodeLocation();
         r.writeSharedArray(nextArchon, myLocFlag);
@@ -333,7 +333,7 @@ public class Archon extends Robot {
                 if (leadToUse < Util.LeadThreshold) {
                     break;
                 }
-                if(minerCount <= MIN_NUM_MINERS && soldierCount >= minerCount) {
+                if(minerCount <= MIN_NUM_MINERS && soldierCount >= (1/3) * minerCount) {
                     chillingCounter = minerSoldier31(chillingCounter);
                 }
                 else {

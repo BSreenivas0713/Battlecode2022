@@ -87,7 +87,6 @@ public class Soldier extends Robot {
                 }
                 break;
             case EXPLORING:
-                tryAttackBestEnemy();
                 if (!tryMoveTowardsEnemy()) { 
                     soldierExplore();
                 }
@@ -245,7 +244,7 @@ public class Soldier extends Robot {
         //Not only should there be no soldiers attacking us, but if we see 2 soldiers between our action radius and our vision radius, we should not go forward
         //Consider changing the numFriendlies < numEnemies to <= and retesting
         // Debug.printString("enemyAction: " + numEnemySoldiersAttackingUs + "enemy: " + numEnemies + "friends: " + numFriendlies);
-        return (numEnemySoldiersAttackingUs > 0) || (numFriendlies < numEnemies);
+        return numEnemySoldiersAttackingUs > 0 || (numFriendlies + 1 < numEnemies);
     }
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {
@@ -254,7 +253,9 @@ public class Soldier extends Robot {
         if (closestEnemy != null) {
             MapLocation dest;
             Direction dir = null;
+            boolean attackFirst = false;
             if(shouldRunAway()) {
+                attackFirst = true;
                 // Positive so that we move towards the point mass.
                 dest = currLoc.translate(-overallEnemySoldierDx, -overallEnemySoldierDy);//(overallFriendlySoldierDx, overallFriendlySoldierDy);
                 dir = Nav.getBestDir(dest);
@@ -269,7 +270,7 @@ public class Soldier extends Robot {
                 Debug.printString("RA, Dest: " + dir);
             } else {
                 dest = closestEnemy.getLocation();
-
+                attackFirst = false;
                 // Debug.printString("Going towards closest Enemy");
             }
             if(dest != null) {
@@ -285,6 +286,7 @@ public class Soldier extends Robot {
                     int locRubble = rc.senseRubble(targetLoc);
                     int currRubble = rc.senseRubble(currLoc);
                     if(rc.onTheMap(targetLoc) && locRubble > (20 + 1.2 * currRubble)) {
+                        tryAttackBestEnemy();
                         return true;
                     }
                     //We're already close to a non-attacking enemy, and moving would put us in lower passability
@@ -292,15 +294,30 @@ public class Soldier extends Robot {
                     //This can be changed if Archons start running away from us
                     if(closestEnemyType == RobotType.ARCHON) {distanceNeeded = actionRadiusSquared;}
                     if(currLoc.distanceSquaredTo(targetLoc) <= distanceNeeded && locRubble > currRubble) {
+                        tryAttackBestEnemy();
                         return true;
                     }
                     Direction[] targetDirs = Util.getInOrderDirections(dir);
-                    tryMoveDest(targetDirs);
+                    if(attackFirst) {
+                        tryAttackBestEnemy();
+                        tryMoveDest(targetDirs);
+                    }
+                    else {
+                        tryMoveDest(targetDirs);
+                        tryAttackBestEnemy();
+                    }
                     return true;
                 }
                 else {
                     Direction[] targetDirs = Util.getInOrderDirections(dir);
-                    tryMoveDest(targetDirs);
+                    if(attackFirst) {
+                        tryAttackBestEnemy();
+                        tryMoveDest(targetDirs);
+                    }
+                    else {
+                        tryMoveDest(targetDirs);
+                        tryAttackBestEnemy();
+                    }
                     return true;
                 }
             }
