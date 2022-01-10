@@ -78,6 +78,7 @@ public class Comms {
 
     private static RobotController rc;
     public static boolean foundEnemy;
+    public static boolean foundEnemySoldier;
 
     public enum InformationCategory {
         EMPTY,
@@ -100,13 +101,17 @@ public class Comms {
     // Categories of information to tell the Archons
     public enum ArchonInfo {
         FOUND_ENEMY,
+        FOUND_ENEMY_SOLDIER,
     }
 
-    static final int FOUND_ENEMY_ARCHON_INFO = (1 << ArchonInfo.FOUND_ENEMY.ordinal());
+    public static int encodeArchonInfo(ArchonInfo cat) {
+        return 1 << cat.ordinal();
+    }
 
     static void init(RobotController r) {
         rc = r;
         foundEnemy = false;
+        foundEnemySoldier = false;
     }
     
     public static int encodeArchonFlag(InformationCategory cat) {
@@ -170,6 +175,7 @@ public class Comms {
     }
     public static void clearUsedLead() throws GameActionException {
         writeIfChanged(LEAD_SPENT_IDX, 0);
+    }
     public static int encodeArchonFlag(InformationCategory cat, MapLocation loc) {
         return (encodeLocation(loc) << ARCHON_FLAG_LOC_OFFSET) | cat.ordinal();
     }
@@ -445,15 +451,25 @@ public class Comms {
     }
 
     // Lets Archons know when the first enemy has been found
-    public static void broadcastEnemyFound() throws GameActionException {
-        if(!foundEnemy) {
+    public static void broadcastEnemyFound(RobotInfo[] enemySensable) throws GameActionException {
+        if (!foundEnemySoldier) {
             int archonInfo = rc.readSharedArray(ARCHON_COMM_IDX);
-            foundEnemy = (archonInfo & FOUND_ENEMY_ARCHON_INFO) == 1;
-            if(rc.senseNearbyRobots(rc.getType().visionRadiusSquared, 
-                rc.getTeam().opponent()).length > 0) {
-                foundEnemy = true;
-                Comms.writeIfChanged(ARCHON_COMM_IDX, archonInfo | FOUND_ENEMY_ARCHON_INFO);
+            int foundEnemyArchonInfo = encodeArchonInfo(ArchonInfo.FOUND_ENEMY);
+            int foundEnemySoldierArchonInfo = encodeArchonInfo(ArchonInfo.FOUND_ENEMY_SOLDIER);
+            foundEnemy = (archonInfo & foundEnemyArchonInfo) == foundEnemyArchonInfo;
+            foundEnemySoldier = (archonInfo & foundEnemySoldierArchonInfo) == foundEnemySoldierArchonInfo;
+            if (!foundEnemySoldier) {
+                for (RobotInfo bot : enemySensable) {
+                    foundEnemy = true;
+                    archonInfo |= foundEnemyArchonInfo;
+                    if (bot.getType() == RobotType.SOLDIER) {
+                        foundEnemySoldier = true;
+                        archonInfo |= foundEnemySoldierArchonInfo;
+                        break;
+                    }
+                }
             }
+            Comms.writeIfChanged(ARCHON_COMM_IDX, archonInfo);
         }
     }
 
@@ -789,9 +805,10 @@ public class Comms {
         MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
         MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
 
-        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc1, 0, 0, 255);
-        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc2, 0, 0, 255);
-        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc3, 0, 0, 255);
+        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc1, 0, 255, 255);
+        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc2, 0, 255, 255);
+        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc3, 0, 255, 255);
+
 
         MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
         
