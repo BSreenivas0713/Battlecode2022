@@ -504,7 +504,7 @@ public class Comms {
         Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc3, 0, 255, 255);
 
         MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
-        
+        // Hi Bharath
         MapLocation bestCluster = null;
         int bestClusterDist = Integer.MAX_VALUE;
 
