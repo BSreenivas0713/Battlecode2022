@@ -1,6 +1,7 @@
 package MPTempName;
 
 import battlecode.common.*;
+import MPTempName.bfs.*;
 import MPTempName.fast.FastIterableIntSet;
 import MPTempName.fast.FasterQueue;
 
@@ -19,7 +20,9 @@ public class Nav {
 
     static void init(RobotController r) {
         rc = r;
-        BFSUnrolled.init(rc);
+        BFSUnrolled20.init(rc);
+        BFSUnrolled18.init(rc);
+        BFSUnrolled13.init(rc);
         closestDistanceToDest = Integer.MAX_VALUE;
         turnsSinceClosestDistanceDecreased = 0;
         lastExploreDir = null;
@@ -57,8 +60,13 @@ public class Nav {
     }
 
     public static Direction navTo(MapLocation dest) throws GameActionException {
-        if(Clock.getBytecodesLeft() > 4800) {
-            return BFSUnrolled.getBestDir(dest);
+        int bcLeft = Clock.getBytecodesLeft();
+        if(bcLeft >= BFSUnrolled20.MIN_BC_TO_USE) {
+            return BFSUnrolled20.getBestDir(dest);
+        } else if(bcLeft >= BFSUnrolled18.MIN_BC_TO_USE) {
+            return BFSUnrolled18.getBestDir(dest);
+        } else if(bcLeft >= BFSUnrolled13.MIN_BC_TO_USE) {
+            return BFSUnrolled13.getBestDir(dest);
         } else {
             return getGreedyDirection(rc.getLocation().directionTo(dest));
         }
