@@ -53,7 +53,7 @@ public class Soldier extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        closestEnemy = getClosestEnemy();
+        closestEnemy = getBestEnemy(EnemySensable);
         findFriendlySoldiers();
         resetShouldRunAway();
         avgEnemyLoc = Comms.getClosestCluster(currLoc);
@@ -208,6 +208,8 @@ public class Soldier extends Robot {
         numFriendlies = 0;
         closestAttackingEnemy = null;
         numEnemies = 0;
+        overallEnemySoldierDx = 0;
+        overallEnemySoldierDy = 0;
         int closestSoldierDist = Integer.MAX_VALUE;
         for (RobotInfo bot : EnemySensable) {
             MapLocation candidateLoc = bot.getLocation();
@@ -216,6 +218,8 @@ public class Soldier extends Robot {
                 numEnemies++;
                 if (candidateDist <= actionRadiusSquared) {
                     numEnemySoldiersAttackingUs++;
+                    overallEnemySoldierDx += currLoc.directionTo(candidateLoc).dx * (100 / (currLoc.distanceSquaredTo(candidateLoc)));
+                    overallEnemySoldierDy += currLoc.directionTo(candidateLoc).dy * (100 / (currLoc.distanceSquaredTo(candidateLoc)));
                 }
                 if (candidateDist < closestSoldierDist) {
                     closestSoldierDist = candidateDist;
@@ -241,7 +245,7 @@ public class Soldier extends Robot {
         //Not only should there be no soldiers attacking us, but if we see 2 soldiers between our action radius and our vision radius, we should not go forward
         //Consider changing the numFriendlies < numEnemies to <= and retesting
         // Debug.printString("enemyAction: " + numEnemySoldiersAttackingUs + "enemy: " + numEnemies + "friends: " + numFriendlies);
-        return numEnemySoldiersAttackingUs > 0 || (numFriendlies < numEnemies);
+        return (numEnemySoldiersAttackingUs > 0) || (numFriendlies < numEnemies);
     }
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {
