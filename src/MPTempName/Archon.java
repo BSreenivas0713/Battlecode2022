@@ -349,9 +349,9 @@ public class Archon extends Robot {
         switch(currentState) {
             case INIT:
                 Debug.printString("Init");
-                /*if (leadToUse < Util.LeadThreshold) {
+                if (leadToUse < Util.LeadThreshold) {
                     break;
-                }*/
+                }
                 firstRounds();
                 break;
             case CHILLING:
