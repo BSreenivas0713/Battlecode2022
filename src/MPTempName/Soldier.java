@@ -65,9 +65,17 @@ public class Soldier extends Robot {
         for (RobotInfo bot : EnemySensable) {
             MapLocation candidateLoc = bot.getLocation();
             int candidateDist = currLoc.distanceSquaredTo(candidateLoc);
-            if (bot.getType() == RobotType.SOLDIER || bot.getType() == RobotType.WATCHTOWER) {
+            boolean isWatchtower = bot.getType() == RobotType.WATCHTOWER;
+            if (bot.getType() == RobotType.SOLDIER || isWatchtower) {
+                // This code makes it so that we don't consider Portables as attacking enemies - it made our bot worse as of Hooray for spring
+                // so it is commented out for now
+                /*boolean canAttack = false;
+                if(!isWatchtower || bot.getMode() == RobotMode.TURRET) {
+                    canAttack = true;
+                }
+                if(canAttack) {numEnemies++;}*/
                 numEnemies++;
-                if (candidateDist <= actionRadiusSquared) {
+                if (candidateDist <= actionRadiusSquared /*&& canAttack*/) {
                     numEnemySoldiersAttackingUs++;
                     overallEnemySoldierDx += currLoc.directionTo(candidateLoc).dx * (100 / (currLoc.distanceSquaredTo(candidateLoc)));
                     overallEnemySoldierDy += currLoc.directionTo(candidateLoc).dy * (100 / (currLoc.distanceSquaredTo(candidateLoc)));
@@ -100,7 +108,16 @@ public class Soldier extends Robot {
         // Debug.printString("enemyAction: " + numEnemySoldiersAttackingUs + "enemy: " + numEnemies + "friends: " + numFriendlies);
         return numEnemySoldiersAttackingUs > 0 || (numFriendlies + 1 < numEnemies);
     }
-
+    public void moveAndAttack(Direction[] targetDirs, boolean attackFirst) throws GameActionException{
+        if(attackFirst) {
+            tryAttackBestEnemy();
+            tryMoveDest(targetDirs);
+        }
+        else {
+            tryMoveDest(targetDirs);
+            tryAttackBestEnemy();
+        }
+    }
     public boolean tryMoveTowardsEnemy() throws GameActionException {
         // move towards it if found
         boolean alreadyCalculated = false;
@@ -152,26 +169,12 @@ public class Soldier extends Robot {
                         return true;
                     }
                     Direction[] targetDirs = Util.getInOrderDirections(dir);
-                    if(attackFirst) {
-                        tryAttackBestEnemy();
-                        tryMoveDest(targetDirs);
-                    }
-                    else {
-                        tryMoveDest(targetDirs);
-                        tryAttackBestEnemy();
-                    }
+                    moveAndAttack(targetDirs, attackFirst);
                     return true;
                 }
                 else {
                     Direction[] targetDirs = Util.getInOrderDirections(dir);
-                    if(attackFirst) {
-                        tryAttackBestEnemy();
-                        tryMoveDest(targetDirs);
-                    }
-                    else {
-                        tryMoveDest(targetDirs);
-                        tryAttackBestEnemy();
-                    }
+                    moveAndAttack(targetDirs, attackFirst);
                     return true;
                 }
             }

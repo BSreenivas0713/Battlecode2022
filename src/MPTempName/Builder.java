@@ -44,7 +44,7 @@ public class Builder extends Robot{
                     }
                     MapLocation robotLoc = robot.location;
                     for(MapLocation newLoc: Util.makePattern(robotLoc)) {
-                        if(robot.mode == RobotMode.TURRET && archonTowerCount < 13 && currLoc.distanceSquaredTo(newLoc) <= 2 && rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc))) {
+                        if(robot.mode == RobotMode.TURRET && archonTowerCount < 13 && currLoc.distanceSquaredTo(newLoc) <= actionRadiusSquared && rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc))) {
                             Debug.printString("Building a Watchtower");
                             making = true;
                             rc.buildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc));
@@ -100,15 +100,15 @@ public class Builder extends Robot{
                 Debug.printString("Friendly near, moving away from home");
                 Direction awayFromHome = currLoc.directionTo(home).opposite();
                 if(!rc.onTheMap(currLoc.add(awayFromHome))) {
-                    tryMoveDest(Util.getInOrderDirections(Util.turnRight90(currLoc.directionTo(home))));
+                    tryMoveDest(Util.getInOrderDirections(Nav.getBestDir(currLoc.add(Util.turnRight90(currLoc.directionTo(home))))));
                 }
                 else {
-                    tryMoveDest(Nav.greedyDirection(awayFromHome));
+                    tryMoveDest(Util.getInOrderDirections(Nav.getBestDir(currLoc.add(awayFromHome))));
                 }
             }
             else {
                 Debug.printString("No Friendly near, moving towards home");
-                tryMoveDest(Nav.greedyDirection(currLoc.directionTo(home)));
+                tryMoveDest(Util.getInOrderDirections(Nav.getBestDir(home)));
             }
         }
     }
