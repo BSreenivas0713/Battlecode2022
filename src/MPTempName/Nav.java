@@ -2,31 +2,30 @@ package MPTempName;
 
 import battlecode.common.*;
 import MPTempName.bfs.*;
-import MPTempName.fast.FastIterableIntSet;
-import MPTempName.fast.FasterQueue;
 
 public class Nav {
     static RobotController rc;
 
     static MapLocation lastCurrLoc;
-    static MapLocation lastDest;
+    static MapLocation currentTarget;
     static int closestDistanceToDest;
     static int turnsSinceClosestDistanceDecreased;
+    static int turnsGreedy;
 
-    public static Direction lastExploreDir;
-    static final int EXPLORE_BOREDOM = 20;
-    static int boredom;
-
-    static final int MIN_DIST_FROM_WALL = 3;
+    static final int BYTECODE_REMAINING = 1000;
+    static final int BYTECODE_REMAINING_NON_MINER_BUILDER = 2500;
+    //static final int BYTECODE_BFS = 5000;
+    static final int GREEDY_TURNS = 4;
 
     static void init(RobotController r) {
         rc = r;
         BFSUnrolled20.init(rc);
         BFSUnrolled18.init(rc);
         BFSUnrolled13.init(rc);
+        MapTracker.reset();
+        Pathfinding.init(rc);
         closestDistanceToDest = Integer.MAX_VALUE;
         turnsSinceClosestDistanceDecreased = 0;
-        lastExploreDir = null;
     }
 
     // @requires loc is adjacent to currLoc
@@ -55,7 +54,7 @@ public class Nav {
 
     // Only checks squares next to current location for better rubble.
     // I don't think it's really worth it to check other ones.
-    public static Direction navToBetterRubbleSquareAdjacentTo(MapLocation dest) throws GameActionException {
+    public static Direction getBestDirBetterRubbleSquareAdjacentTo(MapLocation dest) throws GameActionException {
         int minRubble = rc.senseRubble(rc.getLocation());
         MapLocation currLoc = rc.getLocation();
         MapLocation bestLoc = currLoc;
@@ -76,21 +75,21 @@ public class Nav {
         if(dest.equals(currLoc)) {
             return Direction.CENTER;
         }
-        Direction dir = Nav.navTo(dest);
+        Direction dir = Nav.getBestDir(dest);
         return dir == null ? Direction.CENTER : dir;
     }
 
-    static Direction getBestDir(MapLocation dest) throws GameActionException {
+    static Direction navTo(MapLocation dest) throws GameActionException {
         if(!rc.isMovementReady())
             return Direction.CENTER;
 
         MapLocation currLoc = rc.getLocation();
 
         if(currLoc.isAdjacentTo(dest))
-            return navToBetterRubbleSquareAdjacentTo(dest);
+            return getBestDirBetterRubbleSquareAdjacentTo(dest);
 
-        if(!dest.equals(lastDest)) {
-            lastDest = dest;
+        if(!dest.equals(currentTarget)) {
+            currentTarget = dest;
             closestDistanceToDest = currLoc.distanceSquaredTo(dest);
             turnsSinceClosestDistanceDecreased = 0;
         }
@@ -109,99 +108,27 @@ public class Nav {
         } else {
             Debug.println(Debug.PATHFINDING, "Doing BFS normally");
         }
-        Direction dir = Nav.navTo(dest);
+        Direction dir = Nav.getBestDir(dest);
         return dir == null ? Util.getFirstValidInOrderDirection(currLoc.directionTo(dest)) : dir;
     }
 
-    public static Direction navTo(MapLocation dest) throws GameActionException {
+    public static Direction getBestDir(MapLocation dest) throws GameActionException {
+        return getBestDir(dest, 0);
+    }
+
+    public static Direction getBestDir(MapLocation dest, int bytecodeCushion) throws GameActionException {
         int bcLeft = Clock.getBytecodesLeft();
-        if(bcLeft >= BFSUnrolled20.MIN_BC_TO_USE) {
+        if(bcLeft >= BFSUnrolled20.MIN_BC_TO_USE + bytecodeCushion) {
             return BFSUnrolled20.getBestDir(dest);
-        } else if(bcLeft >= BFSUnrolled18.MIN_BC_TO_USE) {
+        } else if(bcLeft >= BFSUnrolled18.MIN_BC_TO_USE + bytecodeCushion) {
             return BFSUnrolled18.getBestDir(dest);
-        } else if(bcLeft >= BFSUnrolled13.MIN_BC_TO_USE) {
+        } else if(bcLeft >= BFSUnrolled13.MIN_BC_TO_USE + bytecodeCushion) {
             return BFSUnrolled13.getBestDir(dest);
         } else {
             return getGreedyDirection(rc.getLocation().directionTo(dest));
         }
     }
 
-    // Don't continue in this explore dir if it will bring you too close to a wall.
-    public static boolean isValidExploreDir(Direction dir) {
-        switch(dir) {
-            case NORTH: case SOUTH: case EAST: case WEST:
-                return Util.onTheMap(rc.getLocation().translate(dir.dx * 5, dir.dy * 5));
-            case NORTHEAST: case NORTHWEST: case SOUTHEAST: case SOUTHWEST:
-                return Util.onTheMap(rc.getLocation().translate(dir.dx * 4, dir.dy * 4));
-            case CENTER:
-                // Should not happen
-                return true;
-        }
-        return false;
-    }
-
-    public static void pickNewExploreDir() {
-        Direction[] newDirChoices = {
-            // Util.turnLeft90(lastExploreDir),
-            lastExploreDir.rotateLeft(),
-            lastExploreDir,
-            lastExploreDir.rotateRight(),
-            // Util.turnRight90(lastExploreDir),
-        };
-
-        Direction[] validDirs = new Direction[5];
-        int numValidDirs = 0;
-        for(Direction dir : newDirChoices) {
-            if(isValidExploreDir(dir)) {
-                validDirs[numValidDirs++] = dir;
-            }
-        }
-
-        if(numValidDirs > 0) {
-            lastExploreDir = validDirs[Util.rng.nextInt(numValidDirs)];
-        } else {
-            // This can happen if you're going straight into a corner or wall
-            // In this case, we choose from close to the opposite current explore dir
-            switch(Util.rng.nextInt(3)) {
-                case 0:
-                    lastExploreDir = lastExploreDir.opposite().rotateLeft();
-                    break;
-                case 1:
-                    lastExploreDir = lastExploreDir.opposite().rotateRight();
-                    break;
-                default:
-                    lastExploreDir = lastExploreDir.opposite();
-                    break;
-            }
-        }
-    }
-
-	public static Direction[] explorePathfinding() throws GameActionException {
-        // Debug.println(Debug.PATHFINDING, "Exploring");
-        if(!rc.isMovementReady())
-            return new Direction[0];
-        
-		if(lastExploreDir == null) {
-            lastExploreDir = rc.getLocation().directionTo(Robot.home).opposite();
-			boredom = 0;
-        }
-        
-        // Pick a kinda new direction if you've gone in the same direction for a while
-		if(boredom >= EXPLORE_BOREDOM) {
-            boredom = 0;
-            pickNewExploreDir();
-		}
-        boredom++;
-
-        // Pick a new direction if you ran into a wall.
-        if(!isValidExploreDir(lastExploreDir)) {
-            pickNewExploreDir();
-        }
-
-        MapLocation target = rc.getLocation().translate(lastExploreDir.getDeltaX() * 5, 
-                                                        lastExploreDir.getDeltaY() * 5);
-        return Util.getInOrderDirections(getBestDir(target));
-    }
 
     public static Direction getGreedyDirection(Direction dir) throws GameActionException {
         Direction[] bestDirs = greedyDirection(dir);
@@ -253,7 +180,7 @@ public class Nav {
         } else if(leftRubble <= dirRubble && dirRubble <= rightRubble) {
             orderedDirs[0] = left; orderedDirs[1] = dir; orderedDirs[2] = right;
         } else if(leftRubble <= rightRubble && rightRubble <= dirRubble) {
-            orderedDirs[0] = left; orderedDirs[1] = dir; orderedDirs[2] = dir;
+            orderedDirs[0] = left; orderedDirs[1] = right; orderedDirs[2] = dir;
         }
 
         Direction[] dirs = new Direction[numToInsert];
@@ -261,81 +188,66 @@ public class Nav {
         return dirs;
     }
 
-    // If you're traveling south *right* next to a wall, you should go southwest/east for a turn
-    public static Direction rotateAwayFromWallIfNecessary(Direction dir) {
-        MapLocation currLoc = rc.getLocation();
-        switch(dir) {
-            case SOUTH:
-                if(currLoc.x < MIN_DIST_FROM_WALL) {
-                    return dir.rotateLeft();
-                }
-                if(Util.MAP_WIDTH - currLoc.x < MIN_DIST_FROM_WALL) {
-                    return dir.rotateRight();
-                }
-                break;
-            case NORTH:
-                if(currLoc.x < MIN_DIST_FROM_WALL) {
-                    return dir.rotateRight();
-                }
-                if(Util.MAP_WIDTH - currLoc.x < MIN_DIST_FROM_WALL) {
-                    return dir.rotateLeft();
-                }
-                break;
-            case WEST:
-                if(currLoc.y < MIN_DIST_FROM_WALL) {
-                    return dir.rotateRight();
-                }
-                if(Util.MAP_HEIGHT - currLoc.y < MIN_DIST_FROM_WALL) {
-                    return dir.rotateLeft();
-                }
-                break;
-            case EAST:
-                if(currLoc.y < MIN_DIST_FROM_WALL) {
-                    return dir.rotateLeft();
-                }
-                if(Util.MAP_HEIGHT - currLoc.y < MIN_DIST_FROM_WALL) {
-                    return dir.rotateRight();
-                }
-                break;
-        }
-        return dir;
+    static void reset(){
+        turnsGreedy = 0;
+        MapTracker.reset();
     }
 
-    public static Direction[] exploreGreedy() throws GameActionException {
-        // Debug.println(Debug.INFO, "Exploring");
-        if(!rc.isMovementReady())
-            return new Direction[0];
-        
-		if(lastExploreDir == null) {
-            // Debug.println(Debug.INFO, "changing last Explore Dir");
-            Direction oppositeFromHome = Util.randomDirection();
-            if (Robot.home != null) {
-                oppositeFromHome = rc.getLocation().directionTo(Robot.home).opposite();
-            }
-            Direction[] oppositeFromHomeDirs = {oppositeFromHome, oppositeFromHome.rotateLeft(), oppositeFromHome.rotateRight()};
-            lastExploreDir = oppositeFromHomeDirs[(int)(Math.random() * 3)];
-			boredom = 0;
-        }
-        
-		if(boredom >= EXPLORE_BOREDOM) {
-            // Debug.println(Debug.INFO, "changing last Explore Dir because of boredom");
-            boredom = 0;
-            pickNewExploreDir();
-		}
-        boredom++;
-        
-        // Pick a new direction if you ran into a wall.
-        if(!isValidExploreDir(lastExploreDir)) {
-            pickNewExploreDir();
-        }
-
-        if(lastExploreDir != null) {
-            Debug.printString("Exploring " + lastExploreDir);
-        }
-        return greedyDirection(rotateAwayFromWallIfNecessary(lastExploreDir));
+    static void update(MapLocation target){
+        if (currentTarget == null || target.distanceSquaredTo(currentTarget) > 0){
+            reset();
+        } else --turnsGreedy;
+        currentTarget = target;
+        MapTracker.add(rc.getLocation());
     }
 
-    public static Direction[] explore() throws GameActionException {
-        return exploreGreedy();
+    static void activateGreedy() {
+        turnsGreedy = GREEDY_TURNS;
+    }
+
+    static void initTurn() {
+        Pathfinding.initTurn();
+    }
+
+    static void move(MapLocation target) throws GameActionException {
+        move(target, false);
+    }
+
+    static void move(MapLocation target, boolean greedy) throws GameActionException {
+        if (target == null) return;
+        if (!rc.isMovementReady()) return;
+        if (rc.getLocation().distanceSquaredTo(target) == 0) return;
+
+        update(target);
+
+        if (!greedy && turnsGreedy <= 0){
+            Direction dir = getBestDir(target);
+            if (dir != null && !MapTracker.check(rc.getLocation().add(dir))){
+                Explore.move(dir);
+                return;
+            } else activateGreedy();
+        }
+
+        switch(rc.getType()) {
+            case MINER:
+            case BUILDER:
+                if (Clock.getBytecodesLeft() >= BYTECODE_REMAINING) {
+                    //System.err.println("Using greedy");
+                    //System.out.println("Before pathfinding " + Clock.getBytecodeNum());
+                    Pathfinding.move(target);
+                    //System.out.println("After pathfinding " + Clock.getBytecodeNum());
+                    --turnsGreedy;
+                }
+                break;
+            default:
+                if (Clock.getBytecodesLeft() >= BYTECODE_REMAINING_NON_MINER_BUILDER) {
+                    //System.err.println("Using greedy");
+                    //System.out.println("Before pathfinding " + Clock.getBytecodeNum());
+                    Pathfinding.move(target);
+                    //System.out.println("After pathfinding " + Clock.getBytecodeNum());
+                    --turnsGreedy;
+                }
+                break;
+        }
     }
 }

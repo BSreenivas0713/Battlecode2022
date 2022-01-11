@@ -14,6 +14,7 @@ public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         Debug.init(rc);
         Comms.init(rc);
+        Explore.init(rc);
         Nav.init(rc);
         Util.init(rc);
 
@@ -45,8 +46,8 @@ public strictfp class RobotPlayer {
             case MINER:
                 bot = new Miner(rc);
                 if(ic == InformationCategory.DIRECTION) {
-                    Nav.lastExploreDir = Comms.decodeArchonFlagDirection(dataFlag);
-                    Debug.printString("Dir: " + Nav.lastExploreDir);
+                    Explore.lastExploreDir = Comms.decodeArchonFlagDirection(dataFlag);
+                    Debug.printString("Dir: " + Explore.lastExploreDir);
                 }
                 break;
             case SOLDIER:
@@ -57,8 +58,8 @@ public strictfp class RobotPlayer {
             case BUILDER:    bot = new Builder(rc);  break;
             case SAGE:       bot = new Sage(rc); break;
         }
-        while (true) {
 
+        while (true) {
             try {
                 bot.takeTurn();
                 Debug.flush();

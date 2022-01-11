@@ -123,7 +123,7 @@ public class Miner extends Robot {
         boolean canMine = rc.senseNearbyLocationsWithLead(2, 2).length > 0;
         if (!amMining && !canMine) {
             //Become XSqaure (random location on the map)
-            dir = Nav.explore();
+            dir = Explore.explore();
             str = "Exploring";
         }
 
@@ -137,7 +137,7 @@ public class Miner extends Robot {
         }
         //no need to complicate things, just go towards the closest ore
         if(bestLead != null) {
-            dir = Util.getInOrderDirections(Nav.getBestDir(bestLead));
+            dir = Util.getInOrderDirections(Nav.navTo(bestLead));
             str = "going towards lead";
             if(minerCount >= 5) {
                 // Move away if you can still mine any lead at the new location.

@@ -129,7 +129,7 @@ public class Soldier extends Robot {
                 attackFirst = true;
                 // Positive so that we move towards the point mass.
                 dest = currLoc.translate(-overallEnemySoldierDx, -overallEnemySoldierDy);//(overallFriendlySoldierDx, overallFriendlySoldierDy);
-                dir = Nav.getBestDir(dest);
+                dir = Nav.navTo(dest);
                 alreadyCalculated = true;
                 MapLocation targetLoc = currLoc.add(dir);
                 int locRubble = rc.senseRubble(targetLoc);
@@ -146,7 +146,7 @@ public class Soldier extends Robot {
             }
             if(dest != null) {
                 if(!alreadyCalculated) {
-                    dir = Nav.getBestDir(dest);
+                    dir = Nav.navTo(dest);
                 }
                 //Don't go towards miners if it forces us to go to low passability squares(the formula I used is kind of arbitrary, so its definitely tweakable)
                 //keep in mind, however, that on Intersection its like passability 1 versus 85 so any formula thats halfway decent will work there
@@ -185,12 +185,12 @@ public class Soldier extends Robot {
 
     public void soldierExplore() throws GameActionException {
         if (avgEnemyLoc != null && currLoc.distanceSquaredTo(avgEnemyLoc) > visionRadiusSquared) {
-            Direction bestDir = Nav.getBestDir(avgEnemyLoc);
+            Direction bestDir = Nav.navTo(avgEnemyLoc);
             Direction[] targets = Util.getInOrderDirections(bestDir);
             tryMoveDest(targets);
         }
         else {
-            tryMoveDest(Nav.explore());
+            tryMoveDest(Explore.explore());
         }
     }
 }
