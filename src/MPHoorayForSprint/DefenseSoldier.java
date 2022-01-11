@@ -1,9 +1,9 @@
-package MPTempName;
+package MPHoorayForSprint;
 
 import battlecode.common.*;
-import MPTempName.Debug.*;
-import MPTempName.Util.*;
-import MPTempName.Comms.*;
+import MPHoorayForSprint.Debug.*;
+import MPHoorayForSprint.Util.*;
+import MPHoorayForSprint.Comms.*;
 
 public class DefenseSoldier extends Robot {
     static int homeFlagIdx;

@@ -1,13 +1,15 @@
-package MPTempName;
+package MPHoorayForSprint;
 
 import battlecode.common.*;
-import MPTempName.Debug.*;
-import MPTempName.Util.*;
+import MPHoorayForSprint.Debug.*;
+import MPHoorayForSprint.Util.*;
 
 public class Watchtower extends Robot {
     static int timeSinceLastAttacked;
+    static int spinDirection;
     public Watchtower(RobotController r) throws GameActionException {
         super(r);
+        spinDirection = Util.rng.nextInt(1);
         timeSinceLastAttacked = 5;
     }
     public void takeTurn() throws GameActionException {
@@ -28,7 +30,6 @@ public class Watchtower extends Robot {
             }
         }
         else {
-            //try vision again with updates
             if (rc.senseNearbyRobots(actionRadiusSquared, rc.getTeam().opponent()).length != 0) {
                 if(rc.canTransform()) {
                     rc.transform();

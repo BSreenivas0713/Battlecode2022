@@ -1,13 +1,14 @@
-package MPTempName;
+package MPHoorayForSprint;
 
 import battlecode.common.*;
-import MPTempName.Util.*;
-import MPTempName.Comms.*;
-import MPTempName.Debug.*;
+import MPHoorayForSprint.Util.*;
+import MPHoorayForSprint.Comms.*;
+import MPHoorayForSprint.Debug.*;
 
 
 public strictfp class RobotPlayer {
 
+    static int turnCount = 0;
     static Robot bot;
 
     @SuppressWarnings("unused")
@@ -50,7 +51,11 @@ public strictfp class RobotPlayer {
                 }
                 break;
             case SOLDIER:
-                bot = new Soldier(rc, homeFlagIdx);
+                if (ic == InformationCategory.DEFENSE_SOLDIERS) {
+                    bot = new DefenseSoldier(rc, homeFlagIdx);
+                } else {
+                    bot = new Soldier(rc, homeFlagIdx);
+                }
                 break;
             case LABORATORY: bot = new Laboratory(rc);  break;
             case WATCHTOWER: bot = new Watchtower(rc);  break;
@@ -58,6 +63,8 @@ public strictfp class RobotPlayer {
             case SAGE:       bot = new Sage(rc); break;
         }
         while (true) {
+
+            turnCount += 1;
 
             try {
                 bot.takeTurn();
