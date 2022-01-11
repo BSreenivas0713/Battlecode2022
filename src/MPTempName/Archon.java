@@ -117,7 +117,7 @@ public class Archon extends Robot {
 
     public boolean buildRobot(RobotType toBuild, Direction mainDir) throws GameActionException {
         Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
-        if (!Comms.canBuildPrioritized(turnNumber)) {
+        if (!Comms.canBuildPrioritized(turnNumber, currentState == State.INIT)) {
             Debug.printString("Not my turn.");
             return false;
         } else {
