@@ -40,6 +40,7 @@ public class Archon extends Robot {
     static MapLocation closestLeadOre;
     static Buildable currentBuild = Buildable.MINER;
     static Buildable nextBuild = Buildable.MINER;
+    static Direction[] buildDirections;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -63,11 +64,59 @@ public class Archon extends Robot {
         maxLeadUsedByArchons = 75 * ((1 + rc.getArchonCount()) - archonNumber);
         leadObesity = rc.getArchonCount() * 180 + maxLeadUsedByArchons;
         minerDirOffset = Util.rng.nextInt(8);
+        loadBuildDirections();
+    }
+
+    // Loads build directions in order of increasing rubble, randomly breaking ties.
+    public void loadBuildDirections() throws GameActionException {
+        boolean[] usedDir = new boolean[Util.directions.length];
+        Direction[] dirs = new Direction[Util.directions.length];
+        int numDirections = 0;
+        int rubble;
+        int minRubble;
+        int numEqual;
+        int bestDir;
+        MapLocation loc;
+        for(int i = 0; i < Util.directions.length; i++) {
+            minRubble = 101;
+            bestDir = -1;
+            numEqual = 0;
+            for(int j = 0; j < Util.directions.length; j++) {
+                loc = rc.adjacentLocation(Util.directions[j]);
+                if(usedDir[j] || !rc.onTheMap(loc)) continue;
+                rubble = rc.senseRubble(loc);
+                if(rubble < minRubble) {
+                    minRubble = rubble;
+                    bestDir = j;
+                } else if(rubble == minRubble) {
+                    numEqual++;
+                    if(Util.rng.nextInt(numEqual) == 0) {
+                        minRubble = rubble;
+                        bestDir = j;
+                    }
+                }
+            }
+
+            if(bestDir != -1) {
+                usedDir[bestDir] = true;
+                dirs[numDirections++] = Util.directions[bestDir];
+            }
+        }
+
+        buildDirections = new Direction[numDirections];
+        System.arraycopy(dirs, 0, buildDirections, 0, numDirections);
+    }
+
+    public boolean buildRobot(RobotType toBuild) throws GameActionException {
+        return buildRobot(toBuild, buildDirections);
     }
 
     public boolean buildRobot(RobotType toBuild, Direction mainDir) throws GameActionException {
+        return buildRobot(toBuild, Util.getOrderedDirections(mainDir));
+    }
+
+    public boolean buildRobot(RobotType toBuild, Direction[] orderedDirs) throws GameActionException {
         Comms.encodeBuildGuess(archonNumber, currentBuild);
-        Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
         if (!Comms.canBuildPrioritized(archonNumber, currentState == State.INIT)) {
             Debug.printString("Not my turn.");
             return false;
@@ -125,23 +174,22 @@ public class Archon extends Robot {
     // pick a random lead ore for  a miner to go to, if spawned on this turn
     //
     public void updateClosestLeadOre() throws GameActionException{
-        MapLocation[] locs = rc.senseNearbyLocationsWithLead(visionRadiusSquared);
+        MapLocation[] locs = rc.senseNearbyLocationsWithLead(-1, 2);
         double bestLeadScore = Integer.MIN_VALUE;
         MapLocation bestLeadLoc = null;
         for(MapLocation loc: locs) {
             double currScore = getLeadDistTradeoffScore(loc.distanceSquaredTo(currLoc), rc.senseLead(loc));
-            if(currScore > bestLeadScore && rc.senseLead(loc) > 1 && !loc.equals(currLoc)) {
+            if(currScore > bestLeadScore && !loc.equals(currLoc)) {
                 bestLeadScore = currScore;
                 bestLeadLoc = loc;
             }
         }
         if (bestLeadLoc != null) {
             closestLeadOre = bestLeadLoc;
+            Debug.printString("ore: " + closestLeadOre);
+        } else {
+            closestLeadOre = null;
         }
-        else {
-            closestLeadOre = currLoc.add(Util.randomDirection());
-        }
-        Debug.printString("ore: " + closestLeadOre);
     }
 
     public void updateRobotCounts() throws GameActionException {
@@ -153,15 +201,23 @@ public class Archon extends Robot {
     public int buildMiner(int counter) throws GameActionException {
         if (minerCount < MAX_NUM_MINERS) {
             Debug.printString("Building miner");
-            if(buildRobot(RobotType.MINER, currLoc.directionTo(closestLeadOre))){
-                counter++;
-                numMinersBuilt++;
-                nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
+            if(closestLeadOre != null) {
+                if(buildRobot(RobotType.MINER, currLoc.directionTo(closestLeadOre))){
+                    counter++;
+                    numMinersBuilt++;
+                    nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
+                }
+            } else {
+                if(buildRobot(RobotType.MINER)) {
+                    counter++;
+                    numMinersBuilt++;
+                    nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
+                }
             }
         }
         else {
             Debug.printString("Building soldier");
-            if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+            if(buildRobot(RobotType.SOLDIER)){
                 counter++;
             }
         }
@@ -170,7 +226,7 @@ public class Archon extends Robot {
 
     public int buildSoldier(int counter) throws GameActionException {
         Debug.printString("Building soldier");
-        if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
+        if(buildRobot(RobotType.SOLDIER)) {
             counter++;
         }
         return counter;
@@ -178,7 +234,7 @@ public class Archon extends Robot {
 
     public int buildBuilder(int counter) throws GameActionException {
         Debug.printString("Building builder, num builders: " + builderCount);
-        if(buildRobot(RobotType.BUILDER, Util.randomDirection())){
+        if(buildRobot(RobotType.BUILDER)) {
             counter++;
         }
         return counter;
@@ -282,15 +338,20 @@ public class Archon extends Robot {
     }
 
     public void firstRounds() throws GameActionException {
-        RobotType toBuild = RobotType.MINER;
-        Direction dir = currLoc.directionTo(closestLeadOre);
         currentBuild = Buildable.MINER;
         nextBuild = Buildable.MINER;
-        if(buildRobot(toBuild,dir)) {
-            numMinersBuilt++;
-            nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
-        }
 
+        if(closestLeadOre != null) {
+            if(buildRobot(RobotType.MINER, currLoc.directionTo(closestLeadOre))){
+                numMinersBuilt++;
+                nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
+            }
+        } else {
+            if(buildRobot(RobotType.MINER)) {
+                numMinersBuilt++;
+                nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
+            }
+        }
     }
 
     public void toggleState(boolean underAttack, boolean isObese) throws GameActionException {
@@ -353,9 +414,7 @@ public class Archon extends Robot {
 
     // Tries to repair the lowest health droid in range if an action is ready.
     public void tryToRepair() throws GameActionException {
-        if(!rc.isActionReady()) {
-            return;
-        }
+        if(!rc.isActionReady()) return;
 
         RobotInfo[] friendlies = rc.senseNearbyRobots(actionRadiusSquared, rc.getTeam());
         RobotInfo maybeSage = null;

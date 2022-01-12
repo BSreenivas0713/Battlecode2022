@@ -105,6 +105,9 @@ public class Robot {
         currLoc = rc.getLocation();
         Comms.broadcastEnemyFound(EnemySensable);
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
+        // if(rc.getRoundNum() > 150) {
+        //     rc.resign();
+        // }
     }
 
     public void endTurn() throws GameActionException {
