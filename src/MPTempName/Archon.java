@@ -29,7 +29,7 @@ public class Archon extends Robot {
     static int builderCount;
     static State currentState;
     static int flagIndex;
-    static int turnNumber;
+    static int archonNumber;
     static double percentLeadToTake;
     static ArrayDeque<State> stateStack;
     static int leadToUse;
@@ -42,6 +42,7 @@ public class Archon extends Robot {
     static int maxLeadUsedByArchons;
     static int distressSemaphore = 0;
     static MapLocation closestLeadOre;
+    static Buildable currentBuild = Buildable.MINER;
     static Buildable nextBuild = Buildable.MINER;
 
     public Archon(RobotController r) throws GameActionException {
@@ -59,14 +60,14 @@ public class Archon extends Robot {
         flagIndex = nextArchon + Comms.mapLocToFlag;
         homeFlagIdx = flagIndex;
         changeState(State.INIT);
-        turnNumber = nextArchon;
+        archonNumber = nextArchon;
         leadNeededByBuilders = 0;
         percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), nextArchon, 0);
         soldierCount = 0;
         builderCount = 0;
         findBestLeadSource();
         nonWallDirections = findnonWallDirections();
-        maxLeadUsedByArchons = 75 * ((1 + rc.getArchonCount()) - turnNumber);
+        maxLeadUsedByArchons = 75 * ((1 + rc.getArchonCount()) - archonNumber);
         leadObesity = rc.getArchonCount() * 180 + maxLeadUsedByArchons;
         minerDirOffset = Util.rng.nextInt(8);
         // System.out.println("nonWallDirections: " + nonWallDirections.toString());
@@ -116,8 +117,9 @@ public class Archon extends Robot {
     }
 
     public boolean buildRobot(RobotType toBuild, Direction mainDir) throws GameActionException {
+        Comms.encodeBuildGuess(archonNumber, currentBuild);
         Direction[] orderedDirs = Util.getOrderedDirections(mainDir);
-        if (!Comms.canBuildPrioritized(turnNumber, currentState == State.INIT)) {
+        if (!Comms.canBuildPrioritized(archonNumber, currentState == State.INIT)) {
             Debug.printString("Not my turn.");
             return false;
         } else {
@@ -125,8 +127,10 @@ public class Archon extends Robot {
         }
         for(Direction dir : orderedDirs) {
             if (rc.canBuildRobot(toBuild, dir)){
-                Comms.useLead(toBuild);
-                Comms.encodeBuildGuess(turnNumber, nextBuild);
+                if (Comms.getTurn() != rc.getArchonCount()) {
+                    Comms.useLead(toBuild);
+                }
+                Comms.encodeBuildGuess(archonNumber, nextBuild);
                 rc.buildRobot(toBuild, dir);
                 RobotInfo robot = rc.senseRobotAtLocation(rc.getLocation().add(dir));
                 //in future, add info about this new robot to maps
@@ -134,7 +138,7 @@ public class Archon extends Robot {
                     System.out.println("CRITICAL: EC didn't find the robot it just built");
                 }
                 robotCounter += 1;
-                Comms.incrementBuiltRobots(turnNumber, robotCounter);
+                Comms.incrementBuiltRobots(archonNumber, robotCounter);
                 return true;
             }
         }
@@ -143,10 +147,14 @@ public class Archon extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        if (turnNumber == 1) {
+        // System.out.println(Comms.getTurn());
+        if (Comms.getTurn() == 1) {
+            Comms.resetAlive();
             Comms.clearUsedLead();
             Comms.clearBuildGuesses();
         }
+        Comms.setAlive(archonNumber);
+        Comms.setCanBuild(archonNumber, rc.isActionReady());
         clearAndResetHelpers();
         Comms.resetAvgEnemyLoc();
         boolean underAttack = false;
@@ -157,6 +165,7 @@ public class Archon extends Robot {
         toggleState(underAttack, isObese);
         doStateAction();
         tryToRepair();
+        Comms.advanceTurn();
         // Debug.setIndicatorString(leadToUse + "; " + robotCounter + "; num alive enemies: " + Comms.aliveEnemyArchonCount());
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
@@ -299,14 +308,17 @@ public class Archon extends Robot {
     public int minerSoldier31(int counter) throws GameActionException {
         switch(counter % 3) {
             case 0: 
+                currentBuild = Buildable.SOLDIER;
                 nextBuild = Buildable.SOLDIER;
                 counter = buildSoldier(counter);
                 break;
             case 1:
+                currentBuild = Buildable.SOLDIER;
                 nextBuild = Buildable.MINER;
                 counter = buildSoldier(counter);
                 break;
             default:
+                currentBuild = Buildable.MINER;
                 nextBuild = Buildable.SOLDIER;
                 counter = buildMiner(counter);
                 break;
@@ -317,10 +329,12 @@ public class Archon extends Robot {
     public int minerSoldierRatio(int mod, int counter) throws GameActionException {
         switch(counter % mod) {
             case (0):
+                currentBuild = Buildable.MINER;
                 nextBuild = Buildable.SOLDIER;
                 counter = buildMiner(counter);
                 break;
             default:
+                currentBuild = Buildable.SOLDIER;
                 if (counter % mod == mod - 1) {
                     nextBuild = Buildable.MINER;
                 } else {
@@ -335,10 +349,12 @@ public class Archon extends Robot {
     public int SoldierBuilderRatio(int mod, int counter) throws GameActionException {
         switch(counter % mod) {
             case 0:
+                currentBuild = Buildable.BUILDER;
                 nextBuild = Buildable.SOLDIER;
                 counter = buildBuilder(counter);
                 break;
             default:
+                currentBuild = Buildable.SOLDIER;
                 if (counter % mod == mod - 1) {
                     nextBuild = Buildable.BUILDER;
                 } else {
@@ -396,6 +412,7 @@ public class Archon extends Robot {
     public void firstRounds() throws GameActionException {
         RobotType toBuild = RobotType.MINER;
         Direction dir = currLoc.directionTo(closestLeadOre);
+        currentBuild = Buildable.MINER;
         nextBuild = Buildable.MINER;
         if(buildRobot(toBuild,dir)) {
             numMinersBuilt++;
@@ -413,10 +430,10 @@ public class Archon extends Robot {
             return;
         }
         double builderPercentage = ((double) leadNeededByBuilders) / availableLead;
-        percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), turnNumber, builderPercentage);
+        percentLeadToTake = Util.leadPercentage(rc.getArchonCount(), archonNumber, builderPercentage);
         leadToUse = (int) (availableLead * (percentLeadToTake));
         if (leadToUse < Util.LeadThreshold) {
-            if (Comms.getArchonWithLeastFirstRoundBuilt() == turnNumber) {
+            if (Comms.getArchonWithLeastFirstRoundBuilt() == archonNumber) {
                 leadToUse = (int) (availableLead * (1.0 - builderPercentage));
             } else {
                 leadToUse = 0;
