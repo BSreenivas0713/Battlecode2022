@@ -1,9 +1,9 @@
-package MPTempName;
+package MPHoorayForSprint;
 
 import battlecode.common.*;
-import MPTempName.bfs.*;
-import MPTempName.fast.FastIterableIntSet;
-import MPTempName.fast.FasterQueue;
+import MPHoorayForSprint.bfs.*;
+import MPHoorayForSprint.fast.FastIterableIntSet;
+import MPHoorayForSprint.fast.FasterQueue;
 
 public class Nav {
     static RobotController rc;
@@ -72,7 +72,7 @@ public class Nav {
             }
         }
 
-        // Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 51, 204, 255);
+        Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 51, 204, 255);
         if(dest.equals(currLoc)) {
             return Direction.CENTER;
         }

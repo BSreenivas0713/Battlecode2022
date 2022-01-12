@@ -1,8 +1,8 @@
-package MPTempName;
+package MPHoorayForSprint;
 
 import battlecode.common.*;
-import MPTempName.Debug.*;
-import MPTempName.Util.*;
+import MPHoorayForSprint.Debug.*;
+import MPHoorayForSprint.Util.*;
 
 public class Comms {
     static final int mapLocToFlag = 8;
@@ -40,7 +40,6 @@ public class Comms {
     static final int CURR_ROUND_NUM_ENEMIES_IDX_3 = 36;
     static final int BUILD_GUESS_IDX = 37;
     static final int LEAD_SPENT_IDX = 38;
-    static final int LAST_CHOSEN_IDX = 39;
 
     // Setup flag masks
     // Bits 1-3 are friendly Archon count
@@ -55,11 +54,6 @@ public class Comms {
     static final int MAX_HELPER_MASK = 0x3F;
     static final int COUNT_OFFSET = 3;
     static final int MAX_HELPER_OFFSET = 6;
-    static final int TURNS_TAKEN_OFFSET = 12;
-    static final int LEADER_OFFSET = 8;
-    static final int CAN_BUILD_OFFSET = 10;
-    static final int CURR_ALIVE_OFFSET = 6;
-    static final int PREV_ALIVE_OFFSET = 10;
     public static final int MAX_HELPERS = MAX_HELPER_MASK;
     static final int HAS_RESET_ENEMY_LOCS_OFFSET = 15;
 
@@ -93,6 +87,10 @@ public class Comms {
         DIRECTION,
     }
 
+    public enum SoldierStateCategory {
+        EMPTY,
+        RUSH_SOLDIERS,
+    }
 
     // Categories of information to tell the Archons
     public enum ArchonInfo {
@@ -101,10 +99,10 @@ public class Comms {
     }
 
     public enum Buildable {
-        EMPTY,
         SOLDIER,
         MINER, 
         BUILDER,
+        SAGE,
     }
 
     public static int encodeArchonInfo(ArchonInfo cat) {
@@ -125,9 +123,10 @@ public class Comms {
     }
     public static void encodeBuildGuess(int archonNum, Buildable buildCat) throws GameActionException{
         int currFlagValue = rc.readSharedArray(BUILD_GUESS_IDX);
-        int offset = (archonNum - 1) * 2;
-        int clearedFlag = (~(3 << offset)) & currFlagValue;
-        rc.writeSharedArray(BUILD_GUESS_IDX, clearedFlag | (buildCat.ordinal() << offset));
+        int bits = buildCat.ordinal() << ((archonNum - 1) * 2);
+        int clearedFlag = (~(3 << ((archonNum - 1) * 2))) & currFlagValue;
+        int newFlag = clearedFlag | bits;
+        rc.writeSharedArray(BUILD_GUESS_IDX, newFlag);
     }
     public static Buildable getBuildGuess(int archonNum) throws GameActionException {
         int flag = rc.readSharedArray(BUILD_GUESS_IDX);
@@ -136,38 +135,17 @@ public class Comms {
     }
     public static void advanceLeader() throws GameActionException {
         int currFlagValue = rc.readSharedArray(LEAD_SPENT_IDX);
-        int clearedFlag = currFlagValue & (~(3 << LEADER_OFFSET));
-        int leader = (currFlagValue >> LEADER_OFFSET) & 3;
-        if (rc.getRoundNum() < 2) {
-            if (leader == rc.getArchonCount() - 1) {
-                leader = 0;
-            } else {
-                leader++;
-            }
+        int leadSpent = currFlagValue & 255;
+        int turn = (currFlagValue >> 8) & 3;
+        if (turn == rc.getArchonCount() - 1) {
+            turn = 0;
         } else {
-            if (leader == friendlyArchonCount() - 1) {
-                leader = 0;
-            } else {
-                leader++;
-            }
+            turn += 1;
         }
-        rc.writeSharedArray(LEAD_SPENT_IDX, (leader << LEADER_OFFSET) | clearedFlag);
+        rc.writeSharedArray(LEAD_SPENT_IDX, (turn << 8) | leadSpent);
     }
     public static int getLeader() throws GameActionException {
-        return ((rc.readSharedArray(LEAD_SPENT_IDX) >> LEADER_OFFSET) & 3) + 1;
-    }
-    public static boolean getCanBuild(int archonNum) throws GameActionException {
-        int offset = CAN_BUILD_OFFSET + archonNum - 1;
-        return ((rc.readSharedArray(LEAD_SPENT_IDX) >> offset) & 1) == 1;
-    }
-    public static void setCanBuild(int archonNum, boolean canBuild) throws GameActionException {
-        int bit = 0;
-        if (canBuild) {
-            bit = 1;
-        }
-        int flag = rc.readSharedArray(LEAD_SPENT_IDX);
-        int offset = CAN_BUILD_OFFSET + archonNum - 1;
-        rc.writeSharedArray(LEAD_SPENT_IDX, flag | (bit << offset));
+        return ((rc.readSharedArray(LEAD_SPENT_IDX) >> 8) & 3) + 1;
     }
     public static int getUsedLead() throws GameActionException {
         return rc.readSharedArray(LEAD_SPENT_IDX) & 255;
@@ -188,13 +166,15 @@ public class Comms {
                 break;
         }
         int oldFlag = rc.readSharedArray(LEAD_SPENT_IDX);
+        int oldLeader = (oldFlag >> 8) & 3;
         int oldLead = oldFlag & 255;
-        int restOfFlag = (oldFlag >> LEADER_OFFSET) & 255;
-        rc.writeSharedArray(LEAD_SPENT_IDX, (oldLead + leadAmount) | (restOfFlag << LEADER_OFFSET));
+        int newFlag = (oldLeader << 8) | (oldLead + leadAmount);
+        rc.writeSharedArray(LEAD_SPENT_IDX, newFlag);
     }
     public static void clearUsedLead() throws GameActionException {
-        int flag = rc.readSharedArray(LEAD_SPENT_IDX);
-        writeIfChanged(LEAD_SPENT_IDX, flag & (3 << LEADER_OFFSET));
+        int oldFlag = rc.readSharedArray(LEAD_SPENT_IDX);
+        int oldLeader = (oldFlag >> 8) & 3;
+        writeIfChanged(LEAD_SPENT_IDX, oldLeader << 8);
     }
     public static int buildableCost(Buildable bot) {
         switch (bot) {
@@ -209,10 +189,10 @@ public class Comms {
         }
     }
 
-    public static boolean canBuildPrioritizedEven(int archonNum) throws GameActionException {
+    public static boolean canBuildPrioritized(int archonNum) throws GameActionException {
         int ourLead = rc.getTeamLeadAmount(rc.getTeam());
         ourLead += getUsedLead();
-        int numArchons = friendlyArchonCount();
+        int numArchons = rc.getArchonCount();
         int[] costs = new int[numArchons];
         int leadNeeded = 0;
         for (int i = 1; i <= numArchons; i++) {
@@ -222,11 +202,10 @@ public class Comms {
             leadNeeded += cost;
         }
         if (ourLead >= leadNeeded) {
-            // printRounds("Enough lead.", 50, 100);
             return true;
         }
         int currLeader = getLeader();
-        // printRounds("The leader is " + currLeader, 50, 100);
+        // printRounds("The leader is " + currLeader, 125, 175);
         int[] order = new int[numArchons];
         int current = 0;
         for (int i = currLeader; i <= numArchons; i++) {
@@ -237,17 +216,18 @@ public class Comms {
             order[current] = i;
             current++;
         }
-        /*if (rc.getRoundNum() >= 50 && rc.getRoundNum() <= 100) {
+        /*if (rc.getRoundNum() >= 125 && rc.getRoundNum() <= 175) {
             System.out.print("[");
             for (int i = 0; i < order.length; i++) {
                 System.out.print(order[i] + ",");
             }
             System.out.println("]");
         }*/
-        if (getTurn() == rc.getArchonCount()) {
-            if (getCanBuild(currLeader) && ourLead >= costs[currLeader - 1]) {
-                // printRounds("Enough for one, advancing.", 50, 100);
+        if (archonNum == numArchons) {
+            if (ourLead >= costs[currLeader - 1]) {
+                // printRounds("Enough for one, advancing.", 125, 175);
                 advanceLeader();
+            } else {
             }
         }
 
@@ -263,301 +243,6 @@ public class Comms {
             }
         }
         return false;
-    }
-
-    // Turn last into second last, second last into third last.
-    // Take the archon that just went and make it the last.
-    // Set the special bit to 1 to indicate someone already got the win this round.
-    public static void updateMostRecentArchons(int archonNum) throws GameActionException {
-        int oldFlag = rc.readSharedArray(LAST_CHOSEN_IDX);
-        int clearedFlag = oldFlag & (255 << 6);
-        int last = archonNum - 1;
-        int secondLast = oldFlag & 3; // old last
-        int thirdLast = (oldFlag >> 2) & 3; // old second last
-        int newFlag = (thirdLast << 4) | (secondLast << 2) | last;
-        rc.writeSharedArray(LAST_CHOSEN_IDX, clearedFlag | newFlag);
-    }
-
-    // Get a list of the last three chosen.
-    public static int[] lastArchonsChosen() throws GameActionException {
-        int flag = rc.readSharedArray(LAST_CHOSEN_IDX);
-        int [] result = new int [] {flag & 3, (flag >> 2) & 3, (flag >> 4) & 3};
-        for (int i = 0; i < 3; i++) {
-            result[i] = result[i] + 1;
-        }
-        return result;
-    }
-
-    public static void resetAlive() throws GameActionException {
-        int oldFlag = rc.readSharedArray(LAST_CHOSEN_IDX);
-        int lastChosen = oldFlag & 0x3F;
-        int current = (oldFlag >> CURR_ALIVE_OFFSET) & 0xF;
-        int next = (current << PREV_ALIVE_OFFSET);
-        rc.writeSharedArray(LAST_CHOSEN_IDX, next | lastChosen);
-    }
-
-    public static void setAlive(int archonNum) throws GameActionException {
-        int oldFlag = rc.readSharedArray(LAST_CHOSEN_IDX);
-        int offset = CURR_ALIVE_OFFSET + archonNum - 1;
-        rc.writeSharedArray(LAST_CHOSEN_IDX, oldFlag | (1 << offset));
-    }
-
-    public static boolean isAlive(int archonNum) throws GameActionException {
-        int flag = rc.readSharedArray(LAST_CHOSEN_IDX);
-        int offset = PREV_ALIVE_OFFSET + archonNum - 1;
-        return ((flag >> offset) & 1) == 1;
-    }
-
-    public static boolean canBuildPrioritized(int archonNum, boolean isInit) throws GameActionException {
-        if (isInit) {
-            return canBuildPrioritizedEven(archonNum);
-        } else {
-            return canBuildPrioritizedCluster(archonNum);
-        }
-    }
-
-    public static boolean canBuildPrioritizedCluster(int archonNum) throws GameActionException {
-        // printRounds("Using cluster code.", 100, 200);
-        int[] order = getArchonOrderGivenClusters();
-        int[] lastOnes = lastArchonsChosen();
-        int numImportant = order[4];
-        if (numImportant == 0) {
-            // printRounds("No clusters.", 100, 200);
-            return canBuildPrioritizedEven(archonNum);
-        }
-        /*if (rc.getRoundNum() > 299 && rc.getRoundNum() < 401) {
-            System.out.println("Order: [" + order[0] + "," + order[1] + "," + order[2] + "," + order[3] + "]");
-            System.out.println("Recents: [" + lastOnes[0] + "," + lastOnes[1] + "," + lastOnes[2] + "]");
-            System.out.println("Num important: " + numImportant);
-        }*/
-        int ourLead = rc.getTeamLeadAmount(rc.getTeam());
-        ourLead += getUsedLead();
-        int leadNeeded = 0;
-        // printRounds("Our lead: " + ourLead, 300, 400);
-
-        // Count the lead needed by important Archons
-        for (int i = 0; i < numImportant; i++) {
-            int currArchon = order[i];
-            Buildable bot = getBuildGuess(currArchon);
-            // printRounds("Guessing " + bot, 300, 400);
-            int cost = buildableCost(bot);
-            leadNeeded += cost;
-        }
-        // printRounds("Lead needed: " + leadNeeded, 300, 400);
-
-        int numArchons = friendlyArchonCount();
-        int[] newOrder = new int [numArchons];
-        // If we don't have enough lead for important Archons, we
-        // need to use the token ring.
-        if (leadNeeded > ourLead) {
-            // printRounds("Not enough lead.", 100, 200);
-            for (int i = numImportant; i < numArchons; i++) {
-                newOrder[i] = order[i];
-            }
-
-            if (numImportant == 1) {
-                newOrder[0] = order[0];
-            } else if (numImportant == 2) {
-                boolean found = false;
-                for (int i = 0; i < 3; i++) {
-                    if (lastOnes[i] == order[0]) {
-                        newOrder[0] = order[1];
-                        newOrder[1] = order[0];
-                        found = true;
-                        break;
-                    } else if (lastOnes[i] == order[1]) {
-                        newOrder[0] = order[0];
-                        newOrder[1] = order[1];
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    newOrder[0] = order[0];
-                    newOrder[1] = order[1];
-                }
-            } else {
-                boolean found = false;
-                for (int i = 0; i < 3; i++) {
-                    if (lastOnes[i] == order[0]) {
-                        boolean foundSecond = false;
-                        for (int j = i; j < 3; j++) {
-                            if (lastOnes[j] == order[1]) {
-                                newOrder[0] = order[2];
-                                newOrder[1] = order[1];
-                                newOrder[2] = order[0];
-                                foundSecond = true;
-                                break;
-                            } else if (lastOnes[j] == order[2]) {
-                                newOrder[0] = order[1];
-                                newOrder[1] = order[2];
-                                newOrder[2] = order[0];
-                                foundSecond = true;
-                                break;
-                            }
-                        }
-                        if (!foundSecond) {
-                            newOrder[0] = order[1];
-                            newOrder[1] = order[2];
-                            newOrder[2] = order[0];
-                        }
-                        found = true;
-                        break;
-                    } else if (lastOnes[i] == order[1]) {
-                        boolean foundSecond = false;
-                        for (int j = i; j < 3; j++) {
-                            if (lastOnes[j] == order[0]) {
-                                newOrder[0] = order[2];
-                                newOrder[1] = order[0];
-                                newOrder[2] = order[1];
-                                foundSecond = true;
-                                break;
-                            } else if (lastOnes[j] == order[2]) {
-                                newOrder[0] = order[0];
-                                newOrder[1] = order[2];
-                                newOrder[2] = order[1];
-                                foundSecond = true;
-                                break;
-                            }
-                        }
-                        if (!foundSecond) {
-                            newOrder[0] = order[0];
-                            newOrder[1] = order[2];
-                            newOrder[2] = order[1];
-                        }
-                        found = true;
-                        break;
-                    } else if (lastOnes[i] == order[2]) {
-                        boolean foundSecond = false;
-                        for (int j = i; j < 3; j++) {
-                            if (lastOnes[j] == order[0]) {
-                                newOrder[0] = order[1];
-                                newOrder[1] = order[0];
-                                newOrder[2] = order[2];
-                                foundSecond = true;
-                                break;
-                            } else if (lastOnes[j] == order[1]) {
-                                newOrder[0] = order[0];
-                                newOrder[1] = order[1];
-                                newOrder[2] = order[2];
-                                foundSecond = true;
-                                break;
-                            }
-                        }
-                        if (!foundSecond) {
-                            newOrder[0] = order[0];
-                            newOrder[1] = order[1];
-                            newOrder[2] = order[2];
-                        }
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    newOrder[0] = order[0];
-                    newOrder[1] = order[1];
-                    newOrder[2] = order[2];
-                }
-            }
-            if (getTurn() == rc.getArchonCount()) {
-                if (getCanBuild(newOrder[0]) && ourLead >= buildableCost(getBuildGuess(newOrder[0]))) {
-                    // printRounds("Updating most recent.", 300, 400);
-                    updateMostRecentArchons(newOrder[0]);
-                }
-            }
-        } else {
-            newOrder = order;
-        }
-
-        /*if (rc.getRoundNum() > 299 && rc.getRoundNum() < 401) {
-            System.out.print("New Order: [");
-            for (int i = 0; i < rc.getArchonCount(); i++) {
-                System.out.print(newOrder[i] + ",");
-            }
-            System.out.print("]");
-        }*/
-
-        // With the new priority list, proceed by
-        // assigning lead to the highest priority Archons
-        for (int i = 0; i < numArchons; i++) {
-            int currArchon = newOrder[i];
-            Buildable bot = getBuildGuess(currArchon);
-            int cost = buildableCost(bot);
-            if (currArchon == archonNum) {
-                return ourLead >= cost;
-            } else {
-                ourLead -= cost;
-            }
-        }
-        return false;
-    }
-
-    public static int findNext(int[] locList) {
-        if (locList[0] == -1) {return 0;}
-        if (locList[1] == -1) {return 1;}
-        if (locList[2] == -1) {return 2;}
-        if (locList[3] == -1) {return 3;}
-        else {return -1;}
-
-    }
-
-    public static boolean isIn(int[] locList, int loc) {
-        for(int i = 0; i < 4; i ++) {
-            if(loc == locList[i]) {return true;} 
-        }
-        return false;
-    }
-        
-    public static int[] getArchonOrderGivenClusters() throws GameActionException {
-        MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
-        MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
-        MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
-
-        MapLocation ArchonLoc1 = locationFromFlag(rc.readSharedArray(1));
-        MapLocation ArchonLoc2 = locationFromFlag(rc.readSharedArray(2));
-        MapLocation ArchonLoc3 = locationFromFlag(rc.readSharedArray(3));
-        MapLocation ArchonLoc4 = locationFromFlag(rc.readSharedArray(4));
-
-
-        MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
-        MapLocation[] archonLocs = new MapLocation[]{ArchonLoc1, ArchonLoc2, ArchonLoc3,ArchonLoc4};
-
-        
-        int numClusters = 0;
-        for (int i = 0; i < 3; i++) {
-            if (rc.readSharedArray(i * 4 + LAST_ROUND_AVG_ENEMY_LOC_IDX_1) != 0) {
-                numClusters++;
-            }
-        }
-        int numArchons = friendlyArchonCount();
-        int[] closestArchonsToClusters = new int[]{-1,-1,-1,-1, 0};
-        for (int clusterNum = 0; clusterNum < numClusters; clusterNum++) {
-            MapLocation currCluster = currAvgLocs[clusterNum];
-            int closestArchon = -1;
-            int bestDist = Integer.MAX_VALUE;
-            if(clusterNum > rc.getArchonCount()) {break;}
-            for(int archonNum = 0; archonNum < numArchons; archonNum++) {
-                if (!isAlive(archonNum + 1)) {
-                    continue;
-                }
-                MapLocation currArchon = archonLocs[archonNum];
-                int currDist = currArchon.distanceSquaredTo(currCluster);
-                if(currDist < bestDist) {
-                    bestDist = currDist;
-                    closestArchon = archonNum + 1;
-                }
-            }
-            if (!isIn(closestArchonsToClusters, closestArchon)) {
-                closestArchonsToClusters[4] = closestArchonsToClusters[4] + 1;
-                closestArchonsToClusters[findNext(closestArchonsToClusters)] = closestArchon;
-            }
-        }
-        for(int archonNum2 = 0; archonNum2 < numArchons; archonNum2 ++) {
-            if(!isIn(closestArchonsToClusters, archonNum2 + 1)) {
-                closestArchonsToClusters[findNext(closestArchonsToClusters)] = archonNum2 + 1;
-            }
-        }
-        return closestArchonsToClusters;
     }
 
     public static void printRounds(String print, int start, int end) throws GameActionException {
@@ -586,11 +271,17 @@ public class Comms {
         return Direction.values()[(flag >> ARCHON_FLAG_LOC_OFFSET)];
     }
 
+    public static int encodeSoldierStateFlag(SoldierStateCategory cat) {
+        return cat.ordinal();
+    }
 
     public static InformationCategory getICFromFlag(int flag) {
         return InformationCategory.values()[flag & ARCHON_FLAG_IC_MASK];
     }
 
+    public static SoldierStateCategory getSoldierCatFromFlag(int flag) {
+        return SoldierStateCategory.values()[flag];
+    }
 
     public static int friendlyArchonCount() throws GameActionException {
         int flag = rc.readSharedArray(setupFlag);
@@ -611,29 +302,6 @@ public class Comms {
     public static int readMaxHelper() throws GameActionException {
         int flag = rc.readSharedArray(setupFlag);
         return (flag >> MAX_HELPER_OFFSET) & MAX_HELPER_MASK;
-    }
-
-    public static int getTurn() throws GameActionException {
-        int flag = rc.readSharedArray(setupFlag);
-        int count = ((flag >> TURNS_TAKEN_OFFSET) & 3) + 1;
-        return count;
-    }
-    
-    public static void advanceTurn() throws GameActionException {
-        int oldFlag = rc.readSharedArray(setupFlag);
-        int clearedFlag = (~(3 << TURNS_TAKEN_OFFSET)) & oldFlag;
-        int currentTurn = (oldFlag >> TURNS_TAKEN_OFFSET) & 3;
-        if (currentTurn == rc.getArchonCount() - 1) {
-            currentTurn = 0;
-        } else if (currentTurn == rc.getArchonCount()) {
-            currentTurn = 1;  
-        } else {
-            currentTurn++;
-        }
-        int newFlag = clearedFlag | (currentTurn << TURNS_TAKEN_OFFSET);
-        if (newFlag != oldFlag) {
-            rc.writeSharedArray(setupFlag, newFlag);
-        }
     }
 
     public static int aliveEnemyArchonCount() throws GameActionException {
@@ -785,7 +453,7 @@ public class Comms {
     // The upper half of 16 bits hold the robot count for the last turn.
     // Archons move the lower half into the upper half if the upper is 0.
     // Archons also zero the lower half.
-    public static int getSoldierCount() throws GameActionException {
+    public static int getRushSoldierCount() throws GameActionException {
         int soldierFlag = rc.readSharedArray(SOLDIER_COUNTER_IDX);
         int lastCount = (soldierFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
         int currCount = soldierFlag & MINER_MASK;
@@ -800,7 +468,7 @@ public class Comms {
 
     // The lower half holds the running count updated by the miners.
     // Miners zero out the upper half if they see it's not 0.
-    public static void incrementSoldierCounter() throws GameActionException {
+    public static void incrementRushSoldierCounter() throws GameActionException {
         int soldierFlag = rc.readSharedArray(SOLDIER_COUNTER_IDX);
         int lastCount = (soldierFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
         int currCount = soldierFlag & MINER_MASK;
@@ -994,7 +662,99 @@ public class Comms {
         }
         return bestCluster;
     }
-    
+    public static MapLocation getProjection(MapLocation currLoc) throws GameActionException {
+        int numClusters = 0;
+        for (int i = 0; i < 3; i++) {
+            if (rc.readSharedArray(i * 4 + LAST_ROUND_AVG_ENEMY_LOC_IDX_1) != 0) {
+                numClusters++;
+            }
+        }
+
+        MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
+        MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
+        MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
+
+
+
+        MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
+        int[] AX;
+        int[] AB;
+        int AXDotAB;
+        int ABDotAB;
+        double[] unitAB;
+        int newX;
+        int newY;
+        switch (numClusters) {
+            case 1:
+                return currAvgLoc1;
+            case 2:
+                Debug.setIndicatorLine(Debug.INDICATORS, currAvgLoc1, currAvgLoc2, 0, 255, 255);
+                AX = vectorFromPt(currAvgLoc1, currLoc);
+                AB = vectorFromPt(currAvgLoc1, currAvgLoc2);
+                AXDotAB = dotProduct(AX, AB);
+                ABDotAB = dotProduct(AB, AB);
+                unitAB = new double[]{(double) AB[0] / (double) ABDotAB, (double) AB[1] / (double) ABDotAB};
+                newX = (int) (unitAB[0] * AXDotAB);
+                newY = (int) (unitAB[1] * AXDotAB);
+                if (AXDotAB < 0) {
+                    return currAvgLoc1;
+                }
+                else if (AXDotAB > ABDotAB) {
+                    return currAvgLoc2;
+                }
+                else {
+                    return new MapLocation(newX + currAvgLoc1.x, newY + currAvgLoc1.y);
+                }
+            case 3:
+                Debug.setIndicatorLine(Debug.INDICATORS, currAvgLoc1, currAvgLoc2, 0, 255, 255);
+                Debug.setIndicatorLine(Debug.INDICATORS, currAvgLoc1, currAvgLoc3, 0, 255, 255);
+                Debug.setIndicatorLine(Debug.INDICATORS, currAvgLoc2, currAvgLoc3, 0, 255, 255);
+                int furthestIdx = -1;
+                int furthestDist = 0;
+                for (int i = 0; i < numClusters; i++) {
+                    int candidateDist = currLoc.distanceSquaredTo(currAvgLocs[i]);
+                    if (candidateDist > furthestDist) {
+                        furthestDist = candidateDist;
+                        furthestIdx = i;
+                    }
+                }
+                MapLocation A = null;
+                MapLocation B = null;
+                switch (furthestIdx) {
+                    case 0:
+                        A = currAvgLoc2;
+                        B = currAvgLoc3;
+                        break;
+                    case 1:
+                        A = currAvgLoc1;
+                        B = currAvgLoc3;
+                        break;
+                    case 2:
+                        A = currAvgLoc1;
+                        B = currAvgLoc2;
+                        break;
+                }
+                AX = vectorFromPt(A, currLoc);
+                AB = vectorFromPt(A, B);
+                AXDotAB = dotProduct(AX, AB);
+                ABDotAB = dotProduct(AB, AB);
+                unitAB = new double[]{(double) AB[0] / (double) ABDotAB, (double) AB[1] / (double) ABDotAB};
+                newX = (int) (unitAB[0] * AXDotAB);
+                newY = (int) (unitAB[1] * AXDotAB);
+                if (AXDotAB < 0) {
+                    return A;
+                }
+                else if (AXDotAB > ABDotAB) {
+                    return B;
+                }
+                else {
+                    return new MapLocation(newX + A.x, newY + A.y);
+                }
+            default:
+                break;
+        }
+        return null;
+    }
 
     /**
      * update avg enemy loc (MapLocation enemyLoc)

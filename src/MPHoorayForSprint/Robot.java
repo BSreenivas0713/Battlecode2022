@@ -1,23 +1,21 @@
-package MPTempName;
+package MPHoorayForSprint;
 
 import battlecode.common.*;
-import MPTempName.Debug.*;
-import MPTempName.Util.*;
-import MPTempName.Comms.*;
+import MPHoorayForSprint.Debug.*;
+import MPHoorayForSprint.Util.*;
+import MPHoorayForSprint.Comms.*;
 
 public class Robot {
     static RobotController rc; 
     static int turnCount;
-
     static MapLocation home;
     static RobotInfo[] EnemySensable;
     static RobotInfo[] FriendlySensable;
     static MapLocation currLoc;
-
     static int actionRadiusSquared;
     static int visionRadiusSquared;
-
     static int homeFlagIdx;
+    static int nextSoldierFlag;
     static int nextFlag;
     static int defaultFlag;
     // This is the order of priorities to attack enemies
@@ -64,6 +62,9 @@ public class Robot {
         
         // setting flag on next turn if archon
         if (rc.getType() == RobotType.ARCHON) {
+            if (rc.readSharedArray(Comms.SOLDIER_STATE_IDX) != nextSoldierFlag) {
+                rc.writeSharedArray(Comms.SOLDIER_STATE_IDX, nextSoldierFlag);
+            }
             if(rc.readSharedArray(homeFlagIdx) != nextFlag) {
                 rc.writeSharedArray(homeFlagIdx, nextFlag);
                 nextFlag = defaultFlag;
@@ -80,8 +81,14 @@ public class Robot {
             }
         }
 
+        nextSoldierFlag = SoldierStateCategory.EMPTY.ordinal();
+
         currLoc = rc.getLocation();
+        reportKilledArchons();
+        tryToReportArchon();
         Comms.broadcastEnemyFound(EnemySensable);
+        // initializeGlobals();
+        // turnCount += 1;
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
         // if(rc.getRoundNum() > 150) {
         //     rc.resign();
@@ -287,4 +294,61 @@ public class Robot {
         return false;
     }
 
+    static void tryToReportArchon() throws GameActionException {
+        Team opponent = rc.getTeam().opponent();
+        RobotInfo[] enemies = rc.senseNearbyRobots(visionRadiusSquared, opponent);
+        for (RobotInfo robot : enemies) {
+            MapLocation robotLoc = robot.getLocation();
+            //report enemy archon if not found yet
+            if (robot.getType() == RobotType.ARCHON) {
+                reportEnemyArchon(robotLoc, robot.ID, robot.health);
+            }
+        }
+    }
+
+    static void reportEnemyArchon(MapLocation enemyLoc, int enemyID, int health) throws GameActionException {
+        int healthBucket = health / Comms.HEALTH_BUCKET_SIZE;
+        int encodedEnemyLoc = Comms.encodeLocation(enemyLoc, healthBucket);
+        int theirArchons = Comms.enemyArchonCount();
+        boolean shouldInsert = true;
+        int[] ids = Comms.getIDs();
+        for (int i = 0; i < theirArchons; i++) {
+            if (enemyID == ids[i]) {
+                shouldInsert = false;
+                int testFlag = rc.readSharedArray(Comms.firstEnemy + i);
+                if (testFlag != encodedEnemyLoc) {
+                    rc.writeSharedArray(Comms.firstEnemy + i, encodedEnemyLoc);
+                }
+                break;
+            }
+        }
+        if (shouldInsert) {
+            int newArchon = Comms.incrementEnemy(enemyID);
+            rc.writeSharedArray(newArchon, encodedEnemyLoc);
+        }
+    }
+
+    static void reportKilledArchons() throws GameActionException {
+        MapLocation[] enemyArchonLocs = Comms.getEnemyArchonLocations();
+        for (int i = 0; i < Comms.enemyArchonCount(); i++) {
+            MapLocation loc = enemyArchonLocs[i];
+            if (rc.canSenseLocation(loc)) { 
+                RobotInfo botAtLoc = rc.senseRobotAtLocation(loc);
+                if (botAtLoc == null || (botAtLoc.type != RobotType.ARCHON)) {
+                    rc.writeSharedArray(Comms.firstEnemy + i, Comms.DEAD_ARCHON_FLAG);
+                }
+            }
+        }
+        MapLocation[] friendlyArchonLocs = Comms.getFriendlyArchonLocations();
+        for (int i = 0; i < Comms.friendlyArchonCount(); i++) {
+            MapLocation loc = friendlyArchonLocs[i];
+            if (rc.canSenseLocation(loc)) {
+                RobotInfo botAtLoc = rc.senseRobotAtLocation(loc);
+                if (botAtLoc == null || (botAtLoc.type != RobotType.ARCHON)) {
+                    int newFlag = Comms.encodeArchonFlag(Comms.InformationCategory.EMPTY);
+                    Comms.writeIfChanged(i + Comms.mapLocToFlag + Comms.firstArchon, newFlag);
+                }
+            }
+        }
+    }
 }

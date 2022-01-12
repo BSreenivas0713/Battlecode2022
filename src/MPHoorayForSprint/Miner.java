@@ -1,8 +1,8 @@
-package MPTempName;
+package MPHoorayForSprint;
 
 import battlecode.common.*;
-import MPTempName.Debug.*;
-import MPTempName.Util.*;
+import MPHoorayForSprint.Debug.*;
+import MPHoorayForSprint.Util.*;
 
 public class Miner extends Robot {
     static int roundNumBorn;
@@ -37,7 +37,6 @@ public class Miner extends Robot {
         unitLeadLoc = null;
         int[] actionRadiusArr = new int[9];
         for (int x = 0; x < 3; x ++) {for (int y = 0; y < 3; y ++ ) {actionRadiusArr[3 * x + y] = 0;}}
-
         bestLead = null;
         minerCount = 0;
         double bestScore = Integer.MIN_VALUE;
@@ -49,7 +48,8 @@ public class Miner extends Robot {
                 double currScore = getLeadDistTradeoffScore(currDist, leadAmount);
                 if(currScore > bestScore) {
                     bestScore = currScore;
-                    bestLead = loc; 
+                    bestLead = loc;
+                    
                 }
                 if (currDist <= actionRadiusSquared) {
                     actionRadiusArr[(1 + (loc.x - currLoc.x)) * 3  + (1 + (loc.y - currLoc.y))] = leadAmount;
@@ -69,8 +69,8 @@ public class Miner extends Robot {
             loc = possibleFriendly.location;
             if (possibleFriendly.type == RobotType.MINER && !loc.equals(currLoc)) {
                 minerCount ++;
-                overallDX += currLoc.directionTo(possibleFriendly.getLocation()).dx * (100 / (currLoc.distanceSquaredTo(loc)));
-                overallDY += currLoc.directionTo(possibleFriendly.getLocation()).dy * (100 / (currLoc.distanceSquaredTo(loc)));
+                overallDX += currLoc.directionTo(possibleFriendly.getLocation()).dx * (10000 / (currLoc.distanceSquaredTo(loc)));
+                overallDY += currLoc.directionTo(possibleFriendly.getLocation()).dy * (10000 / (currLoc.distanceSquaredTo(loc)));
             }
         }
         return actionRadiusArr;
@@ -81,7 +81,9 @@ public class Miner extends Robot {
         return EnemySensable.length > FriendlySensable.length &&
             !currLoc.isWithinDistanceSquared(home, Util.MIN_DIST_TO_DEPLETE_UNIT_LEAD);
     }
-
+    public String bigArrToString(int[] bigArr) {
+        return "[ " + "[ " + bigArr[0] + " " + bigArr[1] + " " + bigArr[2] + " ]," + "[ " + bigArr[3] + " " + bigArr[4] + " "  + bigArr[5] + " ]," + "[ "+  bigArr[6] + " " + bigArr[7] + " "  + bigArr[8] + " ]," + "]";
+    }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
@@ -98,10 +100,12 @@ public class Miner extends Robot {
         }
         if(bestLead != null) {
             Debug.printString("Lead: " + bestLead.toString());
+            // Debug.printString(bigArrToString(actionRadiusArr));
             if(unitLeadLoc != null && shouldDepleteUnitLead() && rc.canMineLead(unitLeadLoc)) {
                 Debug.printString("Depleting unit lead");
                 rc.mineLead(unitLeadLoc);
             }
+            boolean done = false;
             //Go through all lead deposits in action radius, and mine as much as possible (consider the case where two lead ores
             //within action radius have sizes 3 and 4. We want to mine them both down to 1 in the same turn 
             for(int x = 0; x < 3 && rc.isActionReady(); x ++) {
@@ -122,7 +126,6 @@ public class Miner extends Robot {
         String str = "";
         boolean canMine = rc.senseNearbyLocationsWithLead(2, 2).length > 0;
         if (!amMining && !canMine) {
-            //Become XSqaure (random location on the map)
             dir = Nav.explore();
             str = "Exploring";
         }
@@ -157,10 +160,6 @@ public class Miner extends Robot {
         }
 
         RobotInfo closestEnemy = getClosestEnemy(RobotType.SOLDIER);
-        if(goldSource != null) {
-            dir = Nav.greedyDirection(currLoc.directionTo(goldSource));
-            str = "going toward gold";
-        }
         if(closestEnemy != null) {
             dir = Nav.greedyDirection(currLoc.directionTo(closestEnemy.getLocation()).opposite());
             str = "going away from enemy soldier";
@@ -170,6 +169,12 @@ public class Miner extends Robot {
             dir = Nav.greedyDirection(currLoc.directionTo(closestEnemy.getLocation()).opposite());
             str = "going away from enemy Watchtower";
         }
+        
+        if(goldSource != null) {
+            dir = Nav.greedyDirection(currLoc.directionTo(goldSource));
+            str = "going toward gold";
+        }
+
         Debug.printString(str);
         tryMoveDest(dir);
     }
