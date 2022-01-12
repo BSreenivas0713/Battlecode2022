@@ -8,6 +8,7 @@ import MPTempName.Comms.*;
 public class Robot {
     static RobotController rc; 
     static int turnCount;
+    static RobotType robotType;
 
     static MapLocation home;
     static RobotInfo[] EnemySensable;
@@ -32,11 +33,11 @@ public class Robot {
     public Robot(RobotController r) {
         rc = r;
         turnCount = 0;
-        actionRadiusSquared = rc.getType().actionRadiusSquared;
-        visionRadiusSquared = rc.getType().visionRadiusSquared;
+        robotType = rc.getType();
+        actionRadiusSquared = robotType.actionRadiusSquared;
+        visionRadiusSquared = robotType.visionRadiusSquared;
 
-        
-        if(rc.getType() == RobotType.ARCHON) {
+        if(robotType == RobotType.ARCHON) {
             home = rc.getLocation();
         } else {
             RobotInfo[] sensableWithin2 = rc.senseNearbyRobots(2, rc.getTeam());
@@ -55,6 +56,10 @@ public class Robot {
     public double getLeadDistTradeoffScore(int radiusSquared, int leadAmount) {
         if(radiusSquared == 0 && leadAmount > 1){return Integer.MAX_VALUE;}
         return (float)leadAmount - Math.sqrt((double) radiusSquared) * 5;
+    }
+
+    public void initTurn() throws GameActionException {
+        Nav.initTurn();
     }
 
     public void takeTurn() throws GameActionException {
@@ -83,9 +88,18 @@ public class Robot {
         currLoc = rc.getLocation();
         Comms.broadcastEnemyFound(EnemySensable);
         // Debug.setIndicatorDot(Debug.info, home, 255, 255, 255);
-        // if(rc.getRoundNum() > 150) {
-        //     rc.resign();
-        // }
+    }
+
+    public void endTurn() throws GameActionException {
+        Explore.initialize();
+        switch(robotType) {
+            case MINER:
+            case BUILDER:
+            case SOLDIER:
+            case SAGE:
+            case WATCHTOWER:
+                Explore.markSeen();
+        }
     }
 
     public RobotInfo getClosestEnemy() {
@@ -269,6 +283,27 @@ public class Robot {
         }
         return false;
     }
+
+    // Haven't tested this
+    // I think the idea is that it will rotate at distance rad due to bugNav
+    boolean moveSafely(MapLocation loc, int rad) throws GameActionException {
+        if (loc == null) return false;
+        int d = rc.getLocation().distanceSquaredTo(loc);
+        d = Math.min(d, rad);
+        boolean[] imp = new boolean[Util.directionsCenter.length];
+        boolean greedy = false;
+        for (int i = Util.directionsCenter.length; i-- > 0; ){
+            MapLocation newLoc = rc.getLocation().add(Util.directionsCenter[i]);
+            if (newLoc.distanceSquaredTo(loc) <= d) {
+                imp[i] = true;
+                greedy = true;
+            }
+        }
+        Pathfinding.setImpassable(imp);
+        Nav.move(loc, greedy);
+        return true;
+    }
+
     static boolean tryMove(Direction dir) throws GameActionException {
         //Debug.println(Debug.info, "I am trying to move " + dir + "; " + rc.isReady() + " " + rc.getCooldownTurns() + " " + rc.canMove(dir));
         if (rc.canMove(dir)) {

@@ -18,6 +18,18 @@ public class Util {
         Direction.WEST,
         Direction.NORTHWEST,
     };
+    
+    static final Direction[] directionsCenter = {
+        Direction.NORTH,
+        Direction.NORTHEAST,
+        Direction.EAST,
+        Direction.SOUTHEAST,
+        Direction.SOUTH,
+        Direction.SOUTHWEST,
+        Direction.WEST,
+        Direction.NORTHWEST,
+        Direction.CENTER
+};
 
     static final Direction[] exploreDirections = {
         Direction.NORTH,
@@ -88,17 +100,19 @@ public class Util {
         return new Direction[]{dir, dir.rotateLeft(), dir.rotateLeft().rotateLeft(), dir.opposite().rotateRight(), dir.opposite(),
                 dir.opposite().rotateLeft(), dir.rotateRight().rotateRight(), dir.rotateRight()};
     }
+
     static Direction[] getInOrderDirections(Direction target_dir) {
         return new Direction[]{target_dir, target_dir.rotateRight(), target_dir.rotateLeft(), 
             target_dir.rotateRight().rotateRight(), target_dir.rotateLeft().rotateLeft()};
     }
+
     static Direction getFirstValidInOrderDirection(Direction dir){
         for(Direction newDir : Util.getInOrderDirections(dir)) {
             if(rc.canMove(newDir)) {
                 return newDir;
             }
         }
-        return dir;
+        return Direction.CENTER;
     }
 
     static Direction randomDirection() {
@@ -281,5 +295,20 @@ public class Util {
     
     static int distance(MapLocation A, MapLocation B){
         return Math.max(Math.abs(A.x - B.x), Math.abs(A.y - B.y));
+    }
+
+    // Returns the location on the opposite side from loc wrt to your own location
+    static MapLocation invertLocation(MapLocation loc) {
+        int dx = loc.x - rc.getLocation().x;
+        int dy = loc.y - rc.getLocation().y;
+        return rc.getLocation().translate(-dx, -dy);
+    }
+
+    static int clip(int n, int lo, int hi) {
+        return Math.min(Math.max(n, lo), hi);
+    }
+
+    static MapLocation clipToWithinMap(MapLocation loc) {
+        return new MapLocation(clip(loc.x, 0, MAP_WIDTH), clip(loc.y, 0, MAP_HEIGHT));
     }
 }

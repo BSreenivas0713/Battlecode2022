@@ -12,8 +12,8 @@ public class Nav {
     static int turnsSinceClosestDistanceDecreased;
     static int turnsGreedy;
 
-    static final int BYTECODE_REMAINING = 1000;
-    static final int BYTECODE_REMAINING_NON_MINER_BUILDER = 2500;
+    static final int BYTECODE_REMAINING = 1500;
+    static final int BYTECODE_REMAINING_NON_MINER_BUILDER = 2000;
     //static final int BYTECODE_BFS = 5000;
     static final int GREEDY_TURNS = 4;
 
@@ -52,12 +52,9 @@ public class Nav {
         }
     }
 
-    // Only checks squares next to current location for better rubble.
-    // I don't think it's really worth it to check other ones.
-    public static Direction getBestDirBetterRubbleSquareAdjacentTo(MapLocation dest) throws GameActionException {
-        int minRubble = rc.senseRubble(rc.getLocation());
-        MapLocation currLoc = rc.getLocation();
-        MapLocation bestLoc = currLoc;
+    public static MapLocation getBestRubbleSquareAdjacentTo(MapLocation dest) throws GameActionException {
+        int minRubble = Integer.MAX_VALUE;
+        MapLocation bestLoc = null;
         MapLocation loc;
         int rubble;
         for(int i = Util.directions.length - 1; --i >= 0;) {
@@ -72,10 +69,15 @@ public class Nav {
         }
 
         // Debug.setIndicatorDot(Debug.INDICATORS, bestLoc, 51, 204, 255);
-        if(dest.equals(currLoc)) {
+        return bestLoc;
+    }
+    
+    public static Direction getBestDirBetterRubbleSquareAdjacentTo(MapLocation dest) throws GameActionException {
+        MapLocation bestLoc = getBestRubbleSquareAdjacentTo(dest);
+        if(bestLoc.equals(rc.getLocation())) {
             return Direction.CENTER;
         }
-        Direction dir = Nav.getBestDir(dest);
+        Direction dir = Nav.getBestDir(bestLoc);
         return dir == null ? Direction.CENTER : dir;
     }
 
@@ -165,7 +167,6 @@ public class Nav {
             numToInsert++;
             rightRubble = rc.senseRubble(rightLoc);
         }
-        Debug.printString("numIns: " + numToInsert);
 
         // Hard coded 3 length array sort lol
         Direction[] orderedDirs = new Direction[3];
@@ -221,8 +222,8 @@ public class Nav {
         update(target);
 
         if (!greedy && turnsGreedy <= 0){
-            Direction dir = getBestDir(target);
-            if (dir != null && !MapTracker.check(rc.getLocation().add(dir))){
+            Direction dir = getBestDir(target, BYTECODE_REMAINING);
+            if (dir != null && !MapTracker.check(rc.adjacentLocation(dir))){
                 Explore.move(dir);
                 return;
             } else activateGreedy();
@@ -232,20 +233,20 @@ public class Nav {
             case MINER:
             case BUILDER:
                 if (Clock.getBytecodesLeft() >= BYTECODE_REMAINING) {
-                    //System.err.println("Using greedy");
-                    //System.out.println("Before pathfinding " + Clock.getBytecodeNum());
                     Pathfinding.move(target);
-                    //System.out.println("After pathfinding " + Clock.getBytecodeNum());
                     --turnsGreedy;
+                } else {
+                    Debug.setIndicatorDot(true, rc.getLocation(), 255, 255, 255);
+                    System.out.println("Didn't have enough BC");
                 }
                 break;
             default:
                 if (Clock.getBytecodesLeft() >= BYTECODE_REMAINING_NON_MINER_BUILDER) {
-                    //System.err.println("Using greedy");
-                    //System.out.println("Before pathfinding " + Clock.getBytecodeNum());
                     Pathfinding.move(target);
-                    //System.out.println("After pathfinding " + Clock.getBytecodeNum());
                     --turnsGreedy;
+                } else {
+                    Debug.setIndicatorDot(true, rc.getLocation(), 255, 255, 255);
+                    System.out.println("Didn't have enough BC");
                 }
                 break;
         }

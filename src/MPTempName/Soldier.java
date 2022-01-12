@@ -184,13 +184,14 @@ public class Soldier extends Robot {
 
 
     public void soldierExplore() throws GameActionException {
+        MapLocation target;
         if (avgEnemyLoc != null && currLoc.distanceSquaredTo(avgEnemyLoc) > visionRadiusSquared) {
-            Direction bestDir = Nav.navTo(avgEnemyLoc);
-            Direction[] targets = Util.getInOrderDirections(bestDir);
-            tryMoveDest(targets);
+            target = avgEnemyLoc;
+            Debug.printString("Avg enemy: " + target.toString());
+        } else {
+            target = Explore.getExploreTarget();
+            Debug.printString("Exploring: " + target.toString());
         }
-        else {
-            tryMoveDest(Explore.explore());
-        }
+        Nav.move(target);
     }
 }

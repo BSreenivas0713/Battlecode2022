@@ -43,9 +43,7 @@ public class Explore {
     static MapLocation explore3Target = null;
     static Boolean rotateLeft = null;
 
-    int conquerorTurns = 0;
-
-    final int bytecodeUsed = 2500;
+    static final int BYTECODES_USED = 2500;
 
     static Direction lastDirMoved = null;
 
@@ -190,7 +188,7 @@ public class Explore {
                 oppositeFromHome = rc.getLocation().directionTo(Robot.home).opposite();
             }
             Direction[] oppositeFromHomeDirs = {oppositeFromHome, oppositeFromHome.rotateLeft(), oppositeFromHome.rotateRight()};
-            lastExploreDir = oppositeFromHomeDirs[(int)(Math.random() * 3)];
+            lastExploreDir = oppositeFromHomeDirs[Util.rng.nextInt(3)];
 			boredom = 0;
         }
         
@@ -216,29 +214,14 @@ public class Explore {
         return exploreGreedy();
     }
 
-    static void initExploreDir(){
+    static void initExploreDir() {
         if (rc.getType() == RobotType.ARCHON) return;
-        RobotInfo closestEC = null;
-        MapLocation myLoc = rc.getLocation();
-        RobotInfo[] robots = rc.senseNearbyRobots(RobotType.ARCHON.actionRadiusSquared, rc.getTeam());
-        for (RobotInfo r : robots){
-            if (r.getType() != RobotType.ARCHON) continue;
-            int d = myLoc.distanceSquaredTo(r.getLocation());
-            if (closestEC == null || d < myLoc.distanceSquaredTo(closestEC.getLocation())){
-                closestEC = r;
-            }
-        }
-        if (closestEC != null){
-            assignExplore3Dir(closestEC.getLocation().directionTo(myLoc));
-        }
-        else assignExplore3Dir(directions[(int)(Math.random()*8)]);
+        assignExplore3Dir(directions[Util.rng.nextInt(8)]);
     }
 
     static void initialize(){
-        if (initialized){
-            //rc.setIndicatorDot(rc.getLocation(), 255, 0, 0);
-            return;
-        }
+        if (initialized) return;
+
         while(initRow < MAX_MAP_SIZE){
             if (Clock.getBytecodesLeft() < INIT_BC_LEFT) return;
             visited[initRow] = new boolean[MAX_MAP_SIZE];
@@ -256,8 +239,8 @@ public class Explore {
         int X = rc.getLocation().x;
         int Y = rc.getLocation().y;
         for (int i = tries; i-- > 0; ){
-            int dx = (int)(Math.random()*MAX_MAP_SIZE2 - MAX_MAP_SIZE);
-            int dy = (int)(Math.random()*MAX_MAP_SIZE2 - MAX_MAP_SIZE);
+            int dx = (int)(Util.rng.nextInt(MAX_MAP_SIZE2) - MAX_MAP_SIZE);
+            int dy = (int)(Util.rng.nextInt(MAX_MAP_SIZE2) - MAX_MAP_SIZE);
             exploreTarget = new MapLocation(X+dx,Y+dy);
             if (myLoc.distanceSquaredTo(exploreTarget) > visionRadius) return;
         }
@@ -275,17 +258,23 @@ public class Explore {
         return explore3Target;
     }
 
-    static void assignExplore3Dir(Direction dir){
+    static void assignExplore3Dir(Direction dir) {
         exploreDir = dir;
-        angle = Math.atan2(exploreDir.dy, exploreDir.dx);
+        double tempAngle = Math.atan2(exploreDir.dy, exploreDir.dx);
+        int tries = 10;
         double x = rc.getLocation().x, y = rc.getLocation().y;
-        x += Math.cos(angle)*EXPLORE_DIST;
-        y += Math.sin(angle)*EXPLORE_DIST;
-        explore3Target = new MapLocation((int)x, (int)y);
+        for(int i = tries; i-- > 0;) {
+            // Try for more variance in the direction?
+            angle = tempAngle + (Util.rng.nextDouble() * 45 - 22.5) / 180 * Math.PI;
+            x += Math.cos(angle)*EXPLORE_DIST;
+            y += Math.sin(angle)*EXPLORE_DIST;
+            explore3Target = new MapLocation((int)x, (int)y);
+            if(Util.onTheMap(explore3Target)) return;
+        }
     }
 
-    static void checkDirection(){
-        if (!isValidExploreDir(exploreDir)) return;
+    static void checkDirection() {
+        if (isValidExploreDir(exploreDir) && explore3Target.isWithinDistanceSquared(rc.getLocation(), visionRadius)) return;
         //System.err.println("Checking new direction!");
         switch(exploreDir){
             case SOUTHEAST:
@@ -379,12 +368,14 @@ public class Explore {
     }
 
     static void getNewTarget(int tries) {
-        if (exploreTarget != null && !hasVisited(exploreTarget) && Util.onTheMap(exploreTarget)) return;
+        if (exploreTarget != null && Util.onTheMap(exploreTarget) && !hasVisited(exploreTarget)) return;
+        MapLocation currLoc = rc.getLocation();
         for (int i = tries; i-- > 0; ) {
-            int dx = 4 * (int) (Math.random() * 16 - 8);
-            int dy = 4 * (int) (Math.random() * 16 - 8);
-            exploreTarget = new MapLocation(initialX+dx,initialY+dy);
-            if (!hasVisited(exploreTarget) && Util.onTheMap(exploreTarget)) return;
+            int dx = 4 * (int) (Util.rng.nextInt(16) - 8);
+            int dy = 4 * (int) (Util.rng.nextInt(16) - 8);
+            exploreTarget = new MapLocation(currLoc.x + dx, currLoc.y + dy);
+            exploreTarget = Util.clipToWithinMap(exploreTarget);
+            if (!hasVisited(exploreTarget)) return;
         }
     }
 

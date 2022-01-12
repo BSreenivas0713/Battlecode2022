@@ -8,7 +8,8 @@ public class Miner extends Robot {
     static int roundNumBorn;
     static int minerCount;
     static boolean explorer;
-    static MapLocation unitLeadLoc;
+    static MapLocation[] unitLeadLocs;
+    static int numUnitLeadLocs;
     static MapLocation bestLead;
     static MapLocation goldSource;
     static float overallDX;
@@ -17,7 +18,7 @@ public class Miner extends Robot {
     public Miner(RobotController r) throws GameActionException {
         super(r);
         roundNumBorn = r.getRoundNum();
-        unitLeadLoc = null;
+        unitLeadLocs = new MapLocation[5];
         if(Util.rng.nextInt(6) == 0) {
             explorer = true;
         }
@@ -34,7 +35,7 @@ public class Miner extends Robot {
 // find the best lead source, prioritizing lead that is within your action radius
         MapLocation[] locs = rc.senseNearbyLocationsWithLead(visionRadiusSquared);
         MapLocation loc;
-        unitLeadLoc = null;
+        numUnitLeadLocs = 0;
         int[] actionRadiusArr = new int[9];
         for (int x = 0; x < 3; x ++) {for (int y = 0; y < 3; y ++ ) {actionRadiusArr[3 * x + y] = 0;}}
 
@@ -54,8 +55,8 @@ public class Miner extends Robot {
                 if (currDist <= actionRadiusSquared) {
                     actionRadiusArr[(1 + (loc.x - currLoc.x)) * 3  + (1 + (loc.y - currLoc.y))] = leadAmount;
                 }
-            } else {
-                unitLeadLoc = loc;
+            } else if(rc.canMineLead(loc) && numUnitLeadLocs < 5) {
+                unitLeadLocs[numUnitLeadLocs++] = loc;
             }
         }
 
@@ -96,12 +97,16 @@ public class Miner extends Robot {
                 rc.mineGold(goldSource);
             }
         }
+
+        if(shouldDepleteUnitLead() && numUnitLeadLocs > 0) {
+            Debug.printString("Depleting unit lead");
+            for(int i = 0; i < numUnitLeadLocs && rc.canMineLead(unitLeadLocs[i]); i++) {
+                rc.mineLead(unitLeadLocs[i]);
+            }
+        }
+
         if(bestLead != null) {
             Debug.printString("Lead: " + bestLead.toString());
-            if(unitLeadLoc != null && shouldDepleteUnitLead() && rc.canMineLead(unitLeadLoc)) {
-                Debug.printString("Depleting unit lead");
-                rc.mineLead(unitLeadLoc);
-            }
             //Go through all lead deposits in action radius, and mine as much as possible (consider the case where two lead ores
             //within action radius have sizes 3 and 4. We want to mine them both down to 1 in the same turn 
             for(int x = 0; x < 3 && rc.isActionReady(); x ++) {
@@ -118,26 +123,29 @@ public class Miner extends Robot {
             }
         }
 
-        Direction[] dir = {};
+        MapLocation target = null;
         String str = "";
         boolean canMine = rc.senseNearbyLocationsWithLead(2, 2).length > 0;
         if (!amMining && !canMine) {
-            //Become XSqaure (random location on the map)
-            dir = Explore.explore();
-            str = "Exploring";
+            target = Explore.getExploreTarget();
+            str = "Exploring: " + target.toString();
+            // Debug.setIndicatorDot(Debug.INDICATORS, target, 255, 204, 102);
         }
 
         if(rc.getRoundNum() == roundNumBorn + 1) {
             for(RobotInfo robot: FriendlySensable) {
                 if(robot.getType() == RobotType.ARCHON) {
-                    dir = Nav.greedyDirection(currLoc.directionTo(robot.getLocation()).opposite());
+                    target = rc.adjacentLocation(currLoc.directionTo(robot.getLocation()).opposite());
                     str = "going away from AR";
                 }
             }
         }
+
         //no need to complicate things, just go towards the closest ore
         if(bestLead != null) {
-            dir = Util.getInOrderDirections(Nav.navTo(bestLead));
+            MapLocation currLoc = rc.getLocation();
+            target = Nav.getBestRubbleSquareAdjacentTo(bestLead);
+            if(currLoc.isAdjacentTo(bestLead) && rc.senseRubble(currLoc) == rc.senseRubble(target)) target = currLoc;
             str = "going towards lead";
             if(minerCount >= 5) {
                 // Move away if you can still mine any lead at the new location.
@@ -146,7 +154,7 @@ public class Miner extends Robot {
                     if(rc.canMove(possibleDir)) {
                         MapLocation newLoc = rc.adjacentLocation(possibleDir);
                         if(rc.senseNearbyLocationsWithLead(newLoc, 2, 2).length > 0) {
-                            dir = possibleDirs;
+                            target = rc.adjacentLocation(possibleDir);
                             str = "going away from other miners: " + DirectionAway.toString();
                         }
                         break;
@@ -158,19 +166,20 @@ public class Miner extends Robot {
 
         RobotInfo closestEnemy = getClosestEnemy(RobotType.SOLDIER);
         if(goldSource != null) {
-            dir = Nav.greedyDirection(currLoc.directionTo(goldSource));
+            target = goldSource;
             str = "going toward gold";
         }
         if(closestEnemy != null) {
-            dir = Nav.greedyDirection(currLoc.directionTo(closestEnemy.getLocation()).opposite());
+            target = Util.invertLocation(closestEnemy.getLocation());
             str = "going away from enemy soldier";
         }
         closestEnemy = getClosestEnemy(RobotType.WATCHTOWER);
         if(closestEnemy != null) {
-            dir = Nav.greedyDirection(currLoc.directionTo(closestEnemy.getLocation()).opposite());
+            target = Util.invertLocation(closestEnemy.getLocation());
             str = "going away from enemy Watchtower";
         }
+
         Debug.printString(str);
-        tryMoveDest(dir);
+        Nav.move(target);
     }
 }
