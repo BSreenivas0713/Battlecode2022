@@ -63,6 +63,7 @@ public class Robot {
         return (float)leadAmount - Math.sqrt((double) radiusSquared) * 5;
     }
 
+
     public void reportEnemies() throws GameActionException {
         for (RobotInfo bot : EnemySensable) {
             switch(bot.getType()) {
