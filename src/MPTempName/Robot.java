@@ -268,24 +268,6 @@ public class Robot {
         if(maybeWatchtower != null) res = maybeWatchtower;
         if(maybeSoldier != null) res = maybeSoldier;
 
-        // A soldier is prioritized if either you or the enemy is
-        // close to home or an enemy archon
-        if(maybeSoldier != null) {
-            MapLocation closestEnemyArchon = getClosestArchon();
-            boolean nearHome = currLoc.distanceSquaredTo(home) < Util.SOLDIER_PRIORITY_ATTACK_DIST;
-            boolean enemyNearHome = maybeSoldier.location.distanceSquaredTo(home) < Util.SOLDIER_PRIORITY_ATTACK_DIST;
-            boolean nearArchon = closestEnemyArchon != null && currLoc.distanceSquaredTo(closestEnemyArchon) < Util.SOLDIER_PRIORITY_ATTACK_DIST;
-            boolean enemyNearArchon = closestEnemyArchon != null && maybeSoldier.location.distanceSquaredTo(closestEnemyArchon) < Util.SOLDIER_PRIORITY_ATTACK_DIST;
-            if(nearHome || enemyNearHome || nearArchon || enemyNearArchon) {
-                res = maybeSoldier;
-            }
-        }
-        if(maybeArchon != null) {
-            if (currLoc.distanceSquaredTo(maybeArchon.getLocation()) < 4) {
-                res = maybeArchon;
-            }
-        }
-
         return res;
     }
 
