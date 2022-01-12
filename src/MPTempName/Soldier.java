@@ -156,7 +156,8 @@ public class Soldier extends Robot {
                     //rubble check
                     int locRubble = Util.getRubble(targetLoc);
                     int currRubble = rc.senseRubble(currLoc);
-                    if(rc.onTheMap(targetLoc) && locRubble > (20 + 1.2 * currRubble)) {
+                    if(rc.onTheMap(targetLoc) && locRubble > (20 + 1.2 * currRubble) && closestEnemyType!= RobotType.ARCHON) {
+                        Debug.printString("rub high");
                         tryAttackBestEnemy();
                         return true;
                     }
@@ -164,15 +165,26 @@ public class Soldier extends Robot {
                     int distanceNeeded = 5;
                     //This can be changed if Archons start running away from us
                     if(closestEnemyType == RobotType.ARCHON) {distanceNeeded = actionRadiusSquared;}
-                    if(currLoc.distanceSquaredTo(targetLoc) <= distanceNeeded && locRubble > currRubble) {
+                    if(currLoc.distanceSquaredTo(dest) <= distanceNeeded && locRubble > currRubble) {
+                        Debug.printString("close");
                         tryAttackBestEnemy();
                         return true;
                     }
+                    Debug.printString("enemyfren");
                     Direction[] targetDirs = Util.getInOrderDirections(dir);
                     moveAndAttack(targetDirs, attackFirst);
                     return true;
                 }
                 else {
+                    int destRubble = Util.getRubble(dest);
+                    int targetLocRubble = Util.getRubble(currLoc.add(dir));
+                    int currRubble = Util.getRubble(currLoc);
+                    if(currRubble > 1.2 * destRubble || 1.2 * currRubble + 15 < targetLocRubble) {
+                        Debug.printString("not worth atak");
+                        tryAttackBestEnemy();
+                        return true;
+                    }
+                    Debug.printString("Atak");
                     Direction[] targetDirs = Util.getInOrderDirections(dir);
                     moveAndAttack(targetDirs, attackFirst);
                     return true;
