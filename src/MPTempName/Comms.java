@@ -978,10 +978,6 @@ public class Comms {
         MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
         MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
 
-        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc1, 0, 255, 255);
-        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc2, 0, 255, 255);
-        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc3, 0, 255, 255);
-
         MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
         // Hi Bharath
         MapLocation bestCluster = null;
@@ -996,7 +992,16 @@ public class Comms {
         }
         return bestCluster;
     }
-    
+
+    public static void drawClusterDots() throws GameActionException {
+        MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
+        MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
+        MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
+
+        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc1, 0, 255, 255);
+        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc2, 0, 255, 255);
+        Debug.setIndicatorDot(Debug.INDICATORS, currAvgLoc3, 0, 255, 255);
+    }
 
     /**
      * update avg enemy loc (MapLocation enemyLoc)

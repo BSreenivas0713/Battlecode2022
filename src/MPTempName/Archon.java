@@ -101,6 +101,7 @@ public class Archon extends Robot {
             Comms.resetAlive();
             Comms.clearUsedLead();
             Comms.clearBuildGuesses();
+            Comms.drawClusterDots();
         }
         Comms.setAlive(archonNumber);
         Comms.setCanBuild(archonNumber, rc.isActionReady());
