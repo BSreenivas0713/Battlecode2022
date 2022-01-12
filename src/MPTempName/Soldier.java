@@ -189,7 +189,7 @@ public class Soldier extends Robot {
             target = avgEnemyLoc;
             Debug.printString("Avg enemy: " + target.toString());
         } else {
-            target = Explore.getExploreTarget();
+            target = Explore.getLegacyExploreTarget();
             Debug.printString("Exploring: " + target.toString());
         }
         Nav.move(target);

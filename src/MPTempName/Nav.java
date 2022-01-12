@@ -189,6 +189,11 @@ public class Nav {
         return dirs;
     }
 
+    static MapLocation getGreedyTargetAway(MapLocation loc) throws GameActionException {
+        Direction[] dirs = greedyDirection(rc.getLocation().directionTo(loc).opposite());
+        return rc.getLocation().add(Util.getFirstMoveableDir(dirs));
+    }
+
     static void reset(){
         turnsGreedy = 0;
         MapTracker.reset();

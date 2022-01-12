@@ -214,6 +214,11 @@ public class Explore {
         return exploreGreedy();
     }
 
+    public static MapLocation getLegacyExploreTarget() throws GameActionException {
+        Direction[] exploreDirs = explore();
+        return rc.getLocation().add(Util.getFirstMoveableDir(exploreDirs));
+    }
+
     static void initExploreDir() {
         if (rc.getType() == RobotType.ARCHON) return;
         assignExplore3Dir(directions[Util.rng.nextInt(8)]);

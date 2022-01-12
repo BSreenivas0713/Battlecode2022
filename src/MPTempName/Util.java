@@ -316,4 +316,17 @@ public class Util {
         if(rc.canSenseLocation(loc)) return rc.senseRubble(loc);
         return 100;
     }
+
+    static MapLocation addMult(MapLocation loc, Direction dir, int mult) {
+        return loc.translate(dir.dx * mult, dir.dy * mult);
+    }
+
+    static Direction getFirstMoveableDir(Direction[] dirs) {
+        for(Direction dir : dirs) {
+            if(rc.canMove(dir)) {
+                return dir;
+            }
+        }
+        return Direction.CENTER;
+    }
 }

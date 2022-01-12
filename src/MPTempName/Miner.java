@@ -127,7 +127,8 @@ public class Miner extends Robot {
         String str = "";
         boolean canMine = rc.senseNearbyLocationsWithLead(2, 2).length > 0;
         if (!amMining && !canMine) {
-            target = Explore.getExploreTarget();
+            // target = Explore.getExploreTarget();
+            target = Explore.getLegacyExploreTarget();
             str = "Exploring: " + target.toString();
             // Debug.setIndicatorDot(Debug.INDICATORS, target, 255, 204, 102);
         }
@@ -170,12 +171,12 @@ public class Miner extends Robot {
             str = "going toward gold";
         }
         if(closestEnemy != null) {
-            target = Util.invertLocation(closestEnemy.getLocation());
+            target = Nav.getGreedyTargetAway(closestEnemy.getLocation());
             str = "going away from enemy soldier";
         }
         closestEnemy = getClosestEnemy(RobotType.WATCHTOWER);
         if(closestEnemy != null) {
-            target = Util.invertLocation(closestEnemy.getLocation());
+            target = Nav.getGreedyTargetAway(closestEnemy.getLocation());
             str = "going away from enemy Watchtower";
         }
 
