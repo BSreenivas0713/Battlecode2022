@@ -105,6 +105,7 @@ public class Archon extends Robot {
         Comms.setAlive(archonNumber);
         Comms.setCanBuild(archonNumber, rc.isActionReady());
         Comms.resetAvgEnemyLoc();
+        reportEnemies();
         boolean underAttack = false;
         updateRobotCounts();
         updateClosestLeadOre();

@@ -30,12 +30,17 @@ public class Robot {
     static RobotInfo maybeMiner = null;
     static RobotInfo maybeLab = null;
 
+    static Team team;
+    static Team opponent;
+
     public Robot(RobotController r) {
         rc = r;
         turnCount = 0;
         robotType = rc.getType();
         actionRadiusSquared = robotType.actionRadiusSquared;
         visionRadiusSquared = robotType.visionRadiusSquared;
+        team = rc.getTeam();
+        opponent = team.opponent();
 
         if(robotType == RobotType.ARCHON) {
             home = rc.getLocation();
@@ -58,14 +63,22 @@ public class Robot {
         return (float)leadAmount - Math.sqrt((double) radiusSquared) * 5;
     }
 
+    public void reportEnemies() throws GameActionException {
+        for (RobotInfo bot : EnemySensable) {
+            if (bot.getType() == RobotType.SOLDIER || bot.getType() == RobotType.WATCHTOWER || bot.getType() == RobotType.ARCHON) {
+                Comms.updateAvgEnemyLoc(bot.getLocation());
+            }
+        }
+    }
+
     public void initTurn() throws GameActionException {
         Nav.initTurn();
     }
 
     public void takeTurn() throws GameActionException {
         turnCount += 1;
-        EnemySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent());
-        FriendlySensable = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam());
+        EnemySensable = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        FriendlySensable = rc.senseNearbyRobots(-1, rc.getTeam());
         
         // setting flag on next turn if archon
         if (rc.getType() == RobotType.ARCHON) {
@@ -75,14 +88,7 @@ public class Robot {
             }
         }
         else {
-            for (RobotInfo bot : EnemySensable) {
-                if (bot.getType() == RobotType.SOLDIER || bot.getType() == RobotType.WATCHTOWER || bot.getType() == RobotType.ARCHON) {
-                    Comms.updateAvgEnemyLoc(bot.getLocation());
-                }
-                if (!Comms.foundEnemySoldier && bot.getType() == RobotType.MINER) {
-                    Comms.updateAvgEnemyLoc(bot.getLocation());
-                }
-            }
+            reportEnemies();
         }
 
         currLoc = rc.getLocation();

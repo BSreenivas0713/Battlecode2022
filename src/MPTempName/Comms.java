@@ -83,6 +83,7 @@ public class Comms {
     static final int MINER_MASK = 0xFF;
 
     private static RobotController rc;
+    private static RobotType robotType;
     public static boolean foundEnemy;
     public static boolean foundEnemySoldier;
 
@@ -115,6 +116,7 @@ public class Comms {
         rc = r;
         foundEnemy = false;
         foundEnemySoldier = false;
+        robotType = rc.getType();
     }
 
     public static void clearBuildGuesses() throws GameActionException {
@@ -1002,7 +1004,9 @@ public class Comms {
      * also add 1 to curr num enemies
      */
     public static void updateAvgEnemyLoc(MapLocation enemyLoc) throws GameActionException {
-        setNeedToResetEnemyLocs();
+        if(robotType != RobotType.ARCHON) {
+            setNeedToResetEnemyLocs();
+        }
         int numClusters = 0;
         for (int i = 0; i < 3; i++) {
             if (rc.readSharedArray(i * 4 + CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_1) != 0) {
