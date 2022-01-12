@@ -278,4 +278,9 @@ public class Util {
         }
         return clusters;
     }
+
+    static int getRubble(MapLocation loc) throws GameActionException {
+        if(rc.canSenseLocation(loc)) return rc.senseRubble(loc);
+        return 100;
+    }
 }

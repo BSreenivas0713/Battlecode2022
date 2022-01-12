@@ -132,7 +132,7 @@ public class Soldier extends Robot {
                 dir = Nav.navTo(dest);
                 alreadyCalculated = true;
                 MapLocation targetLoc = currLoc.add(dir);
-                int locRubble = rc.senseRubble(targetLoc);
+                int locRubble = Util.getRubble(targetLoc);
                 int currRubble = rc.senseRubble(currLoc);
                 if(rc.onTheMap(targetLoc) && locRubble > (20 + 1.2 * currRubble)) {
                     Debug.printString("moving Away bad");
@@ -154,7 +154,7 @@ public class Soldier extends Robot {
                 RobotType closestEnemyType = closestEnemy.getType();
                 if(closestEnemyType == RobotType.MINER || closestEnemyType == RobotType.ARCHON || closestEnemyType == RobotType.BUILDER) {
                     //rubble check
-                    int locRubble = rc.senseRubble(targetLoc);
+                    int locRubble = Util.getRubble(targetLoc);
                     int currRubble = rc.senseRubble(currLoc);
                     if(rc.onTheMap(targetLoc) && locRubble > (20 + 1.2 * currRubble)) {
                         tryAttackBestEnemy();

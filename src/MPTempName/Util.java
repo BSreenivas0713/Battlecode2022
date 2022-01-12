@@ -311,4 +311,9 @@ public class Util {
     static MapLocation clipToWithinMap(MapLocation loc) {
         return new MapLocation(clip(loc.x, 0, MAP_WIDTH), clip(loc.y, 0, MAP_HEIGHT));
     }
+
+    static int getRubble(MapLocation loc) throws GameActionException {
+        if(rc.canSenseLocation(loc)) return rc.senseRubble(loc);
+        return 100;
+    }
 }
