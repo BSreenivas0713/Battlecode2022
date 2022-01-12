@@ -15,6 +15,9 @@ public class Archon extends Robot {
         INIT,
     };
 
+    static Direction[] BUILD_DIRECTIONS;
+    static Direction[] EXPLORE_DIRECTIONS;
+
     static int MAX_NUM_MINERS;
     static int MIN_NUM_MINERS;
 
@@ -40,7 +43,6 @@ public class Archon extends Robot {
     static MapLocation closestLeadOre;
     static Buildable currentBuild = Buildable.MINER;
     static Buildable nextBuild = Buildable.MINER;
-    static Direction[] buildDirections;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -65,6 +67,7 @@ public class Archon extends Robot {
         leadObesity = rc.getArchonCount() * 180 + maxLeadUsedByArchons;
         minerDirOffset = Util.rng.nextInt(8);
         loadBuildDirections();
+        pruneExploreDirections();
     }
 
     // Loads build directions in order of increasing rubble, randomly breaking ties.
@@ -103,12 +106,33 @@ public class Archon extends Robot {
             }
         }
 
-        buildDirections = new Direction[numDirections];
-        System.arraycopy(dirs, 0, buildDirections, 0, numDirections);
+        BUILD_DIRECTIONS = new Direction[numDirections];
+        System.arraycopy(dirs, 0, BUILD_DIRECTIONS, 0, numDirections);
+    }
+
+    void pruneExploreDirections() throws GameActionException {
+        Direction[] validExploreDirs = new Direction[8];
+        int numValidDirs = 0;
+        boolean[] isValidDir = new boolean[9];
+        for(Direction dir : Util.directions) {
+            if(Explore.isValidExploreDir(dir)) {
+                validExploreDirs[numValidDirs++] = dir;
+                isValidDir[dir.ordinal()] = true;
+            }
+        }
+
+        EXPLORE_DIRECTIONS = new Direction[numValidDirs];
+        numValidDirs = 0;
+        for(Direction dir : Util.exploreDirectionsOrder) {
+            if(isValidDir[dir.ordinal()]) {
+                EXPLORE_DIRECTIONS[numValidDirs++] = dir;
+                Debug.printString(dir.toString());
+            }
+        }
     }
 
     public boolean buildRobot(RobotType toBuild) throws GameActionException {
-        return buildRobot(toBuild, buildDirections);
+        return buildRobot(toBuild, BUILD_DIRECTIONS);
     }
 
     public boolean buildRobot(RobotType toBuild, Direction mainDir) throws GameActionException {
@@ -198,20 +222,23 @@ public class Archon extends Robot {
         builderCount = Comms.getBuilderCount();
     }
 
+    public void signalNextExploreDirection() {
+        numMinersBuilt++;
+        nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, EXPLORE_DIRECTIONS[(numMinersBuilt + minerDirOffset) % EXPLORE_DIRECTIONS.length]);
+    }
+
     public int buildMiner(int counter) throws GameActionException {
         if (minerCount < MAX_NUM_MINERS) {
             Debug.printString("Building miner");
             if(closestLeadOre != null) {
                 if(buildRobot(RobotType.MINER, currLoc.directionTo(closestLeadOre))){
                     counter++;
-                    numMinersBuilt++;
-                    nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
+                    signalNextExploreDirection();
                 }
             } else {
                 if(buildRobot(RobotType.MINER)) {
                     counter++;
-                    numMinersBuilt++;
-                    nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
+                    signalNextExploreDirection();
                 }
             }
         }
@@ -342,14 +369,12 @@ public class Archon extends Robot {
         nextBuild = Buildable.MINER;
 
         if(closestLeadOre != null) {
-            if(buildRobot(RobotType.MINER, currLoc.directionTo(closestLeadOre))){
-                numMinersBuilt++;
-                nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
+            if(buildRobot(RobotType.MINER, currLoc.directionTo(closestLeadOre))) {
+                signalNextExploreDirection();
             }
         } else {
             if(buildRobot(RobotType.MINER)) {
-                numMinersBuilt++;
-                nextFlag = Comms.encodeArchonFlag(Comms.InformationCategory.DIRECTION, Util.exploreDirections[(numMinersBuilt + minerDirOffset) % 8]);
+                signalNextExploreDirection();
             }
         }
     }

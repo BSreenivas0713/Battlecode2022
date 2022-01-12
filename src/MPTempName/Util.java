@@ -29,27 +29,27 @@ public class Util {
         Direction.WEST,
         Direction.NORTHWEST,
         Direction.CENTER
-};
+    };
 
-    static final Direction[] exploreDirections = {
+    static final Direction[] exploreDirectionsOrder = {
         Direction.NORTH,
         Direction.SOUTHEAST,
         Direction.SOUTHWEST,
         Direction.NORTHWEST,
         Direction.EAST,
         Direction.SOUTH,
-        Direction.NORTHEAST,
         Direction.WEST,
+        Direction.NORTHEAST,
     };
 
+    static Direction[] exploreDirections = exploreDirectionsOrder;
+
     static final int LeadThreshold = 50;
-    static final int ArchonStraightVisionRange = 5;
-    static final int ArchonDiagVisionRange = 4;
     static final int MinerDomain = 8;
     static final int WatchTowerDomain = 15;
     static final int MAX_MINERS = 128;
     static final int MAX_MAP_SIZE_TO_MINER_RATIO = 16;
-    static final int[] WatchTowerHealths = new int[]{130,143,156};
+    static final int[] WatchTowerHealths = new int[]{150,270,486};
     
     private static RobotController rc;
     static int SOLDIERS_NEEDED_TO_RUSH;
