@@ -65,8 +65,19 @@ public class Robot {
 
     public void reportEnemies() throws GameActionException {
         for (RobotInfo bot : EnemySensable) {
-            if (bot.getType() == RobotType.SOLDIER || bot.getType() == RobotType.WATCHTOWER || bot.getType() == RobotType.ARCHON) {
-                Comms.updateAvgEnemyLoc(bot.getLocation());
+            switch(bot.getType()) {
+                case SOLDIER:
+                case WATCHTOWER:
+                case ARCHON:
+                case SAGE:
+                    Comms.updateAvgEnemyLoc(bot.getLocation());
+                    break;
+                case MINER:
+                case BUILDER:
+                case LABORATORY:
+                    if(!Comms.foundEnemySoldier)
+                        Comms.updateAvgEnemyLoc(bot.getLocation());
+                    break;
             }
         }
     }
