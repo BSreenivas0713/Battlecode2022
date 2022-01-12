@@ -95,7 +95,17 @@ public class Util {
     static Direction turnRight90(Direction dir) {
         return dir.rotateRight().rotateRight();
     }
-    
+    static boolean canAttackorArchon(RobotType newType) throws GameActionException {
+        switch(newType) {
+            case SOLDIER:
+            case WATCHTOWER:
+            case ARCHON:
+            case SAGE:
+                return true;
+            default:
+                return false;
+        }
+    }
     static Direction[] getOrderedDirections(Direction dir) {
         return new Direction[]{dir, dir.rotateLeft(), dir.rotateLeft().rotateLeft(), dir.opposite().rotateRight(), dir.opposite(),
                 dir.opposite().rotateLeft(), dir.rotateRight().rotateRight(), dir.rotateRight()};

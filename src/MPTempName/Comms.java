@@ -1,6 +1,7 @@
 package MPTempName;
 
 import battlecode.common.*;
+import MPTempName.fast.FastIterableLocSet;
 import MPTempName.Debug.*;
 import MPTempName.Util.*;
 
@@ -875,7 +876,8 @@ public class Comms {
                 for (RobotInfo bot : enemySensable) {
                     foundEnemy = true;
                     archonInfo |= foundEnemyArchonInfo;
-                    if (bot.getType() == RobotType.SOLDIER) {
+                    RobotType botType = bot.getType();
+                    if (Util.canAttackorArchon(botType)) {
                         foundEnemySoldier = true;
                         archonInfo |= foundEnemySoldierArchonInfo;
                         break;
@@ -1059,6 +1061,71 @@ public class Comms {
     public static void resetNeedToResetEnemyLocs() throws GameActionException {
         int oldFlag = rc.readSharedArray(setupFlag);
         writeIfChanged(setupFlag, oldFlag & (~(1 << HAS_RESET_ENEMY_LOCS_OFFSET)));
+    }
+    public static MapLocation[] guessEnemyLoc(MapLocation ourLoc) throws GameActionException {
+        MapLocation[] results;
+
+        int height = rc.getMapHeight();
+        int width = rc.getMapWidth();
+
+        MapLocation verticalFlip = new MapLocation(ourLoc.x, rc.getMapHeight() - ourLoc.y - 1);
+        MapLocation horizontalFlip = new MapLocation(rc.getMapWidth() - ourLoc.x - 1, ourLoc.y);
+        MapLocation rotation = new MapLocation(width - ourLoc.x - 1, height - ourLoc.y - 1);
+
+        results = new MapLocation[]{verticalFlip, horizontalFlip, rotation};
+        return results;
+    }
+
+
+    public static void guessEnemyLocs() throws GameActionException {
+        int height = rc.getMapHeight();
+        int width = rc.getMapWidth();
+        boolean isSquare = height == width;
+        FastIterableLocSet possibleLocs = new FastIterableLocSet(12);
+        MapLocation[] listOfArchons = new MapLocation[]{Comms.locationFromFlag(rc.readSharedArray(1)), 
+                                                        Comms.locationFromFlag(rc.readSharedArray(2)), 
+                                                        Comms.locationFromFlag(rc.readSharedArray(3)),
+                                                        Comms.locationFromFlag(rc.readSharedArray(4))};
+        for(int i = 0; i < 4; i ++) {
+            MapLocation ourLoc = listOfArchons[i];
+            if(!ourLoc.equals(new MapLocation(0,0))) {
+                MapLocation[] possibleFlips = guessEnemyLoc(ourLoc);
+                for(MapLocation possibleFlip: possibleFlips) {
+                    boolean IsOk = true;
+                    for(MapLocation ArchonLoc: listOfArchons) {
+                        if (!ArchonLoc.equals(new MapLocation(0,0)) && possibleFlip.distanceSquaredTo(ArchonLoc) < RobotType.ARCHON.visionRadiusSquared) {
+                            IsOk = false;
+                        }
+                    }
+                    if (IsOk) {
+                        possibleLocs.add(possibleFlip);
+                        possibleLocs.updateIterable();
+                    }
+                }
+            }
+        }
+        if(possibleLocs.size > 0) {
+            MapLocation closestLoc = null;
+            int bestDist = Integer.MAX_VALUE;
+            for(int i = possibleLocs.size - 1; i >= 0; i--) {
+                MapLocation symmetryLoc = possibleLocs.locs[i];
+                int currDist = 0;
+                for(MapLocation archonLoc: listOfArchons) {
+                    if(!archonLoc.equals(new MapLocation(0,0))) {
+                        currDist += symmetryLoc.distanceSquaredTo(archonLoc);
+                    }
+                }
+                if (currDist < bestDist) {
+                    bestDist = currDist;
+                    closestLoc = symmetryLoc;
+                }
+            }
+            MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
+            if(currAvgLoc1.equals(new MapLocation(0,0))) {
+                writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_1,encodeLocation(closestLoc));
+            }
+            
+        }
     }
 
     /**

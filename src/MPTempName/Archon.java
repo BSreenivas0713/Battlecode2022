@@ -23,6 +23,7 @@ public class Archon extends Robot {
 
     static int robotCounter;
     static int chillingCounter;
+    static int initCounter;
     static int obesityCounter; 
     static int minerCount;
     static int soldierCount;
@@ -180,7 +181,8 @@ public class Archon extends Robot {
         Comms.setCanBuild(archonNumber, rc.isActionReady());
         Comms.resetAvgEnemyLoc();
         reportEnemies();
-        boolean underAttack = false;
+        tryUpdateSymmetry();
+        boolean underAttack = checkUnderAttack();
         updateRobotCounts();
         updateClosestLeadOre();
         boolean isObese = checkForObesity();
@@ -193,7 +195,28 @@ public class Archon extends Robot {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
     }
-
+    public void tryUpdateSymmetry() throws GameActionException {
+        if(Comms.getTurn() == rc.getArchonCount()) {
+            Comms.guessEnemyLocs();
+        }
+    }
+    public boolean checkUnderAttack() throws GameActionException {
+        int numEnemies = 0;
+        int numFriendlies = 0;
+        for (RobotInfo enemy : EnemySensable) {
+            RobotType enemyType = enemy.getType();
+            if (Util.canAttackorArchon(enemyType)) {
+                numEnemies++;
+            }
+        }
+        for (RobotInfo bot : FriendlySensable) {
+            RobotType botType = bot.getType();
+            if (Util.canAttackorArchon(botType)) {
+                numFriendlies++;
+            }
+        }
+        return numEnemies > numFriendlies;
+    }
 
     // pick a random lead ore for  a miner to go to, if spawned on this turn
     //
@@ -244,7 +267,8 @@ public class Archon extends Robot {
         }
         else {
             Debug.printString("Building soldier");
-            if(buildRobot(RobotType.SOLDIER)){
+            currentBuild = Buildable.SOLDIER;
+            if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
                 counter++;
             }
         }
@@ -332,7 +356,7 @@ public class Archon extends Robot {
         switch(currentState) {
             case INIT:
                 Debug.printString("Init");
-                firstRounds();
+                initCounter = firstRounds(4, initCounter);
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
@@ -364,26 +388,35 @@ public class Archon extends Robot {
         }
     }
 
-    public void firstRounds() throws GameActionException {
-        currentBuild = Buildable.MINER;
-        nextBuild = Buildable.MINER;
-
-        if(closestLeadOre != null) {
-            if(buildRobot(RobotType.MINER, currLoc.directionTo(closestLeadOre))) {
-                signalNextExploreDirection();
+    public int firstRounds(int mod, int counter) throws GameActionException {
+        if (counter != mod - 1) {
+            currentBuild = Buildable.MINER;
+            counter = buildMiner(counter);
+            if(counter == mod - 2) {
+                nextBuild = Buildable.MINER;
             }
-        } else {
-            if(buildRobot(RobotType.MINER)) {
-                signalNextExploreDirection();
+            else {
+                nextBuild = Buildable.SOLDIER;
             }
         }
+        else {
+            counter = buildSoldier(counter);
+            currentBuild = Buildable.SOLDIER;
+            nextBuild = Buildable.MINER;
+        }
+        return counter;
     }
+
 
     public void toggleState(boolean underAttack, boolean isObese) throws GameActionException {
         switch (currentState) {
             case INIT:
                 Debug.printString("lead obesity: " + leadObesity);
-                if((robotCounter >= 3 && Comms.foundEnemy) || minerCount >= MIN_NUM_MINERS) {
+                if(underAttack) {
+                    stateStack.push(State.CHILLING);
+                    changeState(State.UNDER_ATTACK);
+                }
+                else if((robotCounter >= 1 && Comms.foundEnemy) || minerCount >= MIN_NUM_MINERS) {
                     changeState(State.CHILLING);
                 }
                 else if(rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
