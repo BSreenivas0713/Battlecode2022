@@ -1,7 +1,6 @@
 package MPTempName;
 
 import battlecode.common.*;
-import javafx.beans.property.SetProperty;
 import MPTempName.fast.FastIterableLocSet;
 import MPTempName.Debug.*;
 import MPTempName.Util.*;

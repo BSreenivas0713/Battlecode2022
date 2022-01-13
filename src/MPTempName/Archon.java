@@ -545,7 +545,7 @@ public class Archon extends Robot {
                     lastRobot = newRobot;
                 }
             }
-            if(rc.canRepair(lastRobot.location) && lastRobot.health <= getMaxHealth(lastRobot.type)) {
+            if(rc.canRepair(lastRobot.location) && lastRobot.health < getMaxHealth(lastRobot.type)) {
                 Debug.printString("Healing");
                 lastRobotHealed = lastRobot;
                 rc.repair(lastRobot.location);

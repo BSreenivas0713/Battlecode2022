@@ -11,6 +11,7 @@ public class Robot {
     static RobotType robotType;
 
     static MapLocation home;
+    static MapLocation[] archonLocations;
     static RobotInfo[] EnemySensable;
     static RobotInfo[] FriendlySensable;
     static MapLocation currLoc;
@@ -33,7 +34,7 @@ public class Robot {
     static Team team;
     static Team opponent;
 
-    public Robot(RobotController r) {
+    public Robot(RobotController r) throws GameActionException {
         rc = r;
         turnCount = 0;
         robotType = rc.getType();
@@ -51,6 +52,15 @@ public class Robot {
                     MapLocation robotLoc = robot.getLocation();
                     home = robotLoc;
                 }
+            }
+
+            int numArchons = Comms.friendlyArchonCount();
+            int j = 0;
+            archonLocations = new MapLocation[numArchons];
+            for (int i = Comms.firstArchon; i < Comms.firstArchon + numArchons; i++) {
+                int testFlag = rc.readSharedArray(i);
+                archonLocations[j++] = Comms.locationFromFlag(testFlag);
+                Debug.printString(archonLocations[j-1].toString());
             }
         }
 

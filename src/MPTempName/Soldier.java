@@ -29,9 +29,10 @@ public class Soldier extends Robot {
     static int numEnemies;
     static MapLocation closestAttackingEnemy;
     static int numEnemySoldiersAttackingUs;
-    static int prioritizedArchon;
 
     static RobotInfo[] enemyAttackable;
+
+    static MapLocation healTarget;
 
     public Soldier(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -46,7 +47,6 @@ public class Soldier extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         closestEnemy = getBestEnemy(EnemySensable);
-        prioritizedArchon = Comms.getPrioritizedArchon();
         resetShouldRunAway();
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
@@ -62,6 +62,7 @@ public class Soldier extends Robot {
                 // Run away if 1/3 health left
                 if(rc.getHealth() <= RobotType.SOLDIER.health / 3) {
                     currState = SoldierState.HEALING;
+                    loadHealTarget();
                 }
                 break;
             case HEALING:
@@ -82,10 +83,43 @@ public class Soldier extends Robot {
                 }
                 break;
             case HEALING:
+                Debug.setIndicatorDot(Debug.INDICATORS, healTarget, 0, 255, 0);
                 Debug.printString("Healing");
                 tryAttackBestEnemy();
-                moveMoreSafely(home, Util.HEAL_DIST_TO_HOME);
+                moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
                 break;
+        }
+    }
+
+    // Choose an archon inversely proportional to the distance to it
+    // Weight the prioritized archon less
+    public void loadHealTarget() throws GameActionException {
+        int prioritizedArchon = Comms.getPrioritizedArchon() - 1;
+        healTarget = null;
+        double[] probs = new double[Comms.friendlyArchonCount()];
+        double totalProb = 0;
+        for(int i = 0; i < Comms.friendlyArchonCount(); i++) {
+            MapLocation archonLoc = archonLocations[i];
+            probs[i] = 0;
+            if(archonLoc == null) continue;
+            Debug.printString("D: " + currLoc.distanceSquaredTo(archonLoc));
+            probs[i] = 1.0 / currLoc.distanceSquaredTo(archonLoc);
+            if(i == prioritizedArchon) probs[i] /= 4;
+            // dists[i] = 1.0 / Util.distance(currLoc, archonLoc);
+            totalProb += probs[i];
+        }
+
+        double r = Util.rng.nextDouble() * totalProb;
+        for(int i = 0; i < Comms.friendlyArchonCount(); i++) {
+            if(r <= probs[i]) {
+                healTarget = archonLocations[i];
+                break;
+            }
+            r -= probs[i];
+        }
+
+        if(healTarget == null) {
+            healTarget = archonLocations[prioritizedArchon];
         }
     }
 
