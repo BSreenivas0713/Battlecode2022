@@ -29,6 +29,7 @@ public class Soldier extends Robot {
     static int numEnemies;
     static MapLocation closestAttackingEnemy;
     static int numEnemySoldiersAttackingUs;
+    static int prioritizedArchon;
 
     static RobotInfo[] enemyAttackable;
 
@@ -45,7 +46,7 @@ public class Soldier extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         closestEnemy = getBestEnemy(EnemySensable);
-        
+        prioritizedArchon = Comms.getPrioritizedArchon();
         resetShouldRunAway();
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;

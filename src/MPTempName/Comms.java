@@ -1,6 +1,7 @@
 package MPTempName;
 
 import battlecode.common.*;
+import javafx.beans.property.SetProperty;
 import MPTempName.fast.FastIterableLocSet;
 import MPTempName.Debug.*;
 import MPTempName.Util.*;
@@ -61,6 +62,7 @@ public class Comms {
     static final int CAN_BUILD_OFFSET = 10;
     static final int CURR_ALIVE_OFFSET = 6;
     static final int PREV_ALIVE_OFFSET = 10;
+    static final int PRIORITY_ARCHON_OFFSET = 14;
     public static final int MAX_HELPERS = MAX_HELPER_MASK;
     static final int HAS_RESET_ENEMY_LOCS_OFFSET = 15;
 
@@ -273,7 +275,7 @@ public class Comms {
     // Set the special bit to 1 to indicate someone already got the win this round.
     public static void updateMostRecentArchons(int archonNum) throws GameActionException {
         int oldFlag = rc.readSharedArray(LAST_CHOSEN_IDX);
-        int clearedFlag = oldFlag & (255 << 6);
+        int clearedFlag = oldFlag & (~0x3F);
         int last = archonNum - 1;
         int secondLast = oldFlag & 3; // old last
         int thirdLast = (oldFlag >> 2) & 3; // old second last
@@ -291,6 +293,7 @@ public class Comms {
         return result;
     }
 
+    // Also resets prioritized archon
     public static void resetAlive() throws GameActionException {
         int oldFlag = rc.readSharedArray(LAST_CHOSEN_IDX);
         int lastChosen = oldFlag & 0x3F;
@@ -309,6 +312,16 @@ public class Comms {
         int flag = rc.readSharedArray(LAST_CHOSEN_IDX);
         int offset = PREV_ALIVE_OFFSET + archonNum - 1;
         return ((flag >> offset) & 1) == 1;
+    }
+
+    public static void setPrioritizedArchon(int archonNum) throws GameActionException {
+        int oldFlag = rc.readSharedArray(LAST_CHOSEN_IDX);
+        int newFlag = oldFlag | ((archonNum - 1) << PRIORITY_ARCHON_OFFSET);
+        rc.writeSharedArray(LAST_CHOSEN_IDX, newFlag);
+    }
+
+    public static int getPrioritizedArchon() throws GameActionException {
+        return ((rc.readSharedArray(LAST_CHOSEN_IDX) >> PRIORITY_ARCHON_OFFSET) & 3) + 1;
     }
 
     public static boolean canBuildPrioritized(int archonNum, boolean isInit) throws GameActionException {
@@ -470,6 +483,9 @@ public class Comms {
             }
         } else {
             newOrder = order;
+        }
+        if (getTurn() == rc.getArchonCount()) {
+            setPrioritizedArchon(newOrder[0]);
         }
 
         /*if (rc.getRoundNum() > 299 && rc.getRoundNum() < 401) {
