@@ -546,8 +546,10 @@ public class Archon extends Robot {
                 }
             }
             if(rc.canRepair(lastRobot.location) && lastRobot.health <= getMaxHealth(lastRobot.type)) {
+                Debug.printString("Healing");
                 lastRobotHealed = lastRobot;
                 rc.repair(lastRobot.location);
+                Debug.setIndicatorLine(Debug.INDICATORS, currLoc, lastRobot.location, 0, 255, 0);
                 return;
             }
         }
@@ -558,10 +560,10 @@ public class Archon extends Robot {
     // Tries to repair the lowest health droid in range if an action is ready.
     public void tryToRepairLowestHealth() throws GameActionException {
         if(!rc.isActionReady()) return;
-        Debug.printString("Healing");
 
         RobotInfo robotToRepair = getNextRobotToRepair();
         if(robotToRepair != null) {
+            Debug.printString("Healing");
             rc.repair(robotToRepair.location);
             lastRobotHealed = robotToRepair;
             Debug.setIndicatorLine(Debug.INDICATORS, currLoc, robotToRepair.location, 0, 255, 0);
