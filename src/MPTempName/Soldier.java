@@ -349,6 +349,15 @@ public class Soldier extends Robot {
             target = avgEnemyLoc;
             Debug.printString("Avg enemy: " + target.toString());
         } else {
+            boolean seeArchonInSensable = false;
+            for (RobotInfo bot : EnemySensable) {
+                if (bot.getType() == RobotType.ARCHON) {
+                    seeArchonInSensable = true;
+                }
+            }
+            if (!seeArchonInSensable) {
+                Comms.broadcastSoldierNearClusterButNothingFound();
+            }
             target = Explore.getLegacyExploreTarget();
             Debug.printString("Exploring: " + target.toString());
         }

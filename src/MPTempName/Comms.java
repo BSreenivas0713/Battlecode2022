@@ -42,6 +42,7 @@ public class Comms {
     static final int BUILD_GUESS_IDX = 37;
     static final int LEAD_SPENT_IDX = 38;
     static final int LAST_CHOSEN_IDX = 39;
+    static final int SYMMETRY_IDX = 40;
 
     // Setup flag masks
     // Bits 1-3 are friendly Archon count
@@ -64,6 +65,9 @@ public class Comms {
     static final int PRIORITY_ARCHON_OFFSET = 14;
     public static final int MAX_HELPERS = MAX_HELPER_MASK;
     static final int HAS_RESET_ENEMY_LOCS_OFFSET = 15;
+    static final int NONZERO_DX_DY_OFFSET = 2;
+    static final int SOLDIER_NEAR_CLUSTER_BUT_NO_ENEMIES_OFFSET = 1;
+    static final int CLUSTER_SET_BY_SYMMETRY_OFFSET = 0;
 
     static final int X_COORD_OFFSET = 0;
     static final int Y_COORD_OFFSET = 6;
@@ -88,6 +92,7 @@ public class Comms {
     private static RobotType robotType;
     public static boolean foundEnemy;
     public static boolean foundEnemySoldier;
+    static int numSymmetryResets;
 
     public enum InformationCategory {
         EMPTY,
@@ -1083,8 +1088,8 @@ public class Comms {
         int height = rc.getMapHeight();
         int width = rc.getMapWidth();
 
-        MapLocation verticalFlip = new MapLocation(ourLoc.x, rc.getMapHeight() - ourLoc.y - 1);
-        MapLocation horizontalFlip = new MapLocation(rc.getMapWidth() - ourLoc.x - 1, ourLoc.y);
+        MapLocation verticalFlip = new MapLocation(ourLoc.x, height - ourLoc.y - 1);
+        MapLocation horizontalFlip = new MapLocation(width - ourLoc.x - 1, ourLoc.y);
         MapLocation rotation = new MapLocation(width - ourLoc.x - 1, height - ourLoc.y - 1);
 
         results = new MapLocation[]{verticalFlip, horizontalFlip, rotation};
@@ -1092,55 +1097,45 @@ public class Comms {
     }
 
 
-    public static void guessEnemyLocs() throws GameActionException {
-        int height = rc.getMapHeight();
-        int width = rc.getMapWidth();
-        boolean isSquare = height == width;
-        FastIterableLocSet possibleLocs = new FastIterableLocSet(12);
-        MapLocation[] listOfArchons = new MapLocation[]{Comms.locationFromFlag(rc.readSharedArray(1)), 
-                                                        Comms.locationFromFlag(rc.readSharedArray(2)), 
-                                                        Comms.locationFromFlag(rc.readSharedArray(3)),
-                                                        Comms.locationFromFlag(rc.readSharedArray(4))};
-        for(int i = 0; i < 4; i ++) {
-            MapLocation ourLoc = listOfArchons[i];
-            if(!ourLoc.equals(new MapLocation(0,0))) {
-                MapLocation[] possibleFlips = guessEnemyLoc(ourLoc);
-                for(MapLocation possibleFlip: possibleFlips) {
-                    boolean IsOk = true;
-                    for(MapLocation ArchonLoc: listOfArchons) {
-                        if (!ArchonLoc.equals(new MapLocation(0,0)) && possibleFlip.distanceSquaredTo(ArchonLoc) < RobotType.ARCHON.visionRadiusSquared) {
-                            IsOk = false;
-                        }
-                    }
-                    if (IsOk) {
-                        possibleLocs.add(possibleFlip);
-                        possibleLocs.updateIterable();
-                    }
-                }
-            }
+    public static void guessEnemyLocs(MapLocation[] possibleLocs) throws GameActionException {
+        //if first setting or need to reset again
+        if(possibleLocs.length > 0 && (numSymmetryResets == 0 || canSetNewSymmetryCluster())) {
+            writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_1,encodeLocation(possibleLocs[numSymmetryResets]));
+            numSymmetryResets++;
+            Comms.resetSymmetryArrayBits();
+            Comms.broadcastSetClusterBySymmetry();
         }
-        if(possibleLocs.size > 0) {
-            MapLocation closestLoc = null;
-            int bestDist = Integer.MAX_VALUE;
-            for(int i = possibleLocs.size - 1; i >= 0; i--) {
-                MapLocation symmetryLoc = possibleLocs.locs[i];
-                int currDist = 0;
-                for(MapLocation archonLoc: listOfArchons) {
-                    if(!archonLoc.equals(new MapLocation(0,0))) {
-                        currDist += symmetryLoc.distanceSquaredTo(archonLoc);
-                    }
-                }
-                if (currDist < bestDist) {
-                    bestDist = currDist;
-                    closestLoc = symmetryLoc;
-                }
-            }
-            MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
-            if(currAvgLoc1.equals(new MapLocation(0,0))) {
-                writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_1,encodeLocation(closestLoc));
-            }
-            
-        }
+    }
+
+    //if there was no dxdy reported, and soldier set that it went to cluster and saw nothing, and the symmetry bit was set
+    public static boolean canSetNewSymmetryCluster() throws GameActionException {
+        int currFlag = rc.readSharedArray(SYMMETRY_IDX);
+        int bottom3Bits = currFlag & 0x7;
+        return bottom3Bits == 0x3; // zero dxdy reported, soldier bit set, symmetry bit set
+    }
+
+    public static void broadcastSetClusterBySymmetry() throws GameActionException {
+        int currFlag = rc.readSharedArray(SYMMETRY_IDX);
+        int newFlag = currFlag | (1 << CLUSTER_SET_BY_SYMMETRY_OFFSET);
+        writeIfChanged(SYMMETRY_IDX, newFlag);
+    }
+
+    public static void broadcastNonzeroDxDy() throws GameActionException {
+        int currFlag = rc.readSharedArray(SYMMETRY_IDX);
+        int newFlag = currFlag | (1 << NONZERO_DX_DY_OFFSET);
+        writeIfChanged(SYMMETRY_IDX, newFlag);
+    }
+
+    public static void broadcastSoldierNearClusterButNothingFound() throws GameActionException {
+        int currFlag = rc.readSharedArray(SYMMETRY_IDX);
+        int newFlag = currFlag | (1 << SOLDIER_NEAR_CLUSTER_BUT_NO_ENEMIES_OFFSET);
+        writeIfChanged(SYMMETRY_IDX, newFlag);
+    }
+
+    public static void resetSymmetryArrayBits() throws GameActionException {
+        int currFlag = rc.readSharedArray(SYMMETRY_IDX);
+        int newFlag = currFlag & 0xFFF8; //zero out bottom 3 bits
+        writeIfChanged(SYMMETRY_IDX, newFlag);
     }
 
     /**
@@ -1150,6 +1145,7 @@ public class Comms {
      */
     public static void resetAvgEnemyLoc() throws GameActionException {
         if(needToResetEnemyLocs()) {
+            broadcastNonzeroDxDy(); //there exists some other enemy
             MapLocation[] clusters = getCurrentClusters();
 
             writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_1,

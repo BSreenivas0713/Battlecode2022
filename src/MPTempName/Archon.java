@@ -6,6 +6,7 @@ import MPTempName.Debug.*;
 import MPTempName.Util.*;
 import MPTempName.Comms.*;
 import java.util.ArrayDeque;
+import MPTempName.fast.FastIterableLocSet;
 
 public class Archon extends Robot {
     static enum State {
@@ -46,6 +47,7 @@ public class Archon extends Robot {
     static Buildable nextBuild = Buildable.MINER;
 
     static RobotInfo lastRobotHealed;
+    static MapLocation[] archonSymmetryLocs; // only set for the last archon
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -71,6 +73,9 @@ public class Archon extends Robot {
         minerDirOffset = Util.rng.nextInt(8);
         loadBuildDirections();
         pruneExploreDirections();
+        if (Comms.getTurn() == rc.getArchonCount()) {
+            archonSymmetryLocs = guessAndSortSymmetryLocs();
+        }
     }
 
     // Loads build directions in order of increasing rubble, randomly breaking ties.
@@ -178,12 +183,14 @@ public class Archon extends Robot {
             Comms.clearUsedLead();
             Comms.clearBuildGuesses();
             Comms.drawClusterDots();
+            //todo: zero out the symmetry cluster bit
         }
         Comms.setAlive(archonNumber);
         Comms.setCanBuild(archonNumber, rc.isActionReady());
         Comms.resetAvgEnemyLoc();
         reportEnemies();
         tryUpdateSymmetry();
+        //todo: move cluster dots drawing here
         boolean underAttack = checkUnderAttack();
         updateRobotCounts();
         updateClosestLeadOre();
@@ -198,9 +205,41 @@ public class Archon extends Robot {
     }
     public void tryUpdateSymmetry() throws GameActionException {
         if(Comms.getTurn() == rc.getArchonCount()) {
-            Comms.guessEnemyLocs();
+            Comms.guessEnemyLocs(archonSymmetryLocs);
         }
     }
+
+    public MapLocation[] guessAndSortSymmetryLocs() throws GameActionException {
+        FastIterableLocSet possibleLocs = new FastIterableLocSet(12);
+        MapLocation[] listOfArchons = new MapLocation[]{Comms.locationFromFlag(rc.readSharedArray(1)), 
+                                                        Comms.locationFromFlag(rc.readSharedArray(2)), 
+                                                        Comms.locationFromFlag(rc.readSharedArray(3)),
+                                                        Comms.locationFromFlag(rc.readSharedArray(4))};
+        for(int i = 0; i < 4; i ++) {
+            MapLocation ourLoc = listOfArchons[i];
+            if(!ourLoc.equals(new MapLocation(0,0))) {
+                MapLocation[] possibleFlips = Comms.guessEnemyLoc(ourLoc);
+                for(MapLocation possibleFlip: possibleFlips) {
+                    boolean IsOk = true;
+                    for(MapLocation ArchonLoc: listOfArchons) {
+                        if (!ArchonLoc.equals(new MapLocation(0,0)) && possibleFlip.distanceSquaredTo(ArchonLoc) < RobotType.ARCHON.visionRadiusSquared) {
+                            IsOk = false;
+                        }
+                    }
+                    if (IsOk) {
+                        possibleLocs.add(possibleFlip);
+                        possibleLocs.updateIterable();
+                    }
+                }
+            }
+        }
+        MapLocation[] candidateLocs = new MapLocation[possibleLocs.size];
+        for (int i = 0; i < possibleLocs.size; i++) {
+            candidateLocs[i] = possibleLocs.locs[i];
+        }
+        return candidateLocs;
+    }
+
     public boolean checkUnderAttack() throws GameActionException {
         int numEnemies = 0;
         int numFriendlies = 0;

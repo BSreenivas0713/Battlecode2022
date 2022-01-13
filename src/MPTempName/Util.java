@@ -341,4 +341,31 @@ public class Util {
         }
         return Direction.CENTER;
     }
+
+    public static void sortLocations(MapLocation[] possibleFlips, MapLocation[] listOfArchons) {
+        for (int i = 0;  i < possibleFlips.length;  i++) {
+            MapLocation itemToInsert = possibleFlips[i];
+            int j = i;
+            while (j != 0  &&  greaterThan(possibleFlips[j-1], itemToInsert, listOfArchons)) {
+                possibleFlips[j] = possibleFlips[j-1];  j = j-1;
+            }
+            possibleFlips[j] = itemToInsert;
+        }
+    }
+
+    public static boolean greaterThan(MapLocation loc1, MapLocation loc2, MapLocation[] listOfArchons) {
+        int currDist1 = 0;
+        for(MapLocation archonLoc: listOfArchons) {
+            if(!archonLoc.equals(new MapLocation(0,0))) {
+                currDist1 += loc1.distanceSquaredTo(archonLoc);
+            }
+        }
+        int currDist2 = 0;
+        for(MapLocation archonLoc: listOfArchons) {
+            if(!archonLoc.equals(new MapLocation(0,0))) {
+                currDist2 += loc2.distanceSquaredTo(archonLoc);
+            }
+        }
+        return currDist1 > currDist2;
+    }
 }
