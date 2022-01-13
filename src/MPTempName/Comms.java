@@ -1099,7 +1099,7 @@ public class Comms {
 
     public static void guessEnemyLocs(MapLocation[] possibleLocs) throws GameActionException {
         //if first setting or need to reset again
-        if(possibleLocs.length > 0 && (numSymmetryResets == 0 || canSetNewSymmetryCluster())) {
+        if(possibleLocs != null && possibleLocs.length > 0 && (numSymmetryResets == 0 || canSetNewSymmetryCluster())) {
             writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_1,encodeLocation(possibleLocs[numSymmetryResets]));
             numSymmetryResets++;
             Comms.resetSymmetryArrayBits();

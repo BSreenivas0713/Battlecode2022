@@ -208,7 +208,7 @@ public class Archon extends Robot {
     }
     
     public void tryUpdateSymmetry() throws GameActionException {
-        if(Comms.getTurn() == rc.getArchonCount()) {
+        if(!Comms.foundEnemy && Comms.getTurn() == rc.getArchonCount()) {
             Comms.guessEnemyLocs(archonSymmetryLocs);
         }
     }
