@@ -8,6 +8,7 @@ import MPTempName.Comms.*;
 public class Soldier extends Robot {
     static enum SoldierState {
         EXPLORING,
+        GOING_TO_HEAL,
         HEALING,
     }
 
@@ -61,8 +62,15 @@ public class Soldier extends Robot {
             case EXPLORING:
                 // Run away if 1/3 health left
                 if(rc.getHealth() <= RobotType.SOLDIER.health / 3) {
-                    currState = SoldierState.HEALING;
+                    currState = SoldierState.GOING_TO_HEAL;
                     loadHealTarget();
+                }
+                break;
+            case GOING_TO_HEAL:
+                if(rc.getHealth() == RobotType.SOLDIER.health) {
+                    currState = SoldierState.EXPLORING;
+                } else if(currLoc.isWithinDistanceSquared(healTarget, RobotType.ARCHON.actionRadiusSquared)) {
+                    currState = SoldierState.HEALING;
                 }
                 break;
             case HEALING:
@@ -82,11 +90,27 @@ public class Soldier extends Robot {
                     soldierExplore();
                 }
                 break;
+            case GOING_TO_HEAL:
+                Debug.setIndicatorDot(Debug.INDICATORS, healTarget, 0, 255, 0);
+                Debug.printString("Going to heal");
+                tryAttackBestEnemy();
+                if(currLoc.isWithinDistanceSquared(healTarget, 4 * Util.HEAL_DIST_TO_HOME)) {
+                    moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
+                } else {
+                    Nav.move(healTarget);
+                }
+                break;
             case HEALING:
                 Debug.setIndicatorDot(Debug.INDICATORS, healTarget, 0, 255, 0);
                 Debug.printString("Healing");
-                tryAttackBestEnemy();
-                moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
+                if(numEnemies != 0) {
+                    //@Maxwell change micro here if you'd like
+                    tryAttackBestEnemy();
+                    moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
+                } else {
+                    tryAttackBestEnemy();
+                    moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
+                }
                 break;
         }
     }
