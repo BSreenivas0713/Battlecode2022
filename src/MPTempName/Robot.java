@@ -254,6 +254,36 @@ public class Robot {
         return getBestEnemy(rc.senseNearbyRobots(actionRadiusSquared, rc.getTeam().opponent()));
     }
 
+    public RobotInfo[] getEnemyAttackable() throws GameActionException {
+        int size = 0;
+        for (RobotInfo enemyRobot: EnemySensable) {
+            switch(enemyRobot.getType()) {
+                case SOLDIER:
+                case WATCHTOWER:
+                case SAGE:
+                    size++;
+                    break;
+                default: 
+                    break;
+            }
+        }
+        RobotInfo[] enemyAttackable = new RobotInfo[size];
+        int counter = 0;
+        for (RobotInfo enemyRobot: EnemySensable) {
+            switch(enemyRobot.getType()) {
+                case SOLDIER:
+                case WATCHTOWER:
+                case SAGE:
+                    enemyAttackable[counter] = enemyRobot;
+                    counter++;
+                    break;
+                default: 
+                    break;
+            }
+        }
+        return enemyAttackable;
+    }
+
     public RobotInfo getBestEnemy(RobotInfo[] sensable) throws GameActionException {
         loadEnemies(sensable);
 

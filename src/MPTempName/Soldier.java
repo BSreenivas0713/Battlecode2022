@@ -30,6 +30,8 @@ public class Soldier extends Robot {
     static MapLocation closestAttackingEnemy;
     static int numEnemySoldiersAttackingUs;
 
+    static RobotInfo[] enemyAttackable;
+
     public Soldier(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
     }
@@ -43,7 +45,10 @@ public class Soldier extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         closestEnemy = getBestEnemy(EnemySensable);
+        
         resetShouldRunAway();
+        enemyAttackable = getEnemyAttackable();
+        numEnemies = enemyAttackable.length;
         avgEnemyLoc = Comms.getClosestCluster(currLoc);
         Comms.incrementSoldierCounter();
         trySwitchState();
@@ -103,7 +108,6 @@ public class Soldier extends Robot {
                     canAttack = true;
                 }
                 if(canAttack) {numEnemies++;}*/
-                numEnemies++;
                 if (candidateDist <= actionRadiusSquared /*&& canAttack*/) {
                     numEnemySoldiersAttackingUs++;
                     overallEnemySoldierDx += currLoc.directionTo(candidateLoc).dx * (100 / (currLoc.distanceSquaredTo(candidateLoc)));
@@ -149,6 +153,90 @@ public class Soldier extends Robot {
         }
     }
 
+
+    public Direction chooseForwardDirection(Direction Dir) throws GameActionException {
+        Direction[] dirsToConsider = Util.getInOrderDirections(Dir);
+        Direction bestDirSoFar = null;
+        int bestRubble = 101;
+        int bestEnemiesSeen = Integer.MAX_VALUE;
+        for(Direction newDir: dirsToConsider) {
+            if (rc.canMove(newDir)) {
+                MapLocation targetLoc = currLoc.add(newDir);
+                int locRubble = rc.senseRubble(currLoc);
+                int newDirRubble = rc.senseRubble(targetLoc);
+                boolean notTooMuchRubble = newDirRubble < (10 + locRubble);
+                int currEnemiesSeen = 0;
+                for (RobotInfo enemy: enemyAttackable) {
+                    MapLocation enemyLoc = enemy.getLocation();
+                    if(enemyLoc.distanceSquaredTo(targetLoc) <= actionRadiusSquared) {
+                        currEnemiesSeen++;
+                    }
+                }
+                if(notTooMuchRubble && (currEnemiesSeen <= bestEnemiesSeen ||  bestEnemiesSeen == 0)) {
+                    if (currEnemiesSeen != 0) {
+                        if (currEnemiesSeen < bestEnemiesSeen || bestEnemiesSeen == 0) {
+                            bestDirSoFar = newDir;
+                            bestRubble = newDirRubble;
+                            bestEnemiesSeen = currEnemiesSeen;
+                        }
+                        else if (currEnemiesSeen == bestEnemiesSeen && newDirRubble < bestRubble) {
+                            bestDirSoFar = newDir;
+                            bestRubble = newDirRubble;
+                            bestEnemiesSeen = currEnemiesSeen;                    
+                        }
+                    }
+                    else {
+                        if(bestEnemiesSeen == Integer.MAX_VALUE) {
+                            if (newDirRubble < bestRubble) {
+                                bestDirSoFar = newDir;
+                                bestRubble = newDirRubble;
+                                bestEnemiesSeen = currEnemiesSeen;                                 
+                            }
+                        }
+                    }
+                }                
+            }
+        }
+        return bestDirSoFar;
+    }        
+
+    public Direction chooseBackupDirection(Direction Dir) throws GameActionException {
+        Direction[] dirsToConsider = Util.getInOrderDirections(Dir);
+        Direction bestDirSoFar = null;
+        int bestRubble = 101;
+        int bestEnemiesStillSeen = Integer.MAX_VALUE;
+        for(Direction newDir: dirsToConsider) {
+            if (rc.canMove(newDir)) {
+                MapLocation targetLoc = currLoc.add(newDir);
+                int locRubble = rc.senseRubble(currLoc);
+                int newDirRubble = rc.senseRubble(targetLoc);
+                boolean notTooMuchRubble = newDirRubble < (10 + locRubble);
+                int currEnemiesStillSeen = 0;
+                for (RobotInfo enemy: enemyAttackable) {
+                    MapLocation enemyLoc = enemy.getLocation();
+                    int enemyActionRadius = enemy.getType().actionRadiusSquared;
+                    if(enemyLoc.distanceSquaredTo(targetLoc) <= enemyActionRadius) {
+                        currEnemiesStillSeen++;
+                    }
+                }
+                if(notTooMuchRubble && currEnemiesStillSeen <= bestEnemiesStillSeen) {
+                    if (currEnemiesStillSeen < bestEnemiesStillSeen) {
+                        bestDirSoFar = newDir;
+                        bestRubble = newDirRubble;
+                        bestEnemiesStillSeen = currEnemiesStillSeen;
+                    }
+                    else if (currEnemiesStillSeen == bestEnemiesStillSeen && newDirRubble < bestRubble) {
+                        bestDirSoFar = newDir;
+                        bestRubble = newDirRubble;
+                        bestEnemiesStillSeen = currEnemiesStillSeen;                    
+                    }
+                }                
+            }
+        }
+        return bestDirSoFar;
+
+    }
+
     public boolean tryMoveTowardsEnemy() throws GameActionException {
         // move towards it if found
         boolean alreadyCalculated = false;
@@ -160,30 +248,25 @@ public class Soldier extends Robot {
                 attackFirst = true;
                 // Positive so that we move towards the point mass.
                 dest = currLoc.translate(-overallEnemySoldierDx, -overallEnemySoldierDy);//(overallFriendlySoldierDx, overallFriendlySoldierDy);
-                dir = Nav.navTo(dest);
-                alreadyCalculated = true;
-                MapLocation targetLoc = currLoc.add(dir);
-                int locRubble = Util.getRubble(targetLoc);
-                int currRubble = rc.senseRubble(currLoc);
-                if(rc.onTheMap(targetLoc) && locRubble > (20 + 1.2 * currRubble)) {
-                    Debug.printString("moving Away bad");
+                Direction possibleDir = currLoc.directionTo(dest);
+                dir = chooseBackupDirection(possibleDir);
+                if (dir == null) {
+                    Debug.printString("RA bad");
+                    tryAttackBestEnemy();
                     return true;
                 }
                 Debug.printString("RA, Dest: " + dir);
+                Direction[] targetDirs = Util.getInOrderDirections(dir);
+                moveAndAttack(targetDirs, attackFirst);
+                return true;
+                
             } else {
                 dest = closestEnemy.getLocation();
-                attackFirst = false;
-                // Debug.printString("Going towards closest Enemy");
-            }
-            if(dest != null) {
-                if(!alreadyCalculated) {
-                    dir = Nav.navTo(dest);
-                }
-                //Don't go towards miners if it forces us to go to low passability squares(the formula I used is kind of arbitrary, so its definitely tweakable)
-                //keep in mind, however, that on Intersection its like passability 1 versus 85 so any formula thats halfway decent will work there
-                MapLocation targetLoc = currLoc.add(dir);
                 RobotType closestEnemyType = closestEnemy.getType();
                 if(closestEnemyType == RobotType.MINER || closestEnemyType == RobotType.ARCHON || closestEnemyType == RobotType.BUILDER) {
+                    dir = Nav.navTo(dest);
+                    MapLocation targetLoc = currLoc.add(dir);
+
                     //rubble check
                     int locRubble = Util.getRubble(targetLoc);
                     int currRubble = rc.senseRubble(currLoc);
@@ -207,15 +290,14 @@ public class Soldier extends Robot {
                     return true;
                 }
                 else {
-                    int destRubble = Util.getRubble(dest);
-                    int targetLocRubble = Util.getRubble(currLoc.add(dir));
-                    int currRubble = Util.getRubble(currLoc);
-                    if(currRubble > 1.2 * destRubble || 1.2 * currRubble + 15 < targetLocRubble) {
-                        Debug.printString("not worth atak");
+                    dir = chooseForwardDirection(currLoc.directionTo(dest));
+                    attackFirst = false;
+                    if (dir == null) {
+                        Debug.printString("RA bad");
                         tryAttackBestEnemy();
                         return true;
                     }
-                    Debug.printString("Atak");
+                    Debug.printString("RA, Dest: " + dir);
                     Direction[] targetDirs = Util.getInOrderDirections(dir);
                     moveAndAttack(targetDirs, attackFirst);
                     return true;
