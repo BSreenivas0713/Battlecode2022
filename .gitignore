@@ -20,6 +20,7 @@ build/*
 *.ipr
 *.iws
 /.idea/
+*.zip
 
 
 # User-specific stuff:
@@ -29,4 +30,3 @@ battlecode-scaffold.iws
 .classpath
 .project
 .settings/
-src/MPTempName.zip
