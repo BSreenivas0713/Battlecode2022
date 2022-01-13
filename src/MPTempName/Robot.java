@@ -60,7 +60,7 @@ public class Robot {
             for (int i = Comms.firstArchon; i < Comms.firstArchon + numArchons; i++) {
                 int testFlag = rc.readSharedArray(i);
                 archonLocations[j++] = Comms.locationFromFlag(testFlag);
-                Debug.printString(archonLocations[j-1].toString());
+                // Debug.printString(archonLocations[j-1].toString());
             }
         }
 

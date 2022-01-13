@@ -91,6 +91,29 @@ public class Soldier extends Robot {
         }
     }
 
+
+        // Rotates at distance rad due to BugNav
+    // Also ignores higher rubble squares if you're already close
+    boolean moveMoreSafely(MapLocation loc, int rad) throws GameActionException {
+        if (loc == null) return false;
+        int d = rc.getLocation().distanceSquaredTo(loc);
+        d = Math.min(d, rad);
+        boolean[] imp = new boolean[Util.directionsCenter.length];
+        boolean greedy = false;
+        for (int i = Util.directionsCenter.length; i-- > 0; ){
+            MapLocation newLoc = rc.getLocation().add(Util.directionsCenter[i]);
+            if (newLoc.distanceSquaredTo(loc) <= d ||
+                (currLoc.isWithinDistanceSquared(loc, 2 * rad) && rc.senseRubble(currLoc) < (20 + 1.2 * Util.getRubble(newLoc)))) {
+                imp[i] = true;
+                greedy = true;
+            }
+        }
+        Pathfinding.setImpassable(imp);
+        Nav.move(loc, greedy);
+        return true;
+    }
+
+
     // Choose an archon inversely proportional to the distance to it
     // Weight the prioritized archon less
     public void loadHealTarget() throws GameActionException {
@@ -102,7 +125,7 @@ public class Soldier extends Robot {
             MapLocation archonLoc = archonLocations[i];
             probs[i] = 0;
             if(archonLoc == null) continue;
-            Debug.printString("D: " + currLoc.distanceSquaredTo(archonLoc));
+            // Debug.printString("D: " + currLoc.distanceSquaredTo(archonLoc));
             probs[i] = 1.0 / currLoc.distanceSquaredTo(archonLoc);
             if(i == prioritizedArchon) probs[i] /= 4;
             // dists[i] = 1.0 / Util.distance(currLoc, archonLoc);
@@ -237,6 +260,7 @@ public class Soldier extends Robot {
 
     public Direction chooseBackupDirection(Direction Dir) throws GameActionException {
         Direction[] dirsToConsider = Util.getInOrderDirections(Dir);
+        // Debug.printString("dir:" + Dir + " " + rc.getActionCooldownTurns());
         Direction bestDirSoFar = null;
         int bestRubble = 101;
         int bestEnemiesStillSeen = Integer.MAX_VALUE;
@@ -255,6 +279,7 @@ public class Soldier extends Robot {
                     }
                 }
                 if(notTooMuchRubble && currEnemiesStillSeen <= bestEnemiesStillSeen) {
+                    // Debug.printString("R");
                     if (currEnemiesStillSeen < bestEnemiesStillSeen) {
                         bestDirSoFar = newDir;
                         bestRubble = newDirRubble;
@@ -269,7 +294,6 @@ public class Soldier extends Robot {
             }
         }
         return bestDirSoFar;
-
     }
 
     public boolean tryMoveTowardsEnemy() throws GameActionException {
@@ -294,7 +318,6 @@ public class Soldier extends Robot {
                 Direction[] targetDirs = Util.getInOrderDirections(dir);
                 moveAndAttack(targetDirs, attackFirst);
                 return true;
-                
             } else {
                 dest = closestEnemy.getLocation();
                 RobotType closestEnemyType = closestEnemy.getType();
@@ -345,6 +368,9 @@ public class Soldier extends Robot {
 
     public void soldierExplore() throws GameActionException {
         MapLocation target;
+        if (avgEnemyLoc!=null && currLoc.distanceSquaredTo(avgEnemyLoc) <= visionRadiusSquared) {
+            Debug.printString("explor");
+        }
         if (avgEnemyLoc != null && currLoc.distanceSquaredTo(avgEnemyLoc) > visionRadiusSquared) {
             target = avgEnemyLoc;
             Debug.printString("Avg enemy: " + target.toString());

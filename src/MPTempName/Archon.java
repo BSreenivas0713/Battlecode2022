@@ -117,6 +117,9 @@ public class Archon extends Robot {
         BUILD_DIRECTIONS = new Direction[numDirections];
         System.arraycopy(dirs, 0, BUILD_DIRECTIONS, 0, numDirections);
     }
+    public boolean isSmallMap() {
+        return rc.getMapHeight() * rc.getMapWidth() <= 625;
+    }
 
     void pruneExploreDirections() throws GameActionException {
         Direction[] validExploreDirs = new Direction[8];
@@ -134,7 +137,7 @@ public class Archon extends Robot {
         for(Direction dir : Util.exploreDirectionsOrder) {
             if(isValidDir[dir.ordinal()]) {
                 EXPLORE_DIRECTIONS[numValidDirs++] = dir;
-                Debug.printString(dir.toString());
+                // Debug.printString(dir.toString());
             }
         }
     }
@@ -203,6 +206,7 @@ public class Archon extends Robot {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
     }
+    
     public void tryUpdateSymmetry() throws GameActionException {
         if(Comms.getTurn() == rc.getArchonCount()) {
             Comms.guessEnemyLocs(archonSymmetryLocs);
@@ -273,7 +277,7 @@ public class Archon extends Robot {
         }
         if (bestLeadLoc != null) {
             closestLeadOre = bestLeadLoc;
-            Debug.printString("ore: " + closestLeadOre);
+            // Debug.printString("ore: " + closestLeadOre);
         } else {
             closestLeadOre = null;
         }
@@ -292,7 +296,7 @@ public class Archon extends Robot {
 
     public int buildMiner(int counter) throws GameActionException {
         if (minerCount < MAX_NUM_MINERS) {
-            Debug.printString("Building miner");
+            // Debug.printString("Building miner");
             if(closestLeadOre != null) {
                 if(buildRobot(RobotType.MINER, currLoc.directionTo(closestLeadOre))){
                     counter++;
@@ -306,7 +310,7 @@ public class Archon extends Robot {
             }
         }
         else {
-            Debug.printString("Building soldier");
+            // Debug.printString("Building soldier");
             currentBuild = Buildable.SOLDIER;
             if(buildRobot(RobotType.SOLDIER, Util.randomDirection())){
                 counter++;
@@ -316,7 +320,7 @@ public class Archon extends Robot {
     }
 
     public int buildSoldier(int counter) throws GameActionException {
-        Debug.printString("Building soldier");
+        // Debug.printString("Building soldier");
         if(buildRobot(RobotType.SOLDIER)) {
             counter++;
         }
@@ -410,7 +414,7 @@ public class Archon extends Robot {
                 tryToRepairLastBot();
                 break;
             case UNDER_ATTACK:
-                Debug.printString("Under Attack");
+                // Debug.printString("Under Attack");
                 chillingCounter = buildSoldier(chillingCounter);
                 tryToRepairLowestHealth();
                 break;
@@ -433,29 +437,54 @@ public class Archon extends Robot {
     }
 
     public int firstRounds(int mod, int counter) throws GameActionException {
-        if (counter != mod - 1) {
-            currentBuild = Buildable.MINER;
-            counter = buildMiner(counter);
-            if(counter == mod - 2) {
-                nextBuild = Buildable.MINER;
+        if (!isSmallMap()) {
+            if (counter != mod - 1) {
+                currentBuild = Buildable.MINER;
+                counter = buildMiner(counter);
+                if(counter == mod - 2) {
+                    nextBuild = Buildable.MINER;
+                }
+                else {
+                    nextBuild = Buildable.SOLDIER;
+                }
             }
             else {
-                nextBuild = Buildable.SOLDIER;
+                counter = buildSoldier(counter);
+                currentBuild = Buildable.SOLDIER;
+                nextBuild = Buildable.MINER;
             }
+            return counter;
         }
         else {
-            counter = buildSoldier(counter);
-            currentBuild = Buildable.SOLDIER;
-            nextBuild = Buildable.MINER;
+            if (counter != mod - 1 && counter != mod - 2) {
+                currentBuild = Buildable.MINER;
+                counter = buildMiner(counter);
+                if(counter == mod - 3) {
+                    nextBuild = Buildable.MINER;
+                }
+                else {
+                    nextBuild = Buildable.SOLDIER;
+                }
+            }
+            else {
+                counter = buildSoldier(counter);
+                currentBuild = Buildable.SOLDIER;
+                if(counter == mod - 2) {
+                    nextBuild = Buildable.SOLDIER;
+                }
+                else {
+                    nextBuild = Buildable.MINER;
+                }
+            }
+            return counter;
         }
-        return counter;
     }
 
 
     public void toggleState(boolean underAttack, boolean isObese) throws GameActionException {
         switch (currentState) {
             case INIT:
-                Debug.printString("lead obesity: " + leadObesity);
+                // Debug.printString("lead obesity: " + leadObesity);
                 if(underAttack) {
                     stateStack.push(State.CHILLING);
                     changeState(State.UNDER_ATTACK);
