@@ -100,15 +100,24 @@ public class Builder extends Robot{
                 Debug.printString("Friendly near, moving away from home");
                 Direction awayFromHome = currLoc.directionTo(home).opposite();
                 if(!rc.onTheMap(currLoc.add(awayFromHome))) {
-                    tryMoveDest(Util.getInOrderDirections(Nav.getBestDir(currLoc.add(Util.turnRight90(currLoc.directionTo(home))))));
+                    Direction dir = Nav.getBestDir(currLoc.add(Util.turnRight90(currLoc.directionTo(home))));
+                    if(dir != null) {
+                        tryMoveDest(Util.getInOrderDirections(dir));
+                    }
                 }
                 else {
-                    tryMoveDest(Util.getInOrderDirections(Nav.getBestDir(currLoc.add(awayFromHome))));
+                    Direction dir = Nav.getBestDir(currLoc.add(awayFromHome));
+                    if(dir != null) {
+                        tryMoveDest(Util.getInOrderDirections(dir));
+                    }
                 }
             }
             else {
                 Debug.printString("No Friendly near, moving towards home");
-                tryMoveDest(Util.getInOrderDirections(Nav.getBestDir(home)));
+                Direction dir = Nav.getBestDir(home);
+                if(dir != null) {
+                    tryMoveDest(Util.getInOrderDirections(dir));
+                }
             }
         }
     }

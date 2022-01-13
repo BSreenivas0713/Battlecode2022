@@ -242,7 +242,7 @@ public class Nav {
                     --turnsGreedy;
                 } else {
                     Debug.setIndicatorDot(true, rc.getLocation(), 255, 255, 255);
-                    System.out.println("Didn't have enough BC");
+                    Debug.println("Didn't have enough BC");
                 }
                 break;
             default:
@@ -251,7 +251,7 @@ public class Nav {
                     --turnsGreedy;
                 } else {
                     Debug.setIndicatorDot(true, rc.getLocation(), 255, 255, 255);
-                    System.out.println("Didn't have enough BC");
+                    Debug.println("Didn't have enough BC");
                 }
                 break;
         }
