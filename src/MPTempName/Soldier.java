@@ -7,15 +7,12 @@ import MPTempName.Comms.*;
 
 public class Soldier extends Robot {
     static enum SoldierState {
-        DEFENSE,
-        RUSHING,
-        DONE_RUSHING,
         EXPLORING,
-        HELPING,
+        HEALING,
     }
+
     static SoldierState currState;
     static int homeFlagIdx;
-    static MapLocation target;
     static int targetId;
     static MapLocation distressLocation;
 
@@ -49,8 +46,40 @@ public class Soldier extends Robot {
         resetShouldRunAway();
         avgEnemyLoc = Comms.getClosestCluster(currLoc);
         Comms.incrementSoldierCounter();
-        if (!tryMoveTowardsEnemy()) { 
-            soldierExplore();
+        trySwitchState();
+        doStateAction();
+    }
+
+    public void trySwitchState() throws GameActionException {
+        switch(currState) {
+            case EXPLORING:
+                // Run away if 1/3 health left
+                if(rc.getHealth() <= RobotType.SOLDIER.health / 3) {
+                    currState = SoldierState.HEALING;
+                }
+                break;
+            case HEALING:
+                if(rc.getHealth() == RobotType.SOLDIER.health) {
+                    currState = SoldierState.EXPLORING;
+                }
+                // TODO: maybe also exit if there are a lot of units to be healed
+                // and you've healed to 2/3?
+                break;
+        }
+    }
+
+    public void doStateAction() throws GameActionException {
+        switch(currState) {
+            case EXPLORING:
+                if (!tryMoveTowardsEnemy()) {
+                    soldierExplore();
+                }
+                break;
+            case HEALING:
+                Debug.printString("Healing");
+                tryAttackBestEnemy();
+                moveMoreSafely(home, Util.HEAL_DIST_TO_HOME);
+                break;
         }
     }
 
@@ -108,6 +137,7 @@ public class Soldier extends Robot {
         // Debug.printString("enemyAction: " + numEnemySoldiersAttackingUs + "enemy: " + numEnemies + "friends: " + numFriendlies);
         return numEnemySoldiersAttackingUs > 0 || (numFriendlies + 1 < numEnemies);
     }
+
     public void moveAndAttack(Direction[] targetDirs, boolean attackFirst) throws GameActionException{
         if(attackFirst) {
             tryAttackBestEnemy();
@@ -118,6 +148,7 @@ public class Soldier extends Robot {
             tryAttackBestEnemy();
         }
     }
+
     public boolean tryMoveTowardsEnemy() throws GameActionException {
         // move towards it if found
         boolean alreadyCalculated = false;

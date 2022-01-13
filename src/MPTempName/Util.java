@@ -65,6 +65,8 @@ public class Util {
     // Distance a miner needs to be from home to deplete unit lead sources
     static final int MIN_DIST_TO_DEPLETE_UNIT_LEAD = 256;
 
+    static final int HEAL_DIST_TO_HOME = 5;
+
     static void init(RobotController r) {
         rc = r;
         rng = new Random(rc.getRoundNum()*23981 + rc.getID()*10289);

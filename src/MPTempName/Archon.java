@@ -45,6 +45,8 @@ public class Archon extends Robot {
     static Buildable currentBuild = Buildable.MINER;
     static Buildable nextBuild = Buildable.MINER;
 
+    static RobotInfo lastRobotHealed;
+
     public Archon(RobotController r) throws GameActionException {
         super(r);
         //writing all Archon locations immediately on round 0
@@ -188,7 +190,6 @@ public class Archon extends Robot {
         boolean isObese = checkForObesity();
         toggleState(underAttack, isObese);
         doStateAction();
-        tryToRepair();
         Comms.advanceTurn();
         // Debug.setIndicatorString(leadToUse + "; " + robotCounter + "; num alive enemies: " + Comms.aliveEnemyArchonCount());
         // if (Comms.enemyArchonCount() > 0) {
@@ -357,6 +358,7 @@ public class Archon extends Robot {
             case INIT:
                 Debug.printString("Init");
                 initCounter = firstRounds(4, initCounter);
+                tryToRepairLastBot();
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
@@ -366,10 +368,12 @@ public class Archon extends Robot {
                 else {
                     chillingCounter = minerSoldierRatio(7, chillingCounter);
                 }
+                tryToRepairLastBot();
                 break;
             case UNDER_ATTACK:
                 Debug.printString("Under Attack");
                 chillingCounter = buildSoldier(chillingCounter);
+                tryToRepairLowestHealth();
                 break;
             case OBESITY:
                 Debug.printString("Obesity");
@@ -381,6 +385,7 @@ public class Archon extends Robot {
                     obesityCounter = buildSoldier(obesityCounter);
                     break;
                 }
+                tryToRepairLastBot();
                 break;
             default: 
                 changeState(State.CHILLING);
@@ -470,10 +475,17 @@ public class Archon extends Robot {
         return rc.getTeamLeadAmount(rc.getTeam()) > leadObesity;
     }
 
-    // Tries to repair the lowest health droid in range if an action is ready.
-    public void tryToRepair() throws GameActionException {
-        if(!rc.isActionReady()) return;
+    public int getMaxHealth(RobotType robotType) {
+        switch(robotType) {
+            case SAGE: return RobotType.SAGE.health;
+            case MINER: return RobotType.MINER.health;
+            case SOLDIER: return RobotType.SOLDIER.health;
+            case BUILDER: return RobotType.BUILDER.health;
+            default: return 0;
+        }
+    }
 
+    public RobotInfo getNextRobotToRepair() throws GameActionException {
         RobotInfo[] friendlies = rc.senseNearbyRobots(actionRadiusSquared, rc.getTeam());
         RobotInfo maybeSage = null;
         RobotInfo maybeSoldier = null;
@@ -484,22 +496,26 @@ public class Archon extends Robot {
             friendly = friendlies[i];
             switch(friendly.type) {
                 case SAGE:
-                    if(maybeSage == null || maybeSage.health > friendly.health) {
+                    if((maybeSage == null || maybeSage.health > friendly.health)
+                        && friendly.health != RobotType.SAGE.health) {
                         maybeSage = friendly;
                     }
                     break;
                 case SOLDIER:
-                    if(maybeSoldier == null || maybeSoldier.health > friendly.health) {
+                    if((maybeSoldier == null || maybeSoldier.health > friendly.health)
+                        && friendly.health != RobotType.SOLDIER.health) {
                         maybeSoldier = friendly;
                     }
                     break;
                 case BUILDER:
-                    if(maybeBuilder == null || maybeBuilder.health > friendly.health) {
+                    if((maybeBuilder == null || maybeBuilder.health > friendly.health)
+                        && friendly.health != RobotType.BUILDER.health) {
                         maybeBuilder = friendly;
                     }
                     break;
                 case MINER:
-                    if(maybeMiner == null || maybeMiner.health > friendly.health) {
+                    if((maybeMiner == null || maybeMiner.health > friendly.health)
+                        && friendly.health != RobotType.MINER.health) {
                         maybeMiner = friendly;
                     }
                     break;
@@ -508,9 +524,47 @@ public class Archon extends Robot {
             }
         }
 
-        if(maybeSage != null && rc.canRepair(maybeSage.location)) rc.repair(maybeSage.location);
-        if(maybeSoldier != null && rc.canRepair(maybeSoldier.location)) rc.repair(maybeSoldier.location);
-        if(maybeBuilder != null && rc.canRepair(maybeBuilder.location)) rc.repair(maybeBuilder.location);
-        if(maybeMiner != null && rc.canRepair(maybeMiner.location)) rc.repair(maybeMiner.location);
+        RobotInfo robotToHeal = null;
+        if(maybeMiner != null && rc.canRepair(maybeMiner.location)) robotToHeal = maybeMiner;
+        if(maybeBuilder != null && rc.canRepair(maybeBuilder.location)) robotToHeal = maybeBuilder;
+        if(maybeSoldier != null && rc.canRepair(maybeSoldier.location)) robotToHeal = maybeSoldier;
+        if(maybeSage != null && rc.canRepair(maybeSage.location)) robotToHeal = maybeSage;
+        return robotToHeal;
+    }
+
+    // Remembers the last bot it healed and heals that one first
+    public void tryToRepairLastBot() throws GameActionException {
+        if(!rc.isActionReady()) return;
+
+        if(lastRobotHealed != null && rc.canSenseRobot(lastRobotHealed.ID)) {
+            RobotInfo lastRobot = rc.senseRobot(lastRobotHealed.ID);
+            // Switch targets if you have a miner now and a soldier can be healed
+            if(lastRobot.type == RobotType.MINER) {
+                RobotInfo newRobot = getNextRobotToRepair();
+                if(newRobot != null && newRobot.type != RobotType.MINER) {
+                    lastRobot = newRobot;
+                }
+            }
+            if(rc.canRepair(lastRobot.location) && lastRobot.health <= getMaxHealth(lastRobot.type)) {
+                lastRobotHealed = lastRobot;
+                rc.repair(lastRobot.location);
+                return;
+            }
+        }
+
+        tryToRepairLowestHealth();
+    }
+
+    // Tries to repair the lowest health droid in range if an action is ready.
+    public void tryToRepairLowestHealth() throws GameActionException {
+        if(!rc.isActionReady()) return;
+        Debug.printString("Healing");
+
+        RobotInfo robotToRepair = getNextRobotToRepair();
+        if(robotToRepair != null) {
+            rc.repair(robotToRepair.location);
+            lastRobotHealed = robotToRepair;
+            Debug.setIndicatorLine(Debug.INDICATORS, currLoc, robotToRepair.location, 0, 255, 0);
+        }
     }
 }
