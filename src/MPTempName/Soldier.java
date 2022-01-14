@@ -61,7 +61,8 @@ public class Soldier extends Robot {
         switch(currState) {
             case EXPLORING:
                 // Run away if 1/3 health left
-                if(rc.getHealth() <= RobotType.SOLDIER.health / 3) {
+                if(rc.getHealth() <= RobotType.SOLDIER.health / 3 ||
+                    (numEnemies == 0 && rc.getHealth() <= RobotType.SOLDIER.health / 2)) {
                     currState = SoldierState.GOING_TO_HEAL;
                     loadHealTarget();
                 }
