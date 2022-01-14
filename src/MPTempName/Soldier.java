@@ -105,8 +105,7 @@ public class Soldier extends Robot {
                 Debug.printString("Healing");
                 if(numEnemies != 0) {
                     //@Maxwell change micro here if you'd like
-                    tryAttackBestEnemy();
-                    moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
+                    tryMoveTowardsEnemy();
                 } else {
                     tryAttackBestEnemy();
                     moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
@@ -136,7 +135,6 @@ public class Soldier extends Robot {
         Nav.move(loc, greedy);
         return true;
     }
-
 
     // Choose an archon inversely proportional to the distance to it
     // Weight the prioritized archon less
