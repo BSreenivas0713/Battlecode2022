@@ -53,21 +53,18 @@ public class Robot {
                     home = robotLoc;
                 }
             }
-
-            int numArchons = Comms.friendlyArchonCount();
-            int j = 0;
-            archonLocations = new MapLocation[numArchons];
-            for (int i = Comms.firstArchon; i < Comms.firstArchon + numArchons; i++) {
-                int testFlag = rc.readSharedArray(i);
-                archonLocations[j++] = Comms.locationFromFlag(testFlag);
-                // Debug.printString(archonLocations[j-1].toString());
-            }
+            loadArchonLocations();
         }
 
         if (home == null) {
             home = rc.getLocation();
         }
     }
+
+    public void loadArchonLocations() throws GameActionException {
+        archonLocations = Comms.getFriendlyArchonLocations();
+    }
+
     public double getLeadDistTradeoffScore(int radiusSquared, int leadAmount) {
         if(radiusSquared == 0 && leadAmount > 1){return Integer.MAX_VALUE;}
         return (float)leadAmount - Math.sqrt((double) radiusSquared) * 5;

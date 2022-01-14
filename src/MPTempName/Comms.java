@@ -741,15 +741,6 @@ public class Comms {
         return res;
     }
 
-    public static MapLocation[] getFriendlyArchonLocations() throws GameActionException {
-        MapLocation[] res = new MapLocation[friendlyArchonCount()];
-        for (int i = firstArchon; i < firstArchon + friendlyArchonCount(); i++) {
-            res[i - firstArchon] = locationFromFlag(rc.readSharedArray(i));
-        }
-        return res;
-    }
-
-
     // The upper half of 16 bits hold the robot count for the last turn.
     // Archons move the lower half into the upper half if the upper is 0.
     // Archons also zero the lower half.
@@ -1168,5 +1159,34 @@ public class Comms {
 
             resetNeedToResetEnemyLocs();
         }
+    }
+
+    public static void markArchonDead(MapLocation loc) throws GameActionException {
+        int numArchons = Comms.friendlyArchonCount();
+        for (int i = Comms.firstArchon; i < Comms.firstArchon + numArchons; i++) {
+            int testFlag = rc.readSharedArray(i);
+            if(testFlag == DEAD_ARCHON_FLAG) continue;
+            MapLocation archonLoc = Comms.locationFromFlag(testFlag);
+            if(loc.equals(archonLoc)) {
+                rc.writeSharedArray(i, DEAD_ARCHON_FLAG);
+                break;
+            }
+        }
+    }
+
+    // Returns null locs for dead archons
+    public static MapLocation[] getFriendlyArchonLocations() throws GameActionException {
+        int numArchons = Comms.friendlyArchonCount();
+        int j = 0;
+        MapLocation[] archonLocs = new MapLocation[numArchons];
+        for (int i = Comms.firstArchon; i < Comms.firstArchon + numArchons; i++) {
+            int testFlag = rc.readSharedArray(i);
+            if(testFlag == DEAD_ARCHON_FLAG) {
+                archonLocs[j++] = null;
+            } else {
+                archonLocs[j++] = Comms.locationFromFlag(testFlag);
+            }
+        }
+        return archonLocs;
     }
 }
