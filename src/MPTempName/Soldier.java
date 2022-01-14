@@ -67,20 +67,37 @@ public class Soldier extends Robot {
                 }
                 break;
             case GOING_TO_HEAL:
-                if(rc.getHealth() == RobotType.SOLDIER.health) {
+                if(needToReloadTarget()) {
+                    reloadTarget();
+                } else if(rc.getHealth() == RobotType.SOLDIER.health) {
                     currState = SoldierState.EXPLORING;
                 } else if(currLoc.isWithinDistanceSquared(healTarget, RobotType.ARCHON.actionRadiusSquared)) {
                     currState = SoldierState.HEALING;
                 }
                 break;
             case HEALING:
-                if(rc.getHealth() == RobotType.SOLDIER.health) {
+                if(needToReloadTarget()) {
+                    reloadTarget();
+                } else if(rc.getHealth() == RobotType.SOLDIER.health) {
                     currState = SoldierState.EXPLORING;
                 }
                 // TODO: maybe also exit if there are a lot of units to be healed
                 // and you've healed to 2/3?
                 break;
         }
+    }
+
+    public boolean needToReloadTarget() throws GameActionException {
+        if(!rc.canSenseLocation(healTarget)) return false;
+        RobotInfo robot = rc.senseRobotAtLocation(healTarget);
+        return robot == null || robot.type != RobotType.ARCHON;
+    }
+
+    public void reloadTarget() throws GameActionException {
+        Comms.markArchonDead(healTarget);
+        currState = SoldierState.GOING_TO_HEAL;
+        loadHealTarget();
+        Debug.printString("Reloading");
     }
 
     public void doStateAction() throws GameActionException {
@@ -105,8 +122,7 @@ public class Soldier extends Robot {
                 Debug.printString("Healing");
                 if(numEnemies != 0) {
                     //@Maxwell change micro here if you'd like
-                    tryAttackBestEnemy();
-                    moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
+                    tryMoveTowardsEnemy();
                 } else {
                     tryAttackBestEnemy();
                     moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
@@ -137,10 +153,10 @@ public class Soldier extends Robot {
         return true;
     }
 
-
     // Choose an archon inversely proportional to the distance to it
     // Weight the prioritized archon less
     public void loadHealTarget() throws GameActionException {
+        loadArchonLocations();
         int prioritizedArchon = Comms.getPrioritizedArchon() - 1;
         healTarget = null;
         double[] probs = new double[Comms.friendlyArchonCount()];
