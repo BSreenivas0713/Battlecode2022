@@ -578,6 +578,29 @@ public class Comms {
         return closestArchonsToClusters;
     }
 
+    public static void replaceCluster(MapLocation replacement) throws GameActionException {
+        int numEnemies1 = rc.readSharedArray(CURR_ROUND_NUM_ENEMIES_IDX_1);
+        int numEnemies2 = rc.readSharedArray(CURR_ROUND_NUM_ENEMIES_IDX_2);
+        int numEnemies3 = rc.readSharedArray(CURR_ROUND_NUM_ENEMIES_IDX_3);
+        if (numEnemies1 > numEnemies2) {
+            if (numEnemies2 > numEnemies3) {
+                rc.writeSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3, encodeLocation(replacement));
+                rc.writeSharedArray(CURR_ROUND_NUM_ENEMIES_IDX_3, 0xFFFF);
+            } else {
+                rc.writeSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2, encodeLocation(replacement));
+                rc.writeSharedArray(CURR_ROUND_NUM_ENEMIES_IDX_2, 0xFFFF);
+            }
+        } else {
+            if (numEnemies1 > numEnemies3) {
+                rc.writeSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3, encodeLocation(replacement));
+                rc.writeSharedArray(CURR_ROUND_NUM_ENEMIES_IDX_3, 0xFFFF);
+            } else {
+                rc.writeSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1, encodeLocation(replacement));
+                rc.writeSharedArray(CURR_ROUND_NUM_ENEMIES_IDX_1, 0xFFFF);
+            }
+        }
+    }
+
     public static void printRounds(String print, int start, int end) throws GameActionException {
         if (rc.getRoundNum() >= start && rc.getRoundNum() <= end) {
             System.out.println(print);
@@ -964,6 +987,7 @@ public class Comms {
         int x = rc.readSharedArray(X_IDX);
         int y = rc.readSharedArray(Y_IDX);
         int numEnemies = rc.readSharedArray(NUM_ENEMIES_IDX);
+        // putting a print statement here that prints x, y, and numEnemies fixes the bug
         if(numEnemies == 0) {
             return new MapLocation(-100, -100);
         }
@@ -1143,6 +1167,12 @@ public class Comms {
         }
     }
 
+    public static void resetEnemyCounters() throws GameActionException {
+        writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_1, 0);
+        writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_2, 0); 
+        writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_3, 0);
+    }
+
     /**
      * first archon will move CURR_ROUND_AVG_ENEMY_LOC_IDX to LAST_ROUND_AVG_ENEMY_LOC_IDX
      * will also zero out CURR_ROUND_AVG_ENEMY_LOC_IDX
@@ -1156,19 +1186,16 @@ public class Comms {
                 clusters[0].x != -100 ? encodeLocation(clusters[0]) : 0);
             writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_1, 0);
             writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_1, 0);
-            writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_1, 0);
 
             writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_2,
                 clusters[1].x != -100 ? encodeLocation(clusters[1]) : 0);
             writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_2, 0);
             writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_2, 0);
-            writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_2, 0);
 
             writeIfChanged(LAST_ROUND_AVG_ENEMY_LOC_IDX_3,
                 clusters[2].x != -100 ? encodeLocation(clusters[2]) : 0);
             writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_3, 0);
-            writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_3, 0);
-            writeIfChanged(CURR_ROUND_NUM_ENEMIES_IDX_3, 0);
+            writeIfChanged(CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_3, 0);   
 
             resetNeedToResetEnemyLocs();
         }

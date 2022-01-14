@@ -190,6 +190,9 @@ public class Archon extends Robot {
         boolean isObese = checkForObesity();
         toggleState(underAttack, isObese);
         doStateAction();
+        if (Comms.getTurn() == rc.getArchonCount()) {
+            Comms.resetEnemyCounters();
+        }
         Comms.advanceTurn();
         // Debug.setIndicatorString(leadToUse + "; " + robotCounter + "; num alive enemies: " + Comms.aliveEnemyArchonCount());
         // if (Comms.enemyArchonCount() > 0) {
