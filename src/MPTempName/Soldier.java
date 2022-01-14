@@ -125,7 +125,6 @@ public class Soldier extends Robot {
                 Debug.setIndicatorDot(Debug.INDICATORS, healTarget, 0, 255, 0);
                 Debug.printString("Healing");
                 if(numEnemies != 0) {
-                    //@Maxwell change micro here if you'd like
                     tryMoveTowardsEnemy();
                 } else {
                     tryAttackBestEnemy();
@@ -133,28 +132,6 @@ public class Soldier extends Robot {
                 }
                 break;
         }
-    }
-
-
-        // Rotates at distance rad due to BugNav
-    // Also ignores higher rubble squares if you're already close
-    boolean moveMoreSafely(MapLocation loc, int rad) throws GameActionException {
-        if (loc == null) return false;
-        int d = rc.getLocation().distanceSquaredTo(loc);
-        d = Math.min(d, rad);
-        boolean[] imp = new boolean[Util.directionsCenter.length];
-        boolean greedy = false;
-        for (int i = Util.directionsCenter.length; i-- > 0; ){
-            MapLocation newLoc = rc.getLocation().add(Util.directionsCenter[i]);
-            if (newLoc.distanceSquaredTo(loc) <= d ||
-                (currLoc.isWithinDistanceSquared(loc, 2 * rad) && rc.senseRubble(currLoc) < (20 + 1.2 * Util.getRubble(newLoc)))) {
-                imp[i] = true;
-                greedy = true;
-            }
-        }
-        Pathfinding.setImpassable(imp);
-        Nav.move(loc, greedy);
-        return true;
     }
 
     // Choose an archon inversely proportional to the distance to it
