@@ -44,7 +44,7 @@ public class Builder extends Robot{
                     }
                     MapLocation robotLoc = robot.location;
                     for(MapLocation newLoc: Util.makePattern(robotLoc)) {
-                        if(robot.mode == RobotMode.TURRET && archonTowerCount < 13 && currLoc.distanceSquaredTo(newLoc) <= actionRadiusSquared && rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc))) {
+                        if(robot.mode == RobotMode.TURRET && archonTowerCount < 13 && currLoc.distanceSquaredTo(newLoc) <= 2 && rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc))) {
                             Debug.printString("Building a Watchtower");
                             making = true;
                             rc.buildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc));

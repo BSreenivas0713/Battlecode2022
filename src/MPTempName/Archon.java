@@ -69,7 +69,7 @@ public class Archon extends Robot {
         soldierCount = 0;
         builderCount = 0;
         maxLeadUsedByArchons = 75 * ((1 + rc.getArchonCount()) - archonNumber);
-        leadObesity = rc.getArchonCount() * 180 + maxLeadUsedByArchons;
+        leadObesity = 180 + maxLeadUsedByArchons;
         minerDirOffset = Util.rng.nextInt(8);
         loadBuildDirections();
         pruneExploreDirections();
