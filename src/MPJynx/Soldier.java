@@ -64,12 +64,16 @@ public class Soldier extends Robot {
                 // Run away if 1/3 health left
                 if(rc.getHealth() <= RobotType.SOLDIER.health / 3 ||
                     (numEnemies == 0 && rc.getHealth() <= RobotType.SOLDIER.health / 2)) {
-                    currState = SoldierState.GOING_TO_HEAL;
-                    loadHealTarget();
+                    if(loadHealTarget()) {
+                        currState = SoldierState.GOING_TO_HEAL;
+                    }
                 }
                 break;
             case GOING_TO_HEAL:
                 if(needToReloadTarget()) {
+                    if(!reloadTarget()) {
+                        currState = SoldierState.EXPLORING;
+                    }
                     reloadTarget();
                 } else if(rc.getHealth() == RobotType.SOLDIER.health) {
                     currState = SoldierState.EXPLORING;
@@ -79,7 +83,9 @@ public class Soldier extends Robot {
                 break;
             case HEALING:
                 if(needToReloadTarget()) {
-                    reloadTarget();
+                    if(!reloadTarget()) {
+                        currState = SoldierState.EXPLORING;
+                    }
                 } else if(rc.getHealth() == RobotType.SOLDIER.health) {
                     currState = SoldierState.EXPLORING;
                 }
@@ -95,11 +101,11 @@ public class Soldier extends Robot {
         return robot == null || robot.type != RobotType.ARCHON;
     }
 
-    public void reloadTarget() throws GameActionException {
+    public boolean reloadTarget() throws GameActionException {
         Comms.markArchonDead(healTarget);
         currState = SoldierState.GOING_TO_HEAL;
-        loadHealTarget();
         Debug.printString("Reloading");
+        return loadHealTarget();
     }
 
     public void doStateAction() throws GameActionException {
@@ -136,7 +142,8 @@ public class Soldier extends Robot {
 
     // Choose an archon inversely proportional to the distance to it
     // Weight the prioritized archon less
-    public void loadHealTarget() throws GameActionException {
+    // Returns whether we found a target
+    public boolean loadHealTarget() throws GameActionException {
         loadArchonLocations();
         int prioritizedArchon = Comms.getPrioritizedArchon() - 1;
         healTarget = null;
@@ -156,7 +163,8 @@ public class Soldier extends Robot {
 
         double r = Util.rng.nextDouble() * totalProb;
         for(int i = 0; i < Comms.friendlyArchonCount(); i++) {
-            if(r <= probs[i]) {
+            // Doubles are weird, we still needs this isAtHealingCap check
+            if(r <= probs[i] && !Comms.isAtHealingCap(i)) {
                 healTarget = archonLocations[i];
                 healTargetIdx = i;
                 break;
@@ -164,10 +172,12 @@ public class Soldier extends Robot {
             r -= probs[i];
         }
 
-        if(healTarget == null) {
+        if(healTarget == null && !Comms.isAtHealingCap(prioritizedArchon)) {
             healTarget = archonLocations[prioritizedArchon];
             healTargetIdx = prioritizedArchon;
         }
+
+        return healTarget != null;
     }
 
     public void resetShouldRunAway() throws GameActionException {
