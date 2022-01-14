@@ -34,6 +34,7 @@ public class Soldier extends Robot {
     static RobotInfo[] enemyAttackable;
 
     static MapLocation healTarget;
+    static int healTargetIdx;
 
     public Soldier(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -109,6 +110,7 @@ public class Soldier extends Robot {
                 }
                 break;
             case GOING_TO_HEAL:
+                Comms.incrementNumTroopsHealingAt(healTargetIdx);
                 Debug.setIndicatorDot(Debug.INDICATORS, healTarget, 0, 255, 0);
                 Debug.printString("Going to heal");
                 tryAttackBestEnemy();
@@ -119,6 +121,7 @@ public class Soldier extends Robot {
                 }
                 break;
             case HEALING:
+                Comms.incrementNumTroopsHealingAt(healTargetIdx);
                 Debug.setIndicatorDot(Debug.INDICATORS, healTarget, 0, 255, 0);
                 Debug.printString("Healing");
                 if(numEnemies != 0) {
@@ -165,11 +168,12 @@ public class Soldier extends Robot {
         for(int i = 0; i < Comms.friendlyArchonCount(); i++) {
             MapLocation archonLoc = archonLocations[i];
             probs[i] = 0;
-            if(archonLoc == null) continue;
+            if(archonLoc == null || Comms.isAtHealingCap(i)) continue;
             // Debug.printString("D: " + currLoc.distanceSquaredTo(archonLoc));
             probs[i] = 1.0 / currLoc.distanceSquaredTo(archonLoc);
             if(i == prioritizedArchon) probs[i] /= 4;
             // dists[i] = 1.0 / Util.distance(currLoc, archonLoc);
+            // System.out.println("Num healing at: " + archonLoc.toString() + " is " + Comms.getNumTroopsHealingAt(i));
             totalProb += probs[i];
         }
 
@@ -177,6 +181,7 @@ public class Soldier extends Robot {
         for(int i = 0; i < Comms.friendlyArchonCount(); i++) {
             if(r <= probs[i]) {
                 healTarget = archonLocations[i];
+                healTargetIdx = i;
                 break;
             }
             r -= probs[i];
@@ -184,6 +189,7 @@ public class Soldier extends Robot {
 
         if(healTarget == null) {
             healTarget = archonLocations[prioritizedArchon];
+            healTargetIdx = prioritizedArchon;
         }
     }
 

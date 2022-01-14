@@ -91,7 +91,17 @@ public class Robot {
     }
 
     public void initTurn() throws GameActionException {
+        // bytecodeCheck();
         Nav.initTurn();
+    }
+
+    public void bytecodeCheck() throws GameActionException {
+        if(turnCount >= 2) {
+            int bcLeft = Clock.getBytecodesLeft();
+            if(bcLeft <= robotType.bytecodeLimit - 250) {
+                System.out.println("Ran out of Bytecode last turn");
+            }
+        }
     }
 
     public void takeTurn() throws GameActionException {

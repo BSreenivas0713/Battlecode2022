@@ -186,6 +186,7 @@ public class Archon extends Robot {
             Comms.clearUsedLead();
             Comms.clearBuildGuesses();
             Comms.drawClusterDots();
+            Comms.resetNumTroopsHealing();
             //todo: zero out the symmetry cluster bit
         }
         Comms.setAlive(archonNumber);

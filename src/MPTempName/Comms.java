@@ -39,10 +39,14 @@ public class Comms {
     static final int CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_3 = 34;
     static final int CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_3 = 35;
     static final int CURR_ROUND_NUM_ENEMIES_IDX_3 = 36;
+
     static final int BUILD_GUESS_IDX = 37;
     static final int LEAD_SPENT_IDX = 38;
     static final int LAST_CHOSEN_IDX = 39;
     static final int SYMMETRY_IDX = 40;
+
+    static final int NUM_HEALING_IDX = 41;
+    static final int LAST_NUM_HEALING_IDX = 42;
 
     // Setup flag masks
     // Bits 1-3 are friendly Archon count
@@ -68,6 +72,9 @@ public class Comms {
     static final int NONZERO_DX_DY_OFFSET = 2;
     static final int SOLDIER_NEAR_CLUSTER_BUT_NO_ENEMIES_OFFSET = 1;
     static final int CLUSTER_SET_BY_SYMMETRY_OFFSET = 0;
+
+    static final int MAX_TROOPS_HEALING = 0xF;
+    static final int TROOPS_HEALING_MASK = 0xF;
 
     static final int X_COORD_OFFSET = 0;
     static final int Y_COORD_OFFSET = 6;
@@ -1188,5 +1195,46 @@ public class Comms {
             }
         }
         return archonLocs;
+    }
+
+    public static void resetNumTroopsHealing() throws GameActionException {
+        rc.writeSharedArray(LAST_NUM_HEALING_IDX, rc.readSharedArray(NUM_HEALING_IDX));
+        rc.writeSharedArray(NUM_HEALING_IDX, 0);
+    }
+
+    // @requres 0 <= i <= 3
+    public static void incrementNumTroopsHealingAt(int i) throws GameActionException {
+        int oldFlag = rc.readSharedArray(NUM_HEALING_IDX);
+        int mask = TROOPS_HEALING_MASK << (4 * i);
+        int oldNumHealing = (oldFlag & mask) >> (4 * i);
+        int otherNums = oldFlag & ~mask;
+        int newNumHealing = Math.min(MAX_TROOPS_HEALING, oldNumHealing + 1) << (4 * i);
+        rc.writeSharedArray(NUM_HEALING_IDX, newNumHealing | otherNums);
+    }
+
+    // @requres 0 <= i <= 3
+    public static int getNumTroopsHealingAt(int i) throws GameActionException {
+        int oldFlag = rc.readSharedArray(LAST_NUM_HEALING_IDX);
+        int mask = TROOPS_HEALING_MASK << (4 * i);
+        return (oldFlag & mask) >> (4 * i);
+    }
+
+    public static boolean isAtHealingCap(int i) throws GameActionException {
+        return getNumTroopsHealingAt(i) == MAX_TROOPS_HEALING;
+    }
+
+    public static int[] getNumTroopsHealing() throws GameActionException {
+        int numArchons = Comms.friendlyArchonCount();
+        int j = 0;
+        int[] numHealing = new int[numArchons];
+        for (int i = Comms.firstArchon; i < Comms.firstArchon + numArchons; i++) {
+            int testFlag = rc.readSharedArray(i);
+            if(testFlag == DEAD_ARCHON_FLAG) {
+                numHealing[j++] = MAX_TROOPS_HEALING;
+            } else {
+                numHealing[j++] = getNumTroopsHealingAt(i);
+            }
+        }
+        return numHealing;
     }
 }
