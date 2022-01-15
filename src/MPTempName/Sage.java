@@ -27,6 +27,7 @@ public class Sage extends Robot{
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        Debug.printString("Cool: " + rc.getActionCooldownTurns());
         if (isRunning) {
             runSemaphore--;
         }
@@ -42,11 +43,24 @@ public class Sage extends Robot{
     }
 
     public void tryAttackArchon() throws GameActionException {
+        if (!rc.isActionReady()) {
+            return;
+        }
         for (RobotInfo robot : victims) {
-            if (robot.type == RobotType.ARCHON && rc.canEnvision(AnomalyType.FURY)) {
+            if (robot.type == RobotType.ARCHON) {
                 Debug.printString("Envisioning Fury");
                 rc.envision(AnomalyType.FURY);
                 return;
+            }
+        }
+        for (RobotInfo robot : EnemySensable) {
+            if (robot.type == RobotType.ARCHON) {
+                Nav.move(robot.location);
+                if (rc.canAttack(robot.location)) {
+                    Debug.printString("Envisioning Fury");
+                    rc.envision(AnomalyType.FURY);
+                    return;
+                }
             }
         }
     }
@@ -70,12 +84,11 @@ public class Sage extends Robot{
                 Nav.move(averageEnemyLoc);
                 tryAttack();
             } else {
-                Debug.printString("Cool: " + rc.getActionCooldownTurns());
                 Debug.printString("Running!");
                 Direction dir = averageEnemyLoc.directionTo(currLoc);
                 Direction[] dirs = Util.getInOrderDirections(chooseBackupDirection(dir));
                 tryMoveDest(dirs);
-                runSemaphore = 10;
+                runSemaphore = 5;
                 isRunning = true;
                 runDirection = dir;
             }
@@ -84,7 +97,6 @@ public class Sage extends Robot{
                 isRunning = false;
                 moveTowardsCluster();
             } else {
-                Debug.printString("Cool: " + rc.getActionCooldownTurns());
                 Debug.printString("Running!");
                 Direction[] dirs = Util.getInOrderDirections(chooseBackupDirection(runDirection));
                 tryMoveDest(dirs);
@@ -139,7 +151,6 @@ public class Sage extends Robot{
                     break;
             }
         }
-        Debug.printString("T: " + totalHealth);
         if (bestSoldierHealth > 45) {
             bestSoldierHealth = 45;
         }
