@@ -70,24 +70,25 @@ public class Soldier extends Robot {
                 }
                 break;
             case GOING_TO_HEAL:
-                if(needToReloadTarget()) {
+                if(rc.getHealth() == RobotType.SOLDIER.health) {
+                    currState = SoldierState.EXPLORING;
+                } else if(needToReloadTarget()) {
                     if(!reloadTarget()) {
                         currState = SoldierState.EXPLORING;
                     }
-                    reloadTarget();
-                } else if(rc.getHealth() == RobotType.SOLDIER.health) {
-                    currState = SoldierState.EXPLORING;
                 } else if(currLoc.isWithinDistanceSquared(healTarget, RobotType.ARCHON.actionRadiusSquared)) {
                     currState = SoldierState.HEALING;
                 }
                 break;
             case HEALING:
-                if(needToReloadTarget()) {
+                if(rc.getHealth() == RobotType.SOLDIER.health) {
+                    currState = SoldierState.EXPLORING;
+                } else if(needToReloadTarget()) {
                     if(!reloadTarget()) {
                         currState = SoldierState.EXPLORING;
+                    } else {
+                        currState = SoldierState.GOING_TO_HEAL;
                     }
-                } else if(rc.getHealth() == RobotType.SOLDIER.health) {
-                    currState = SoldierState.EXPLORING;
                 }
                 // TODO: maybe also exit if there are a lot of units to be healed
                 // and you've healed to 2/3?
@@ -140,6 +141,15 @@ public class Soldier extends Robot {
         }
     }
 
+    public int estimateWaitTimeAt(int targetIdx, int prioritizedArchon) throws GameActionException {
+        MapLocation archonLoc = archonLocations[targetIdx];
+        int numHealing = Comms.getNumTroopsHealingAt(targetIdx);
+        int archonHealRate = -RobotType.ARCHON.damage;
+        int waitTime = numHealing * Util.AVERAGE_HEALTH_TO_HEAL / archonHealRate / 2 + (int)Math.sqrt(currLoc.distanceSquaredTo(archonLoc));
+        if(prioritizedArchon == targetIdx) waitTime += numHealing;
+        return waitTime;
+    }
+
     // Choose an archon inversely proportional to the distance to it
     // Weight the prioritized archon less
     // Returns whether we found a target
@@ -147,34 +157,21 @@ public class Soldier extends Robot {
         loadArchonLocations();
         int prioritizedArchon = Comms.getPrioritizedArchon() - 1;
         healTarget = null;
-        double[] probs = new double[Comms.friendlyArchonCount()];
-        double totalProb = 0;
+        int bestWait = Integer.MAX_VALUE;
+        int bestWaitIdx = -1;
         for(int i = 0; i < Comms.friendlyArchonCount(); i++) {
             MapLocation archonLoc = archonLocations[i];
-            probs[i] = 0;
             if(archonLoc == null || Comms.isAtHealingCap(i)) continue;
-            // Debug.printString("D: " + currLoc.distanceSquaredTo(archonLoc));
-            probs[i] = 1.0 / currLoc.distanceSquaredTo(archonLoc);
-            if(i == prioritizedArchon) probs[i] /= 4;
-            // dists[i] = 1.0 / Util.distance(currLoc, archonLoc);
-            // System.out.println("Num healing at: " + archonLoc.toString() + " is " + Comms.getNumTroopsHealingAt(i));
-            totalProb += probs[i];
-        }
-
-        double r = Util.rng.nextDouble() * totalProb;
-        for(int i = 0; i < Comms.friendlyArchonCount(); i++) {
-            // Doubles are weird, we still needs this isAtHealingCap check
-            if(r <= probs[i] && !Comms.isAtHealingCap(i)) {
-                healTarget = archonLocations[i];
-                healTargetIdx = i;
-                break;
+            int waitTime = estimateWaitTimeAt(i, prioritizedArchon);
+            if(waitTime < bestWait) {
+                bestWait = waitTime;
+                bestWaitIdx = i;
             }
-            r -= probs[i];
         }
 
-        if(healTarget == null && !Comms.isAtHealingCap(prioritizedArchon)) {
-            healTarget = archonLocations[prioritizedArchon];
-            healTargetIdx = prioritizedArchon;
+        if(bestWaitIdx != -1) {
+            healTarget = archonLocations[bestWaitIdx];
+            healTargetIdx = bestWaitIdx;
         }
 
         return healTarget != null;

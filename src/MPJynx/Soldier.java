@@ -70,24 +70,25 @@ public class Soldier extends Robot {
                 }
                 break;
             case GOING_TO_HEAL:
-                if(needToReloadTarget()) {
+                if(rc.getHealth() == RobotType.SOLDIER.health) {
+                    currState = SoldierState.EXPLORING;
+                } else if(needToReloadTarget()) {
                     if(!reloadTarget()) {
                         currState = SoldierState.EXPLORING;
                     }
-                    reloadTarget();
-                } else if(rc.getHealth() == RobotType.SOLDIER.health) {
-                    currState = SoldierState.EXPLORING;
                 } else if(currLoc.isWithinDistanceSquared(healTarget, RobotType.ARCHON.actionRadiusSquared)) {
                     currState = SoldierState.HEALING;
                 }
                 break;
             case HEALING:
-                if(needToReloadTarget()) {
+                if(rc.getHealth() == RobotType.SOLDIER.health) {
+                    currState = SoldierState.EXPLORING;
+                } else if(needToReloadTarget()) {
                     if(!reloadTarget()) {
                         currState = SoldierState.EXPLORING;
+                    } else {
+                        currState = SoldierState.GOING_TO_HEAL;
                     }
-                } else if(rc.getHealth() == RobotType.SOLDIER.health) {
-                    currState = SoldierState.EXPLORING;
                 }
                 // TODO: maybe also exit if there are a lot of units to be healed
                 // and you've healed to 2/3?
