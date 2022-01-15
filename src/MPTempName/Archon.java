@@ -405,6 +405,12 @@ public class Archon extends Robot {
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
+                if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold) {
+                    currentBuild = Buildable.EMPTY;
+                    nextBuild = Buildable.SOLDIER;
+                    buildRobot(RobotType.SAGE);
+                    break;
+                }
                 if(minerCount <= MIN_NUM_MINERS && soldierCount >= (1/3) * minerCount) {
                     chillingCounter = minerSoldier31(chillingCounter);
                 }
