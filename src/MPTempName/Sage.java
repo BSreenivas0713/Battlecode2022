@@ -120,7 +120,6 @@ public class Sage extends Robot{
         }
         return averageLoc;
     }    
-
     public void tryAttack() throws GameActionException {
         MapLocation target = findTarget();
         if (target == null && victims.length > 0 && rc.canEnvision(AnomalyType.CHARGE)) {

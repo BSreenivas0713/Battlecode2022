@@ -181,7 +181,8 @@ public class Archon extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         // System.out.println(Comms.getTurn());
-        if (Comms.getTurn() == 1) {
+        int turn = Comms.getTurn();
+        if (turn == 1) {
             Comms.resetAlive();
             Comms.clearUsedLead();
             Comms.clearBuildGuesses();
@@ -202,6 +203,7 @@ public class Archon extends Robot {
         toggleState(underAttack, isObese);
         doStateAction();
         Comms.advanceTurn();
+        trySacrifice(turn);
         // Debug.setIndicatorString(leadToUse + "; " + robotCounter + "; num alive enemies: " + Comms.aliveEnemyArchonCount());
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
@@ -642,6 +644,13 @@ public class Archon extends Robot {
             rc.repair(robotToRepair.location);
             lastRobotHealed = robotToRepair;
             Debug.setIndicatorLine(Debug.INDICATORS, currLoc, robotToRepair.location, 0, 255, 0);
+        }
+    }
+
+    public void trySacrifice(int turn) throws GameActionException {
+        int count = rc.getArchonCount();
+        if (count > 3 && count == turn && numMinersBuilt > 0) {
+            rc.disintegrate();
         }
     }
 }
