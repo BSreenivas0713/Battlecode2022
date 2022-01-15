@@ -415,7 +415,7 @@ public class Archon extends Robot {
             case INIT:
                 Debug.printString("Init");
                 initCounter = firstRounds(4, initCounter);
-                tryToRepairLastBot();
+                tryToRepairHighestHealth();
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
@@ -431,12 +431,12 @@ public class Archon extends Robot {
                 else {
                     chillingCounter = minerSoldierRatio(7, chillingCounter);
                 }
-                tryToRepairLastBot();
+                tryToRepairHighestHealth();
                 break;
             case UNDER_ATTACK:
                 // Debug.printString("Under Attack");
                 chillingCounter = buildSoldier(chillingCounter);
-                tryToRepairLowestHealth();
+                tryToRepairHighestHealth();
                 break;
             case OBESITY:
                 Debug.printString("Obesity");
@@ -448,7 +448,7 @@ public class Archon extends Robot {
                     obesityCounter = buildSoldier(obesityCounter);
                     break;
                 }
-                tryToRepairLastBot();
+                tryToRepairHighestHealth();
                 break;
             case MOVING:
                 Debug.printString("Moving");
@@ -458,6 +458,7 @@ public class Archon extends Robot {
                 break;
             case FINDING_GOOD_SPOT:
                 Debug.printString("Going to low rubble spot");
+                reloadGoodSpot();
                 Nav.move(moveTarget);
                 Debug.setIndicatorLine(Debug.INDICATORS, currLoc, moveTarget, 204, 0, 255);
                 break;
@@ -623,25 +624,25 @@ public class Archon extends Robot {
             friendly = friendlies[i];
             switch(friendly.type) {
                 case SAGE:
-                    if((maybeSage == null || maybeSage.health > friendly.health)
+                    if((maybeSage == null || maybeSage.health < friendly.health)
                         && friendly.health != RobotType.SAGE.health) {
                         maybeSage = friendly;
                     }
                     break;
                 case SOLDIER:
-                    if((maybeSoldier == null || maybeSoldier.health > friendly.health)
+                    if((maybeSoldier == null || maybeSoldier.health < friendly.health)
                         && friendly.health != RobotType.SOLDIER.health) {
                         maybeSoldier = friendly;
                     }
                     break;
                 case BUILDER:
-                    if((maybeBuilder == null || maybeBuilder.health > friendly.health)
+                    if((maybeBuilder == null || maybeBuilder.health < friendly.health)
                         && friendly.health != RobotType.BUILDER.health) {
                         maybeBuilder = friendly;
                     }
                     break;
                 case MINER:
-                    if((maybeMiner == null || maybeMiner.health > friendly.health)
+                    if((maybeMiner == null || maybeMiner.health < friendly.health)
                         && friendly.health != RobotType.MINER.health) {
                         maybeMiner = friendly;
                     }
@@ -681,11 +682,11 @@ public class Archon extends Robot {
             }
         }
 
-        tryToRepairLowestHealth();
+        tryToRepairHighestHealth();
     }
 
     // Tries to repair the lowest health droid in range if an action is ready.
-    public void tryToRepairLowestHealth() throws GameActionException {
+    public void tryToRepairHighestHealth() throws GameActionException {
         if(!rc.isActionReady()) return;
 
         RobotInfo robotToRepair = getNextRobotToRepair();
@@ -824,8 +825,32 @@ public class Archon extends Robot {
         return score;
     }
 
+    // Choose a new spot if the new one is significantly better than the last one.
+    public void reloadGoodSpot() throws GameActionException {
+        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(moveTarget, visionRadiusSquared);
+        MapLocation bestLoc = null;
+        MapLocation loc;
+        int minScore = Integer.MAX_VALUE;
+        int score;
+        for(int i = locs.length; --i > 0;) {
+            loc = locs[i];
+            if(!rc.canSenseLocation(loc) || rc.isLocationOccupied(loc)) continue;
+            score = getSpotScore(loc);
+            if(score < minScore) {
+                minScore = score;
+                bestLoc = loc;
+            }
+        }
+
+        int currScore = getSpotScore(moveTarget);
+        if(currScore > minScore * 5) {
+            moveTarget = bestLoc;
+            Debug.println("New good spot: " + moveTarget.toString());
+        }
+    }
+
     // Find the minimum rubble spot, breaking ties roughly by
-    // the sum of adjacent rubble or the distance to the current location
+    // the sum of adjacent rubble and the distance to the current location
     public void findGoodSpot() throws GameActionException {
         MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(moveTarget, visionRadiusSquared);
         MapLocation bestLoc = null;
