@@ -73,6 +73,38 @@ public class Explore {
         return false;
     }
 
+    public static void pickNewExploreDir90() {
+        Direction[] newDirChoices = {
+            lastExploreDir.rotateLeft().rotateLeft(),
+            lastExploreDir.rotateRight().rotateRight(),
+        };
+        Direction[] validDirs = new Direction[5];
+        int numValidDirs = 0;
+        for(Direction dir : newDirChoices) {
+            if(isValidExploreDir(dir)) {
+                Debug.printString("valid: " + dir);
+                validDirs[numValidDirs++] = dir;
+            }
+        }
+        if(numValidDirs > 0) {
+            lastExploreDir = validDirs[Util.rng.nextInt(numValidDirs)];
+        } else {
+            // This can happen if you're going straight into a corner or wall
+            // In this case, we choose from close to the opposite current explore dir
+            switch(Util.rng.nextInt(3)) {
+                case 0:
+                    lastExploreDir = lastExploreDir.opposite().rotateLeft();
+                    break;
+                case 1:
+                    lastExploreDir = lastExploreDir.opposite().rotateRight();
+                    break;
+                default:
+                    lastExploreDir = lastExploreDir.opposite();
+                    break;
+            }
+        }
+    }
+
     public static void pickNewExploreDir() {
         Direction[] newDirChoices = {
             // Util.turnLeft90(lastExploreDir),

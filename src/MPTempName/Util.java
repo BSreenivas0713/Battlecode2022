@@ -48,6 +48,8 @@ public class Util {
     static final int MinerDomain = 8;
     static final int WatchTowerDomain = 15;
     static final int MAX_MINERS = 128;
+    static final int MIN_AREA_FOR_90_MINERS = 2000;
+    static final int MAX_AREA_FOR_FAST_INIT = 625;
     static final int MAX_MAP_SIZE_TO_MINER_RATIO = 16;
     static final int[] WatchTowerHealths = new int[]{150,270,486};
     static final int HealTimeout = 100;
@@ -99,6 +101,7 @@ public class Util {
     static Direction turnRight90(Direction dir) {
         return dir.rotateRight().rotateRight();
     }
+
     static boolean canAttackorArchon(RobotType newType) throws GameActionException {
         switch(newType) {
             case SOLDIER:

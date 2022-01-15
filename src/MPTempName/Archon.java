@@ -118,7 +118,7 @@ public class Archon extends Robot {
         System.arraycopy(dirs, 0, BUILD_DIRECTIONS, 0, numDirections);
     }
     public boolean isSmallMap() {
-        return rc.getMapHeight() * rc.getMapWidth() <= 625;
+        return Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT;
     }
 
     void pruneExploreDirections() throws GameActionException {

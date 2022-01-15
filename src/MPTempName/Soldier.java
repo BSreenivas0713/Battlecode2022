@@ -137,6 +137,9 @@ public class Soldier extends Robot {
                 Debug.printString("Healing");
                 if(numEnemies != 0) {
                     tryMoveTowardsEnemy();
+                } else if(avgEnemyLoc != null && healTarget != null && avgEnemyLoc.distanceSquaredTo(healTarget) <= RobotType.ARCHON.actionRadiusSquared) {
+                    Debug.printString("oter sid");
+                    soldierExplore();
                 } else {
                     tryAttackBestEnemy();
                     moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
