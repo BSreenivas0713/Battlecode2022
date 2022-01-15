@@ -66,7 +66,7 @@ public class Soldier extends Robot {
             case EXPLORING:
                 // Run away if 1/3 health left
                 if(rc.getHealth() <= RobotType.SOLDIER.health / 3 ||
-                    (numEnemies == 0 && rc.getHealth() <= RobotType.SOLDIER.health / 2)) {
+                    (numEnemies == 0 && rc.getHealth() <= RobotType.SOLDIER.health / 2 && !Comms.existsArchonMoving())) {
                     if(canHeal && loadHealTarget()) {
                         currState = SoldierState.GOING_TO_HEAL;
                     }
@@ -103,9 +103,12 @@ public class Soldier extends Robot {
     }
 
     public boolean needToReloadTarget() throws GameActionException {
-        if(!rc.canSenseLocation(healTarget)) return false;
-        RobotInfo robot = rc.senseRobotAtLocation(healTarget);
-        return robot == null || robot.type != RobotType.ARCHON;
+        loadArchonLocations();
+        for(MapLocation archonLoc : archonLocations) {
+            if(archonLoc == null) continue;
+            if(archonLoc.equals(healTarget)) return false;
+        }
+        return true;
     }
 
     public boolean reloadTarget() throws GameActionException {

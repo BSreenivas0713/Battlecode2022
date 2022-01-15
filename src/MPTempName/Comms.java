@@ -52,6 +52,8 @@ public class Comms {
     // Bits 1-3 are friendly Archon count
     // Bits 4-6 are enemy Archon count
     // Bits 7-12 are max helpers
+    // Bits 13-14 are the number of turns taken
+    // Bit 15 is whether or not any archon is moving
     // Bit 16 is has reset average enemy locs
     static final int COUNT_MASK = 7;
     static final int COORD_MASK = 0x3F;
@@ -68,6 +70,7 @@ public class Comms {
     static final int PREV_ALIVE_OFFSET = 10;
     static final int PRIORITY_ARCHON_OFFSET = 14;
     public static final int MAX_HELPERS = MAX_HELPER_MASK;
+    static final int EXISTS_ARCHON_MOVING_OFFSET = 14;
     static final int HAS_RESET_ENEMY_LOCS_OFFSET = 15;
     static final int NONZERO_DX_DY_OFFSET = 2;
     static final int SOLDIER_NEAR_CLUSTER_BUT_NO_ENEMIES_OFFSET = 1;
@@ -986,6 +989,25 @@ public class Comms {
                         CURR_ROUND_NUM_ENEMIES_IDX_3),
         };
     }
+
+    public static MapLocation[] getClusters() throws GameActionException {
+        int numClusters = 0;
+        for (int i = 0; i < 3; i++) {
+            if (rc.readSharedArray(i * 4 + LAST_ROUND_AVG_ENEMY_LOC_IDX_1) != 0) {
+                numClusters++;
+            }
+        }
+
+        MapLocation currAvgLoc1 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_1));
+        MapLocation currAvgLoc2 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_2));
+        MapLocation currAvgLoc3 = locationFromFlag(rc.readSharedArray(LAST_ROUND_AVG_ENEMY_LOC_IDX_3));
+
+        MapLocation[] currAvgLocs = new MapLocation[]{currAvgLoc1, currAvgLoc2, currAvgLoc3};
+        MapLocation[] clusters = new MapLocation[numClusters];
+        System.arraycopy(currAvgLocs, 0, clusters, 0, numClusters);
+        return clusters;
+    }
+
     public static MapLocation getClosestCluster(MapLocation currLoc) throws GameActionException {
         int numClusters = 0;
         for (int i = 0; i < 3; i++) {
@@ -1065,6 +1087,20 @@ public class Comms {
         rc.writeSharedArray(X_IDX, newX);
         rc.writeSharedArray(Y_IDX, newY);
         rc.writeSharedArray(NUM_ENEMIES_IDX, numEnemies + 1);
+    }
+
+    public static boolean existsArchonMoving() throws GameActionException {
+        return (rc.readSharedArray(setupFlag) >> EXISTS_ARCHON_MOVING_OFFSET) != 0;
+    }
+
+    public static void setArchonMoving() throws GameActionException {
+        int oldFlag = rc.readSharedArray(setupFlag);
+        writeIfChanged(setupFlag, oldFlag | (1 << EXISTS_ARCHON_MOVING_OFFSET));
+    }
+
+    public static void resetArchonMoving() throws GameActionException {
+        int oldFlag = rc.readSharedArray(setupFlag);
+        writeIfChanged(setupFlag, oldFlag & (~(1 << EXISTS_ARCHON_MOVING_OFFSET)));
     }
 
     public static boolean needToResetEnemyLocs() throws GameActionException {

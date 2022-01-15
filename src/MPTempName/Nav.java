@@ -19,6 +19,7 @@ public class Nav {
 
     static void init(RobotController r) {
         rc = r;
+        BFSUnrolled29.init(rc);
         BFSUnrolled20.init(rc);
         BFSUnrolled18.init(rc);
         BFSUnrolled13.init(rc);
@@ -57,7 +58,7 @@ public class Nav {
         MapLocation bestLoc = null;
         MapLocation loc;
         int rubble;
-        for(int i = Util.directions.length - 1; --i >= 0;) {
+        for(int i = Util.directions.length; --i >= 0;) {
             loc = dest.add(Util.directions[i]);
             if(rc.canSenseLocation(loc)) {
                 rubble = rc.senseRubble(loc);
@@ -120,7 +121,9 @@ public class Nav {
 
     public static Direction getBestDir(MapLocation dest, int bytecodeCushion) throws GameActionException {
         int bcLeft = Clock.getBytecodesLeft();
-        if(bcLeft >= BFSUnrolled20.MIN_BC_TO_USE + bytecodeCushion) {
+        if(bcLeft >= BFSUnrolled29.MIN_BC_TO_USE + bytecodeCushion && rc.getType().visionRadiusSquared >= 29) {
+            return BFSUnrolled29.getBestDir(dest);
+        } else if(bcLeft >= BFSUnrolled20.MIN_BC_TO_USE + bytecodeCushion) {
             return BFSUnrolled20.getBestDir(dest);
         } else if(bcLeft >= BFSUnrolled18.MIN_BC_TO_USE + bytecodeCushion) {
             return BFSUnrolled18.getBestDir(dest);
