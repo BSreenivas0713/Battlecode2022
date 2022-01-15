@@ -179,7 +179,11 @@ public class Miner extends Robot {
             target = Nav.getGreedyTargetAway(closestEnemy.getLocation());
             str = "going away from enemy Watchtower";
         }
-
+        closestEnemy = getClosestEnemy(RobotType.SAGE);
+        if(closestEnemy != null) {
+            target = Nav.getGreedyTargetAway(closestEnemy.getLocation());
+            str = "going away from enemy Sage";
+        }
         Debug.printString(str);
         Nav.move(target);
     }
