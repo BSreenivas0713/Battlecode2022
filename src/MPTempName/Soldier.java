@@ -35,6 +35,7 @@ public class Soldier extends Robot {
 
     static MapLocation healTarget;
     static int healTargetIdx;
+    static int healCounter;
 
     public Soldier(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -78,10 +79,15 @@ public class Soldier extends Robot {
                     }
                 } else if(currLoc.isWithinDistanceSquared(healTarget, RobotType.ARCHON.actionRadiusSquared)) {
                     currState = SoldierState.HEALING;
+                    healCounter = 0;
                 }
                 break;
             case HEALING:
-                if(rc.getHealth() == RobotType.SOLDIER.health) {
+                healCounter++;
+                if (healCounter == Util.HealTimeout) {
+                    System.out.println("Waited too long. Giving up.");
+                    currState = SoldierState.EXPLORING;
+                } else if(rc.getHealth() == RobotType.SOLDIER.health) {
                     currState = SoldierState.EXPLORING;
                 } else if(needToReloadTarget()) {
                     if(!reloadTarget()) {
@@ -90,8 +96,6 @@ public class Soldier extends Robot {
                         currState = SoldierState.GOING_TO_HEAL;
                     }
                 }
-                // TODO: maybe also exit if there are a lot of units to be healed
-                // and you've healed to 2/3?
                 break;
         }
     }
