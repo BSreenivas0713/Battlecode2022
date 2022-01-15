@@ -1,9 +1,9 @@
-package MPTempName;
+package MPJynx;
 
 import battlecode.common.*;
-import MPTempName.Debug.*;
-import MPTempName.Util.*;
-import MPTempName.Comms.*;
+import MPJynx.Debug.*;
+import MPJynx.Util.*;
+import MPJynx.Comms.*;
 
 public class Robot {
     static RobotController rc; 
