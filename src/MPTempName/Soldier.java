@@ -85,7 +85,6 @@ public class Soldier extends Robot {
             case HEALING:
                 healCounter++;
                 if (healCounter == Util.HealTimeout) {
-                    System.out.println("Waited too long. Giving up.");
                     currState = SoldierState.EXPLORING;
                 } else if(rc.getHealth() == RobotType.SOLDIER.health) {
                     currState = SoldierState.EXPLORING;

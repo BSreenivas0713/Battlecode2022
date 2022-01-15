@@ -52,7 +52,7 @@ public class Util {
     static final int MAX_AREA_FOR_FAST_INIT = 625;
     static final int MAX_MAP_SIZE_TO_MINER_RATIO = 16;
     static final int[] WatchTowerHealths = new int[]{150,270,486};
-    static final int HealTimeout = 100;
+    static final int HealTimeout = 200;
     
     private static RobotController rc;
     static int SOLDIERS_NEEDED_TO_RUSH;
