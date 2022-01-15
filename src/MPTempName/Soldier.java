@@ -36,6 +36,7 @@ public class Soldier extends Robot {
     static MapLocation healTarget;
     static int healTargetIdx;
     static int healCounter;
+    static boolean canHeal;
 
     public Soldier(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -45,6 +46,7 @@ public class Soldier extends Robot {
         super(r);
         currState = SoldierState.EXPLORING;
         homeFlagIdx = homeFlagIndex;
+        canHeal = true;
     } 
 
     public void takeTurn() throws GameActionException {
@@ -65,7 +67,7 @@ public class Soldier extends Robot {
                 // Run away if 1/3 health left
                 if(rc.getHealth() <= RobotType.SOLDIER.health / 3 ||
                     (numEnemies == 0 && rc.getHealth() <= RobotType.SOLDIER.health / 2)) {
-                    if(loadHealTarget()) {
+                    if(canHeal && loadHealTarget()) {
                         currState = SoldierState.GOING_TO_HEAL;
                     }
                 }
@@ -86,6 +88,7 @@ public class Soldier extends Robot {
                 healCounter++;
                 if (healCounter == Util.HealTimeout) {
                     currState = SoldierState.EXPLORING;
+                    canHeal = false;
                 } else if(rc.getHealth() == RobotType.SOLDIER.health) {
                     currState = SoldierState.EXPLORING;
                 } else if(needToReloadTarget()) {
