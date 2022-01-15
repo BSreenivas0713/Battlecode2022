@@ -1,9 +1,9 @@
-package MPTempName;
+package MPJynx;
 
 import battlecode.common.*;
-import MPTempName.Debug.*;
-import MPTempName.Util.*;
-import MPTempName.fast.FastIterableLocSet;
+import MPJynx.Debug.*;
+import MPJynx.Util.*;
+import MPJynx.fast.FastIterableLocSet;
 
 
 public class Builder extends Robot{

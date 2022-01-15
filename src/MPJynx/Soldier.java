@@ -1,9 +1,9 @@
-package MPTempName;
+package MPJynx;
 
 import battlecode.common.*;
-import MPTempName.Debug.*;
-import MPTempName.Util.*;
-import MPTempName.Comms.*;
+import MPJynx.Debug.*;
+import MPJynx.Util.*;
+import MPJynx.Comms.*;
 
 public class Soldier extends Robot {
     static enum SoldierState {
@@ -141,15 +141,6 @@ public class Soldier extends Robot {
         }
     }
 
-    public int estimateWaitTimeAt(int targetIdx, int prioritizedArchon) throws GameActionException {
-        MapLocation archonLoc = archonLocations[targetIdx];
-        int numHealing = Comms.getNumTroopsHealingAt(targetIdx);
-        int archonHealRate = -RobotType.ARCHON.damage;
-        int waitTime = numHealing * Util.AVERAGE_HEALTH_TO_HEAL / archonHealRate / 2 + (int)Math.sqrt(currLoc.distanceSquaredTo(archonLoc));
-        if(prioritizedArchon == targetIdx) waitTime += numHealing;
-        return waitTime;
-    }
-
     // Choose an archon inversely proportional to the distance to it
     // Weight the prioritized archon less
     // Returns whether we found a target
@@ -157,21 +148,34 @@ public class Soldier extends Robot {
         loadArchonLocations();
         int prioritizedArchon = Comms.getPrioritizedArchon() - 1;
         healTarget = null;
-        int bestWait = Integer.MAX_VALUE;
-        int bestWaitIdx = -1;
+        double[] probs = new double[Comms.friendlyArchonCount()];
+        double totalProb = 0;
         for(int i = 0; i < Comms.friendlyArchonCount(); i++) {
             MapLocation archonLoc = archonLocations[i];
+            probs[i] = 0;
             if(archonLoc == null || Comms.isAtHealingCap(i)) continue;
-            int waitTime = estimateWaitTimeAt(i, prioritizedArchon);
-            if(waitTime < bestWait) {
-                bestWait = waitTime;
-                bestWaitIdx = i;
-            }
+            // Debug.printString("D: " + currLoc.distanceSquaredTo(archonLoc));
+            probs[i] = 1.0 / currLoc.distanceSquaredTo(archonLoc);
+            if(i == prioritizedArchon) probs[i] /= 4;
+            // dists[i] = 1.0 / Util.distance(currLoc, archonLoc);
+            // System.out.println("Num healing at: " + archonLoc.toString() + " is " + Comms.getNumTroopsHealingAt(i));
+            totalProb += probs[i];
         }
 
-        if(bestWaitIdx != -1) {
-            healTarget = archonLocations[bestWaitIdx];
-            healTargetIdx = bestWaitIdx;
+        double r = Util.rng.nextDouble() * totalProb;
+        for(int i = 0; i < Comms.friendlyArchonCount(); i++) {
+            // Doubles are weird, we still needs this isAtHealingCap check
+            if(r <= probs[i] && !Comms.isAtHealingCap(i)) {
+                healTarget = archonLocations[i];
+                healTargetIdx = i;
+                break;
+            }
+            r -= probs[i];
+        }
+
+        if(healTarget == null && !Comms.isAtHealingCap(prioritizedArchon)) {
+            healTarget = archonLocations[prioritizedArchon];
+            healTargetIdx = prioritizedArchon;
         }
 
         return healTarget != null;

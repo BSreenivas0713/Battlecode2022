@@ -1,4 +1,4 @@
-package MPTempName;
+package MPJynx;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -66,7 +66,6 @@ public class Util {
     static final int MIN_DIST_TO_DEPLETE_UNIT_LEAD = 256;
 
     static final int HEAL_DIST_TO_HOME = 5;
-    static final int AVERAGE_HEALTH_TO_HEAL = 2 * RobotType.SOLDIER.health / 3;
 
     static void init(RobotController r) {
         rc = r;

@@ -1,9 +1,9 @@
-package MPTempName;
+package MPJynx;
 
 import battlecode.common.*;
-import MPTempName.fast.FastIterableLocSet;
-import MPTempName.Debug.*;
-import MPTempName.Util.*;
+import MPJynx.fast.FastIterableLocSet;
+import MPJynx.Debug.*;
+import MPJynx.Util.*;
 
 public class Comms {
     static final int mapLocToFlag = 8;

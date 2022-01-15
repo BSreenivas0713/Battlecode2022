@@ -1,12 +1,12 @@
-package MPTempName;
+package MPJynx;
 
 import battlecode.common.*;
 
-import MPTempName.Debug.*;
-import MPTempName.Util.*;
-import MPTempName.Comms.*;
+import MPJynx.Debug.*;
+import MPJynx.Util.*;
+import MPJynx.Comms.*;
 import java.util.ArrayDeque;
-import MPTempName.fast.FastIterableLocSet;
+import MPJynx.fast.FastIterableLocSet;
 
 public class Archon extends Robot {
     static enum State {
@@ -406,12 +406,6 @@ public class Archon extends Robot {
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
-                if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold) {
-                    currentBuild = Buildable.EMPTY;
-                    nextBuild = Buildable.SOLDIER;
-                    buildRobot(RobotType.SAGE);
-                    break;
-                }
                 if(minerCount <= MIN_NUM_MINERS && soldierCount >= (1/3) * minerCount) {
                     chillingCounter = minerSoldier31(chillingCounter);
                 }
