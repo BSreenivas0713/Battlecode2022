@@ -270,7 +270,7 @@ public class Archon extends Robot {
         double bestLeadScore = Integer.MIN_VALUE;
         MapLocation bestLeadLoc = null;
         for(MapLocation loc: locs) {
-            double currScore = getLeadDistTradeoffScore(loc, rc.senseLead(loc));
+            double currScore = getLeadDistTradeoffScore(loc.distanceSquaredTo(currLoc), rc.senseLead(loc));
             if(currScore > bestLeadScore && !loc.equals(currLoc)) {
                 bestLeadScore = currScore;
                 bestLeadLoc = loc;
