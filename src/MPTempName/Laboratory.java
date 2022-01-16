@@ -10,6 +10,9 @@ public class Laboratory extends Robot{
     }
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        if(rc.canTransmute()) {
+            rc.transmute();
+        }
     }
     
 }

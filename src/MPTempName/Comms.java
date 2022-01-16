@@ -17,7 +17,7 @@ public class Comms {
     static final int idList = 13;
     static final int MINER_COUNTER_IDX = 14;
     static final int MINER_MINING_COUNTER_IDX = 15;
-    static final int STATE_STORAGE_IDX = 16; // NOT USED
+    static final int BUILDER_LAB_IDX = 16;
     static final int SOLDIER_COUNTER_IDX = 17;
     static final int BUILDER_REQUEST_IDX = 18;
     static final int BUILDER_COUNTER_IDX = 19;
@@ -118,11 +118,36 @@ public class Comms {
         FOUND_ENEMY_SOLDIER,
     }
 
+    public enum LabBuilderBuilt {
+        EMPTY,
+        LAB_BUILDER_BUILT,
+    }
+
+    public enum LabBuilt {
+        EMPTY,
+        LAB_BUILT,
+    }
+
     public enum Buildable {
         EMPTY,
         SOLDIER,
         MINER, 
         BUILDER,
+    }
+
+    public static void signalBuilderBuilt()  throws GameActionException {
+        int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
+        writeIfChanged(BUILDER_LAB_IDX, oldFlag | 1) ;      
+    }
+    public static void signalLabBuilt()  throws GameActionException {
+        int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
+        writeIfChanged(BUILDER_LAB_IDX, oldFlag | 2);
+    }
+    public static boolean haveBuiltLab() throws GameActionException {
+        return ((rc.readSharedArray(BUILDER_LAB_IDX) & 2) >> 1) == 1;
+    }
+    public static boolean haveBuiltBuilderForFinalLab() throws GameActionException {
+        return (rc.readSharedArray(BUILDER_LAB_IDX) & 1) == 1;
     }
 
     public static int encodeArchonInfo(ArchonInfo cat) {

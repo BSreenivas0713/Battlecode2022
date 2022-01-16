@@ -171,6 +171,9 @@ public class Archon extends Robot {
         }
         for(Direction dir : orderedDirs) {
             if (rc.canBuildRobot(toBuild, dir)){
+                if(toBuild == RobotType.BUILDER && rc.getRoundNum() >= Util.MIN_ROUND_FOR_LAB) {
+                    Comms.signalBuilderBuilt();
+                }
                 if (Comms.getTurn() != rc.getArchonCount()) {
                     Comms.useLead(toBuild);
                 }
@@ -222,6 +225,25 @@ public class Archon extends Robot {
         // }
     }
     
+
+    public boolean amImportant() throws GameActionException {
+        int numArchons = rc.getArchonCount();
+        int[] ArchonOrder = Comms.getArchonOrderGivenClusters();
+        int numImportantArchons = ArchonOrder[4];
+        Debug.printString("num Imp" + numImportantArchons);
+        if (numImportantArchons == numArchons) {
+            return false; //Everyone is close to action, anyone can build a builder;
+        }
+        else {
+            for(int i = 0; i < numImportantArchons; i++) {
+                if(archonNumber == ArchonOrder[i]) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     public void tryUpdateSymmetry() throws GameActionException {
         if(!Comms.foundEnemy && Comms.getTurn() == rc.getArchonCount()) {
             Comms.guessEnemyLocs(archonSymmetryLocs);
@@ -420,17 +442,27 @@ public class Archon extends Robot {
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
-                if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold) {
-                    currentBuild = Buildable.EMPTY;
-                    nextBuild = Buildable.SOLDIER;
-                    buildRobot(RobotType.SAGE);
-                    break;
-                }
-                if(minerCount <= MIN_NUM_MINERS && soldierCount >= (1/3) * minerCount) {
-                    chillingCounter = minerSoldier31(chillingCounter);
+                if((rc.getRoundNum() < Util.MIN_ROUND_FOR_LAB || Comms.haveBuiltLab())) {
+                    if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold) {
+                        currentBuild = Buildable.EMPTY;
+                        nextBuild = Buildable.SOLDIER;
+                        buildRobot(RobotType.SAGE);
+                        break;
+                    }
+                    if(minerCount <= MIN_NUM_MINERS && soldierCount >= (1/3) * minerCount) {
+                        chillingCounter = minerSoldier31(chillingCounter);
+                    }
+                    else {
+                        chillingCounter = minerSoldierRatio(7, chillingCounter);
+                    }
                 }
                 else {
-                    chillingCounter = minerSoldierRatio(7, chillingCounter);
+                    if(!amImportant() && !Comms.haveBuiltBuilderForFinalLab()) {
+                        Debug.printString("not imp, make lab bulder");
+                        currentBuild = Buildable.BUILDER;
+                        nextBuild = Buildable.EMPTY;
+                        buildRobot(RobotType.BUILDER);
+                    }
                 }
                 tryToRepairLastBot();
                 break;
@@ -443,11 +475,21 @@ public class Archon extends Robot {
                 Debug.printString("Obesity");
                 int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
                 int watchtowersPossible = leadForBuilders / 180;
-                if (/*watchtowersPossible > builderCount &&*/ builderCount <= MIN_NUM_MINERS) {
-                    obesityCounter = SoldierBuilderRatio(11, obesityCounter);
-                } else {
-                    obesityCounter = buildSoldier(obesityCounter);
-                    break;
+                if((rc.getRoundNum() < Util.MIN_ROUND_FOR_LAB || Comms.haveBuiltLab())) {
+                    if (/*watchtowersPossible > builderCount &&*/ builderCount <= MIN_NUM_MINERS) {
+                        obesityCounter = SoldierBuilderRatio(11, obesityCounter);
+                    } else {
+                        obesityCounter = buildSoldier(obesityCounter);
+                        break;
+                    }
+                }
+                else {
+                    if(!amImportant() && !Comms.haveBuiltBuilderForFinalLab()) {
+                        Debug.printString("not imp, make lab bulder");
+                        currentBuild = Buildable.BUILDER;
+                        nextBuild = Buildable.EMPTY;
+                        buildRobot(RobotType.BUILDER);
+                    }                   
                 }
                 tryToRepairLowestHealth();
                 break;

@@ -22,7 +22,26 @@ public class Builder extends Robot{
         }
         return false;
     }
-
+    public boolean makeLabIfPossible() throws GameActionException {
+        if(!Comms.haveBuiltLab() && Comms.haveBuiltBuilderForFinalLab()) {
+            int bestRubble = Integer.MAX_VALUE;
+            Direction bestDir = null;
+            for(Direction Dir: Util.getInOrderDirections(currLoc.directionTo(home).opposite())) {
+                int currRubble = Util.getRubble(currLoc.add(Dir));
+                if (rc.canBuildRobot(RobotType.LABORATORY, Dir) && currRubble < bestRubble) {
+                    bestRubble = currRubble;
+                    bestDir = Dir;
+                }
+            }
+            if (bestDir != null) {
+                making = true;
+                rc.buildRobot(RobotType.LABORATORY, bestDir);
+                Comms.signalLabBuilt();
+            }
+            return true;
+        }
+        return false;
+    }
     public boolean makeWatchtowerIfPossible() throws GameActionException{
         boolean seenFriendly = false;
         closestEmptySpotToHome = null;
@@ -44,7 +63,7 @@ public class Builder extends Robot{
                     }
                     MapLocation robotLoc = robot.location;
                     for(MapLocation newLoc: Util.makePattern(robotLoc)) {
-                        if(robot.mode == RobotMode.TURRET && archonTowerCount < 13 && currLoc.distanceSquaredTo(newLoc) <= 2 && rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc))) {
+                        if(!(Comms.haveBuiltBuilderForFinalLab() && !Comms.haveBuiltLab()) &&  robot.mode == RobotMode.TURRET && archonTowerCount < 13 && currLoc.distanceSquaredTo(newLoc) <= 2 && rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc))) {
                             Debug.printString("Building a Watchtower");
                             making = true;
                             rc.buildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc));
@@ -66,9 +85,9 @@ public class Builder extends Robot{
         return seenFriendly;
     }
 
-    public void repairWatchtowerIfPossible() throws GameActionException{
+    public void repairIfPossible() throws GameActionException{
         for(RobotInfo robot: FriendlySensable) {
-            if(currLoc.distanceSquaredTo(robot.location) < actionRadiusSquared && robot.getType() == RobotType.WATCHTOWER) {
+            if(currLoc.distanceSquaredTo(robot.location) < actionRadiusSquared && (robot.getType() == RobotType.WATCHTOWER || robot.getType() == RobotType.LABORATORY)) {
                 if(robot.health < robot.getType().getMaxHealth(robot.level)) {
                     if(rc.canRepair(robot.location)) {
                         rc.repair(robot.location);
@@ -83,20 +102,60 @@ public class Builder extends Robot{
         }
     }
 
+    public boolean runFromEnemy() throws GameActionException {
+        MapLocation target = null;
+        RobotInfo closestEnemy = getClosestEnemy(RobotType.SOLDIER);
+        if(closestEnemy != null) {
+            target = Nav.getGreedyTargetAway(closestEnemy.getLocation());
+        }
+        closestEnemy = getClosestEnemy(RobotType.WATCHTOWER);
+        if(closestEnemy != null) {
+            target = Nav.getGreedyTargetAway(closestEnemy.getLocation());
+        }
+        closestEnemy = getClosestEnemy(RobotType.SAGE);
+        if(closestEnemy != null) {
+            target = Nav.getGreedyTargetAway(closestEnemy.getLocation());
+        }
+        if(target != null) {
+            Nav.move(target);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         Comms.incrementBuilderCount();
         repairing = false;
         making = false;
+        boolean runningFromEnemy = runFromEnemy();
+        makeLabIfPossible();
+        boolean needToMakeLab = !Comms.haveBuiltLab();
         boolean seenFriendly = makeWatchtowerIfPossible();
-        repairWatchtowerIfPossible();
-        if(!repairing && !making) {
-            if(closestEmptySpotToHome != null) {
+        repairIfPossible();
+
+
+
+        if(!repairing && !making && !runningFromEnemy) {
+            if(needToMakeLab) {
+                if(currLoc.distanceSquaredTo(home) < robotType.ARCHON.visionRadiusSquared) {
+                    Debug.printString("getting good Lab Loc");
+                    MapLocation avgEnemyLoc = home;
+                    MapLocation betterEnemyLoc = Comms.getClosestCluster(currLoc);
+                    if(betterEnemyLoc != null) {
+                        avgEnemyLoc = betterEnemyLoc;
+                    }
+                    tryMoveDest(Util.getInOrderDirections(Nav.getGreedyDirection(currLoc.directionTo(avgEnemyLoc).opposite())));
+                }
+            }
+            else if(closestEmptySpotToHome != null) {
                 Debug.printString("Moving towards location that needs to be filled");
                 tryMoveDest(Util.getInOrderDirections(currLoc.directionTo(closestEmptySpotToHome)));
             }
 
-            if(seenFriendly) {
+            else if(seenFriendly) {
                 Debug.printString("Friendly near, moving away from home");
                 Direction awayFromHome = currLoc.directionTo(home).opposite();
                 if(!rc.onTheMap(currLoc.add(awayFromHome))) {
