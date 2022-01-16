@@ -47,7 +47,7 @@ public class Miner extends Robot {
             int leadAmount = rc.senseLead(loc);
             if (leadAmount > 1){
                 int currDist = currLoc.distanceSquaredTo(loc);
-                double currScore = getLeadDistTradeoffScore(currDist, leadAmount);
+                double currScore = getLeadDistTradeoffScore(loc, leadAmount);
                 if(currScore > bestScore) {
                     bestScore = currScore;
                     bestLead = loc; 
