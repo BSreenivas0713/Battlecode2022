@@ -73,7 +73,7 @@ public class Comms {
     static final int SOLDIER_NEAR_CLUSTER_BUT_NO_ENEMIES_OFFSET = 1;
     static final int CLUSTER_SET_BY_SYMMETRY_OFFSET = 0;
 
-    static final int MAX_TROOPS_HEALING = 0xF;
+    static final int MAX_TROOPS_HEALING = 7;
     static final int TROOPS_HEALING_MASK = 0xF;
 
     static final int X_COORD_OFFSET = 0;
