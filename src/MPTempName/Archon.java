@@ -432,7 +432,7 @@ public class Archon extends Robot {
                 else {
                     chillingCounter = minerSoldierRatio(7, chillingCounter);
                 }
-                tryToRepairLowestHealth();
+                tryToRepairLastBot();
                 break;
             case UNDER_ATTACK:
                 // Debug.printString("Under Attack");
@@ -542,18 +542,19 @@ public class Archon extends Robot {
                 } else if (isObese) {
                     stateStack.push(currentState);
                     changeState(State.OBESITY);
-                } else if(rc.getRoundNum() > lastRoundPrioritized + Util.TURNS_NOT_PRIORITIZED_TO_MOVE &&
-                            rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_TO_MOVE_AGAIN &&
-                            rc.isTransformReady() &&
-                            !Comms.existsArchonMoving() &&
-                            chooseInitialMoveTarget()) {
-                    // Just mark yourself as dead in archon locations so units don't come to get healed
-                    rc.writeSharedArray(archonNumber, Comms.DEAD_ARCHON_FLAG);
-                    stateStack.push(currentState);
-                    changeState(State.MOVING);
-                    rc.transform();
-                    Comms.setArchonMoving();
                 }
+                // else if(rc.getRoundNum() > lastRoundPrioritized + Util.TURNS_NOT_PRIORITIZED_TO_MOVE &&
+                //             rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_TO_MOVE_AGAIN &&
+                //             rc.isTransformReady() &&
+                //             !Comms.existsArchonMoving() &&
+                //             chooseInitialMoveTarget()) {
+                //     // Just mark yourself as dead in archon locations so units don't come to get healed
+                //     rc.writeSharedArray(archonNumber, Comms.DEAD_ARCHON_FLAG);
+                //     stateStack.push(currentState);
+                //     changeState(State.MOVING);
+                //     rc.transform();
+                //     Comms.setArchonMoving();
+                // }
                 break;
             case OBESITY:
                 if (underAttack) {
