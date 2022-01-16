@@ -76,7 +76,7 @@ public class Comms {
     static final int SOLDIER_NEAR_CLUSTER_BUT_NO_ENEMIES_OFFSET = 1;
     static final int CLUSTER_SET_BY_SYMMETRY_OFFSET = 0;
 
-    static final int MAX_TROOPS_HEALING = 0xF;
+    static final int MAX_TROOPS_HEALING = 0x7;
     static final int TROOPS_HEALING_MASK = 0xF;
 
     static final int X_COORD_OFFSET = 0;
@@ -1090,7 +1090,7 @@ public class Comms {
     }
 
     public static boolean existsArchonMoving() throws GameActionException {
-        return (rc.readSharedArray(setupFlag) >> EXISTS_ARCHON_MOVING_OFFSET) != 0;
+        return ((rc.readSharedArray(setupFlag) >> EXISTS_ARCHON_MOVING_OFFSET) & 1) != 0;
     }
 
     public static void setArchonMoving() throws GameActionException {

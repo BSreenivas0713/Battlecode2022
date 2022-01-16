@@ -416,7 +416,7 @@ public class Archon extends Robot {
             case INIT:
                 Debug.printString("Init");
                 initCounter = firstRounds(4, initCounter);
-                tryToRepairLowestHealth();
+                tryToRepairLastBot();
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
@@ -449,7 +449,7 @@ public class Archon extends Robot {
                     obesityCounter = buildSoldier(obesityCounter);
                     break;
                 }
-                tryToRepairLowestHealth();
+                tryToRepairLastBot();
                 break;
             case MOVING:
                 Debug.printString("Moving");
