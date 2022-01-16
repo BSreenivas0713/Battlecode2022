@@ -162,7 +162,6 @@ public class Soldier extends Robot {
         return waitTime;
     }
 
-    // Choose an archon inversely proportional to the distance to it
     // Weight the prioritized archon less
     // Returns whether we found a target
     public boolean loadHealTarget() throws GameActionException {

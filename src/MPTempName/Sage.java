@@ -5,6 +5,18 @@ import MPTempName.Debug.*;
 import MPTempName.Util.*;
 
 public class Sage extends Robot{
+    static enum SageState {
+        EXPLORING,
+        GOING_TO_HEAL,
+        HEALING,
+    }
+
+    static SageState currState;
+
+    static MapLocation healTarget;
+    static int healTargetIdx;
+    static int healCounter;
+    static boolean canHeal;
 
     static int homeFlagIdx;
     static MapLocation home;
@@ -13,6 +25,11 @@ public class Sage extends Robot{
     static int runSemaphore;
     static Direction runDirection;
     static RobotInfo[] victims;
+
+    static int overallAttackingEnemyDx;
+    static int overallAttackingEnemyDy;
+    static int numAttackingEnemies;
+    static MapLocation averageAttackingEnemyLocation;
 
     public Sage(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -23,6 +40,8 @@ public class Sage extends Robot{
         home = Comms.locationFromFlag(rc.readSharedArray(homeFlagIndex - Comms.mapLocToFlag));
         homeFlagIdx = homeFlagIndex;
         isRunning = false;
+        currState = SageState.EXPLORING;
+        canHeal = true;
     }
 
     public void takeTurn() throws GameActionException {
@@ -34,8 +53,9 @@ public class Sage extends Robot{
         victims = getVictims();
         boolean almostReady = rc.getActionCooldownTurns() < GameConstants.COOLDOWN_LIMIT + GameConstants.COOLDOWNS_PER_TURN;
         tryAttackArchon();
-        int soldierCount = scanSoldiers();
-        doSageAction(soldierCount, almostReady);
+        getAverage();
+        trySwitchState();
+        doSageAction(almostReady);
     }
 
     public RobotInfo[] getVictims() throws GameActionException {
@@ -65,60 +85,171 @@ public class Sage extends Robot{
         }
     }
 
-    public int scanSoldiers() throws GameActionException {
-        int count = 0;
-        for (RobotInfo robot : EnemySensable) {
-            if (robot.type == RobotType.SOLDIER) {
-                count++;
-            }
+    public void trySwitchState() throws GameActionException {
+        switch(currState) {
+            case EXPLORING:
+                // Run away if 1/3 health left
+                if(rc.getHealth() <= robotType.health / 3 ||
+                    (numAttackingEnemies == 0 && rc.getHealth() <= robotType.health / 2 && !Comms.existsArchonMoving())) {
+                    if(canHeal && loadHealTarget()) {
+                        currState = SageState.GOING_TO_HEAL;
+                    }
+                }
+                break;
+            case GOING_TO_HEAL:
+                if(rc.getHealth() == robotType.health) {
+                    currState = SageState.EXPLORING;
+                } else if(needToReloadTarget()) {
+                    if(!reloadTarget()) {
+                        currState = SageState.EXPLORING;
+                    }
+                } else if(currLoc.isWithinDistanceSquared(healTarget, RobotType.ARCHON.actionRadiusSquared)) {
+                    currState = SageState.HEALING;
+                    healCounter = 0;
+                }
+                break;
+            case HEALING:
+                healCounter++;
+                if (healCounter == Util.HealTimeout) {
+                    currState = SageState.EXPLORING;
+                    canHeal = false;
+                } else if(rc.getHealth() == robotType.health) {
+                    currState = SageState.EXPLORING;
+                } else if(needToReloadTarget()) {
+                    if(!reloadTarget()) {
+                        currState = SageState.EXPLORING;
+                    } else {
+                        currState = SageState.GOING_TO_HEAL;
+                    }
+                }
+                break;
         }
-        return count;
     }
 
-    public void doSageAction(int soldierCount, boolean almostReady) throws GameActionException {
-        if (soldierCount > 0) {
-            MapLocation averageEnemyLoc = getAverage();
-            if (almostReady) {
-                Debug.printString("Fighting!");
-                isRunning = false;
-                Nav.move(averageEnemyLoc);
+    public void doSageAction(boolean almostReady) throws GameActionException {
+        switch(currState) {
+            case EXPLORING:
+                if (numAttackingEnemies > 0) {
+                    if (almostReady) {
+                        Debug.printString("Fighting!");
+                        isRunning = false;
+                        Nav.move(averageAttackingEnemyLocation);
+                        tryAttack();
+                    } else {
+                        Debug.printString("Running!");
+                        Direction dir = averageAttackingEnemyLocation.directionTo(currLoc);
+                        Direction[] dirs = Util.getInOrderDirections(chooseBackupDirection(dir));
+                        tryMoveDest(dirs);
+                        runSemaphore = 5;
+                        isRunning = true;
+                        runDirection = dir;
+                    }
+                } else {
+                    if (!isRunning || runSemaphore <= 0) {
+                        isRunning = false;
+                        moveTowardsCluster();
+                    } else {
+                        Debug.printString("Running!");
+                        Direction[] dirs = Util.getInOrderDirections(chooseBackupDirection(runDirection));
+                        tryMoveDest(dirs);
+                    }
+                }
+                break;
+            case GOING_TO_HEAL:
+                Comms.incrementNumTroopsHealingAt(healTargetIdx);
+                Debug.setIndicatorDot(Debug.INDICATORS, healTarget, 0, 255, 0);
+                Debug.printString("Going to heal");
                 tryAttack();
-            } else {
-                Debug.printString("Running!");
-                Direction dir = averageEnemyLoc.directionTo(currLoc);
-                Direction[] dirs = Util.getInOrderDirections(chooseBackupDirection(dir));
-                tryMoveDest(dirs);
-                runSemaphore = 5;
-                isRunning = true;
-                runDirection = dir;
-            }
-        } else {
-            if (!isRunning || runSemaphore == 0) {
-                isRunning = false;
-                moveTowardsCluster();
-            } else {
-                Debug.printString("Running!");
-                Direction[] dirs = Util.getInOrderDirections(chooseBackupDirection(runDirection));
-                tryMoveDest(dirs);
-            }
+                if(currLoc.isWithinDistanceSquared(healTarget, 4 * Util.HEAL_DIST_TO_HOME)) {
+                    moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
+                } else {
+                    Nav.move(healTarget);
+                }
+                break;
+            case HEALING:
+                Comms.incrementNumTroopsHealingAt(healTargetIdx);
+                Debug.setIndicatorDot(Debug.INDICATORS, healTarget, 0, 255, 0);
+                Debug.printString("Healing");
+                tryAttack();
+                moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
+                break;
+
         }
     }
 
-    public MapLocation getAverage() throws GameActionException {
-        MapLocation averageLoc = null;
-        int totalX = 0;
-        int totalY = 0;
-        int numFound = 0;
-        for (RobotInfo robot : EnemySensable) {
-            MapLocation loc = robot.location;
-            totalX += loc.x;
-            totalY += loc.y;
-            numFound++;
+    public int estimateWaitTimeAt(int targetIdx, int prioritizedArchon) throws GameActionException {
+        MapLocation archonLoc = archonLocations[targetIdx];
+        int numHealing = Comms.getNumTroopsHealingAt(targetIdx);
+        int archonHealRate = -RobotType.ARCHON.damage;
+        int waitTime = numHealing * Util.AVERAGE_HEALTH_TO_HEAL / archonHealRate / 2 + (int)Math.sqrt(currLoc.distanceSquaredTo(archonLoc));
+        if(prioritizedArchon == targetIdx) waitTime += numHealing;
+        return waitTime;
+    }
+
+    // Weight the prioritized archon less
+    // Returns whether we found a target
+    public boolean loadHealTarget() throws GameActionException {
+        loadArchonLocations();
+        int prioritizedArchon = Comms.getPrioritizedArchon() - 1;
+        healTarget = null;
+        int bestWait = Integer.MAX_VALUE;
+        int bestWaitIdx = -1;
+        for(int i = 0; i < Comms.friendlyArchonCount(); i++) {
+            MapLocation archonLoc = archonLocations[i];
+            if(archonLoc == null || Comms.isAtHealingCap(i)) continue;
+            int waitTime = estimateWaitTimeAt(i, prioritizedArchon);
+            if(waitTime < bestWait) {
+                bestWait = waitTime;
+                bestWaitIdx = i;
+            }
         }
-        if (numFound != 0) {
-            averageLoc = new MapLocation(totalX / numFound, totalY / numFound);
+
+        if(bestWaitIdx != -1) {
+            healTarget = archonLocations[bestWaitIdx];
+            healTargetIdx = bestWaitIdx;
         }
-        return averageLoc;
+
+        return healTarget != null;
+    }
+
+    public boolean needToReloadTarget() throws GameActionException {
+        loadArchonLocations();
+        for(MapLocation archonLoc : archonLocations) {
+            if(archonLoc == null) continue;
+            if(archonLoc.equals(healTarget)) return false;
+        }
+        return true;
+    }
+
+    public boolean reloadTarget() throws GameActionException {
+        Comms.markArchonDead(healTarget);
+        currState = SageState.GOING_TO_HEAL;
+        Debug.printString("Reloading");
+        return loadHealTarget();
+    }
+
+    public void getAverage() throws GameActionException {
+        averageAttackingEnemyLocation = null;
+        overallAttackingEnemyDx = 0;
+        overallAttackingEnemyDy = 0;
+        numAttackingEnemies = 0;
+        RobotInfo robot;
+        MapLocation loc;
+        for (int i = EnemySensable.length; --i >= 0;) {
+            robot = EnemySensable[i];
+            switch(robot.type) {
+                case SAGE:
+                case SOLDIER:
+                case WATCHTOWER:
+                    loc = robot.location;
+                    overallAttackingEnemyDx += loc.x;
+                    overallAttackingEnemyDy += loc.y;
+                    numAttackingEnemies++;
+            }
+        }
+        if (numAttackingEnemies != 0) {
+            averageAttackingEnemyLocation = new MapLocation(overallAttackingEnemyDx / numAttackingEnemies, overallAttackingEnemyDy / numAttackingEnemies);
+        }
     }    
 
     public void tryAttack() throws GameActionException {
@@ -143,6 +274,7 @@ public class Sage extends Robot{
                         bestSoldierHealth = robot.health;
                         bestSoldier = robot.location;
                     }
+                    // Intentional fallthrough
                 case MINER:
                 case BUILDER:
                 case SAGE:
