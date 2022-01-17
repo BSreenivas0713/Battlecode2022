@@ -69,7 +69,6 @@ public class Archon extends Robot {
                                     rc.getMapWidth() * rc.getMapHeight() /
                                     Util.MAX_MAP_SIZE_TO_MINER_RATIO);
         MIN_NUM_MINERS = MAX_NUM_MINERS / 5;
-        Debug.println("Min number of miners: " + MIN_NUM_MINERS);
 
         archonNumber = Comms.incrementFriendly();
         int myLocFlag = Comms.encodeLocation();
