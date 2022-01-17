@@ -68,7 +68,7 @@ public class Soldier extends Robot {
             case EXPLORING:
                 // Run away if 1/3 health left
                 if(rc.getHealth() <= RobotType.SOLDIER.health / 3 ||
-                    (lastRoundSawEnemy >= rc.getRoundNum() + Util.MIN_TURNS_NO_ENEMY_TO_HEAL_HALF &&
+                    (rc.getRoundNum() >= lastRoundSawEnemy + Util.MIN_TURNS_NO_ENEMY_TO_HEAL_HALF &&
                         rc.getHealth() <= RobotType.SOLDIER.health / 2 &&
                         !Comms.existsArchonMoving())) {
                     if(canHeal && loadHealTarget()) {
