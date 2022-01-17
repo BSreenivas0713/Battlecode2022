@@ -52,6 +52,7 @@ public class Util {
     static final int MIN_ROUND_FOR_LAB = 1800;
     static final int MAX_AREA_FOR_FAST_INIT = 625;
     static final int MAX_MAP_SIZE_TO_MINER_RATIO = 16;
+    static final int JUST_OUTSIDE_OF_VISION_RADIUS = 34;
     static final int[] WatchTowerHealths = new int[]{150,270,486};
     static final int HealTimeout = 200;
     

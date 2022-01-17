@@ -340,10 +340,10 @@ public class Robot {
         if(bestEnemy != null) {
             if(rc.canAttack(bestEnemy.getLocation())) {
                 rc.attack(bestEnemy.getLocation());
-                Debug.printString("Attacking: " + bestEnemy.getLocation().toString());
+                // Debug.printString("Attacking: " + bestEnemy.getLocation().toString());
                 return true;
             } else {
-                Debug.printString("Enemy: " + bestEnemy.getLocation().toString());
+                // Debug.printString("Enemy: " + bestEnemy.getLocation().toString());
             }
         }
         return false;

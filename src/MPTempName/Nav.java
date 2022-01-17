@@ -222,6 +222,41 @@ public class Nav {
         Pathfinding.initTurn();
     }
 
+    static void tryMoveSafely(MapLocation target) throws GameActionException{
+        Debug.printString("Saf mov");
+        MapLocation currLoc = rc.getLocation();
+
+        Direction correctDir = currLoc.directionTo(target);
+        Direction[] importantDirs = Util.getInOrderDirections(correctDir);
+
+        int currRubble = rc.senseRubble(currLoc);
+        int currBestDist = Integer.MAX_VALUE;
+        int currBestRubble = Integer.MAX_VALUE;
+        Direction currBestDirection = Direction.CENTER;
+
+        for(Direction possibleDir: importantDirs) {
+            MapLocation targetLoc = currLoc.add(possibleDir);
+            int targetLocDist = currLoc.distanceSquaredTo(targetLoc);
+            int nextRubble = Util.getRubble(targetLoc);
+            if (nextRubble < currRubble + 10 && rc.canMove(possibleDir)) {
+                if (nextRubble < currBestRubble) {
+                    currBestRubble = nextRubble;
+                    currBestDist = targetLocDist;
+                    currBestDirection = possibleDir;
+                }
+                else if (nextRubble == currBestRubble && targetLocDist < currBestDist) {
+                    currBestRubble = nextRubble;
+                    currBestDist = targetLocDist;
+                    currBestDirection = possibleDir;
+                }
+            } 
+        }
+        if(rc.canMove(currBestDirection)) {
+            rc.move(currBestDirection);
+            Debug.printString("m" + currBestDirection);
+        }
+    }
+    
     static void move(MapLocation target) throws GameActionException {
         move(target, false);
     }

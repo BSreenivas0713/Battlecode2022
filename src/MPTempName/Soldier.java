@@ -254,17 +254,18 @@ public class Soldier extends Robot {
     }
 
 
-    public Direction chooseForwardDirection(Direction Dir) throws GameActionException {
+    public Direction chooseForwardDirection(MapLocation loc) throws GameActionException {
+        Direction Dir = currLoc.directionTo(loc);
         Direction[] dirsToConsider = Util.getInOrderDirections(Dir);
         Direction bestDirSoFar = null;
-        int bestRubble = 101;
+        int bestRubble = rc.senseRubble(loc) + 2;
         int bestEnemiesSeen = Integer.MAX_VALUE;
         for(Direction newDir: dirsToConsider) {
             if (rc.canMove(newDir)) {
                 MapLocation targetLoc = currLoc.add(newDir);
                 int locRubble = rc.senseRubble(currLoc);
                 int newDirRubble = rc.senseRubble(targetLoc);
-                boolean notTooMuchRubble = newDirRubble < (10 + locRubble);
+                boolean notTooMuchRubble = newDirRubble < (10 + locRubble) && newDirRubble <= bestRubble;
                 int currEnemiesSeen = 0;
                 for (RobotInfo enemy: enemyAttackable) {
                     MapLocation enemyLoc = enemy.getLocation();
@@ -351,6 +352,7 @@ public class Soldier extends Robot {
                 dest = currLoc.translate(-overallEnemySoldierDx, -overallEnemySoldierDy);//(overallFriendlySoldierDx, overallFriendlySoldierDy);
                 Direction possibleDir = currLoc.directionTo(dest);
                 dir = chooseBackupDirection(possibleDir);
+                Debug.printString("t: " + rc.getMovementCooldownTurns() + " " + dir);
                 if (dir == null) {
                     Debug.printString("RA bad");
                     tryAttackBestEnemy();
@@ -390,14 +392,14 @@ public class Soldier extends Robot {
                     return true;
                 }
                 else {
-                    dir = chooseForwardDirection(currLoc.directionTo(dest));
+                    dir = chooseForwardDirection(dest);
                     attackFirst = false;
                     if (dir == null) {
-                        Debug.printString("RA bad");
+                        Debug.printString("Fw bad");
                         tryAttackBestEnemy();
                         return true;
                     }
-                    Debug.printString("RA, Dest: " + dir);
+                    Debug.printString("Fw, Dest: " + dir);
                     Direction[] targetDirs = Util.getInOrderDirections(dir);
                     moveAndAttack(targetDirs, attackFirst);
                     return true;
@@ -410,12 +412,9 @@ public class Soldier extends Robot {
 
     public void soldierExplore() throws GameActionException {
         MapLocation target;
-        if (avgEnemyLoc!=null && currLoc.distanceSquaredTo(avgEnemyLoc) <= visionRadiusSquared) {
-            Debug.printString("explor");
-        }
-        if (avgEnemyLoc != null && currLoc.distanceSquaredTo(avgEnemyLoc) > visionRadiusSquared) {
+        if(avgEnemyLoc != null) {
             target = avgEnemyLoc;
-            Debug.printString("Avg enemy: " + target.toString());
+            Debug.printString("going for it");
         } else {
             boolean seeArchonInSensable = false;
             for (RobotInfo bot : EnemySensable) {
@@ -429,6 +428,13 @@ public class Soldier extends Robot {
             target = Explore.getLegacyExploreTarget();
             Debug.printString("Exploring: " + target.toString());
         }
-        Nav.move(target);
+        if (currLoc.distanceSquaredTo(target) <= Util.JUST_OUTSIDE_OF_VISION_RADIUS) {
+            Nav.tryMoveSafely(target);
+            Debug.printString("saf mov");
+        }
+        else {
+            Nav.move(target);
+            Debug.printString("reg mov");
+        }
     }
 }
