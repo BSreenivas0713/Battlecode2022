@@ -30,6 +30,7 @@ public class Soldier extends Robot {
     static int numEnemies;
     static MapLocation closestAttackingEnemy;
     static int numEnemySoldiersAttackingUs;
+    static int lastRoundSawEnemy;
 
     static RobotInfo[] enemyAttackable;
 
@@ -55,6 +56,7 @@ public class Soldier extends Robot {
         resetShouldRunAway();
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
+        if(numEnemies != 0) lastRoundSawEnemy = rc.getRoundNum();
         avgEnemyLoc = Comms.getClosestCluster(currLoc);
         Comms.incrementSoldierCounter();
         trySwitchState();
@@ -66,7 +68,9 @@ public class Soldier extends Robot {
             case EXPLORING:
                 // Run away if 1/3 health left
                 if(rc.getHealth() <= RobotType.SOLDIER.health / 3 ||
-                    (numEnemies == 0 && rc.getHealth() <= RobotType.SOLDIER.health / 2 && !Comms.existsArchonMoving())) {
+                    (lastRoundSawEnemy >= rc.getRoundNum() + Util.MIN_TURNS_NO_ENEMY_TO_HEAL_HALF &&
+                        rc.getHealth() <= RobotType.SOLDIER.health / 2 &&
+                        !Comms.existsArchonMoving())) {
                     if(canHeal && loadHealTarget()) {
                         currState = SoldierState.GOING_TO_HEAL;
                     }
@@ -86,7 +90,7 @@ public class Soldier extends Robot {
                 break;
             case HEALING:
                 healCounter++;
-                if (healCounter == Util.HealTimeout) {
+                if (healCounter >= Util.HealTimeout) {
                     currState = SoldierState.EXPLORING;
                     canHeal = false;
                 } else if(rc.getHealth() == RobotType.SOLDIER.health) {

@@ -59,6 +59,7 @@ public class Archon extends Robot {
     static boolean isCharging;
 
     static int numEnemies;
+    static int underAttackCooldown;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -296,7 +297,10 @@ public class Archon extends Robot {
                 numFriendlies++;
             }
         }
-        return numEnemies > numFriendlies;
+
+        boolean underAttack = numEnemies > numFriendlies;
+        if(underAttack) underAttackCooldown = Util.MIN_TURNS_TO_EXIT_UNDER_ATTACK;
+        return underAttack;
     }
 
     // pick a random lead ore for  a miner to go to, if spawned on this turn
@@ -467,7 +471,7 @@ public class Archon extends Robot {
                 tryToRepairLastBot();
                 break;
             case UNDER_ATTACK:
-                // Debug.printString("Under Attack");
+                Debug.printString("Under Attack + (" + underAttackCooldown + ")");
                 chillingCounter = buildSoldier(chillingCounter);
                 tryToRepairLowestHealth();
                 break;
@@ -573,7 +577,8 @@ public class Archon extends Robot {
                 }
                 break;
             case UNDER_ATTACK:
-                if (!underAttack) {
+                underAttackCooldown--;
+                if (underAttackCooldown <= 0) {
                     changeState(stateStack.pop());
                 }
                 break;

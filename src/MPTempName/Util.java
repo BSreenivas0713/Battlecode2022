@@ -79,6 +79,11 @@ public class Util {
     static final int MIN_DIST_TO_MOVE = RobotType.ARCHON.visionRadiusSquared;
     static final int MIN_ADJ_RUBBLE_MULTIPLIER = 5;
 
+    // Enough turns to spawn another soldier if you have 2 archons
+    static final int MIN_TURNS_TO_EXIT_UNDER_ATTACK = 40;
+
+    static final int MIN_TURNS_NO_ENEMY_TO_HEAL_HALF = 10;
+
     static void init(RobotController r) {
         rc = r;
         rng = new Random(rc.getRoundNum()*23981 + rc.getID()*10289);
