@@ -1,7 +1,6 @@
 package MPTempName;
 
 import battlecode.common.*;
-import javafx.scene.control.cell.TreeItemPropertyValueFactory;
 import MPTempName.Debug.*;
 import MPTempName.Util.*;
 
