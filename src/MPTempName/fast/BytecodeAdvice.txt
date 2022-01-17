@@ -7,4 +7,6 @@ Store locals if reusing expressions
 switch > if
 static vars when possible
 
+Hack: Fallthrough switch statements for loops
+
 Prints cost about 15 BC

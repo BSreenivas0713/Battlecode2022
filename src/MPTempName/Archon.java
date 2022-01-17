@@ -7,6 +7,7 @@ import MPTempName.Util.*;
 import MPTempName.Comms.*;
 import java.util.ArrayDeque;
 import MPTempName.fast.FastIterableLocSet;
+import MPTempName.fast.FastMath;
 
 public class Archon extends Robot {
     static enum State {
@@ -198,18 +199,17 @@ public class Archon extends Robot {
             Comms.resetAlive();
             Comms.clearUsedLead();
             Comms.clearBuildGuesses();
-            Comms.drawClusterDots();
             Comms.resetNumTroopsHealing();
             //todo: zero out the symmetry cluster bit
         }
         Comms.setAlive(archonNumber);
         Comms.setCanBuild(archonNumber, rc.isActionReady());
         Comms.resetAvgEnemyLoc();
+        Comms.drawClusterDots();
         isPrioritizedArchon = Comms.canBuildPrioritized(archonNumber, currentState == State.INIT);
         if(isPrioritizedArchon) lastRoundPrioritized = rc.getRoundNum();
         reportEnemies();
         tryUpdateSymmetry();
-        //todo: move cluster dots drawing here
         boolean underAttack = checkUnderAttack();
         updateRobotCounts();
         updateClosestLeadOre();
@@ -583,19 +583,18 @@ public class Archon extends Robot {
                 } else if (isObese) {
                     stateStack.push(currentState);
                     changeState(State.OBESITY);
+                } else if(rc.getRoundNum() > lastRoundPrioritized + Util.TURNS_NOT_PRIORITIZED_TO_MOVE &&
+                            rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_TO_MOVE_AGAIN &&
+                            rc.isTransformReady() &&
+                            !Comms.existsArchonMoving() &&
+                            chooseInitialMoveTarget()) {
+                    // Just mark yourself as dead in archon locations so units don't come to get healed
+                    rc.writeSharedArray(archonNumber, Comms.DEAD_ARCHON_FLAG);
+                    stateStack.push(currentState);
+                    changeState(State.MOVING);
+                    rc.transform();
+                    Comms.setArchonMoving();
                 }
-                // else if(rc.getRoundNum() > lastRoundPrioritized + Util.TURNS_NOT_PRIORITIZED_TO_MOVE &&
-                //             rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_TO_MOVE_AGAIN &&
-                //             rc.isTransformReady() &&
-                //             !Comms.existsArchonMoving() &&
-                //             chooseInitialMoveTarget()) {
-                //     // Just mark yourself as dead in archon locations so units don't come to get healed
-                //     rc.writeSharedArray(archonNumber, Comms.DEAD_ARCHON_FLAG);
-                //     stateStack.push(currentState);
-                //     changeState(State.MOVING);
-                //     rc.transform();
-                //     Comms.setArchonMoving();
-                // }
                 break;
             case OBESITY:
                 if (underAttack) {
@@ -607,7 +606,8 @@ public class Archon extends Robot {
                 break;
             case MOVING:
                 if(currLoc.isWithinDistanceSquared(moveTarget, 13) ||
-                    (currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_SQUARED_FROM_CLUSTER) && numEnemies != 0)) {
+                    (currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_SQUARED_FROM_CLUSTER) && numEnemies != 0)
+                    || !checkWontRunThroughCluster()) {
                     changeState(State.FINDING_GOOD_SPOT);
                 }
                 break;
@@ -778,6 +778,43 @@ public class Archon extends Robot {
         return cluster;
     }
 
+    // Don't move if any cluster is within a certain
+    // distance between the line between you and the other archon.
+    // Tries to avoid a Sandwich case where you run through the cluster
+    public boolean checkWontRunThroughCluster() throws GameActionException {
+        MapLocation cluster = getClusterClosestTo(moveTarget);
+        MapLocation closestArchon = currLoc;
+        int minDist = Integer.MAX_VALUE;
+        int dist;
+        for(MapLocation archonLoc : archonLocations) {
+            if(archonLoc == null) continue;
+            dist = archonLoc.distanceSquaredTo(cluster);
+            if(dist < minDist) {
+                closestArchon = archonLoc;
+                minDist = dist;
+            }
+        }
+
+        return checkWontRunThroughCluster(closestArchon);
+    }
+
+    public boolean checkWontRunThroughCluster(MapLocation closestArchon) throws GameActionException {
+        Debug.setIndicatorLine(Debug.INDICATORS, closestArchon, currLoc, 255, 102, 153);
+        MapLocation[] clusters = Comms.getClusters();
+        for(MapLocation cluster : clusters) {
+            MapLocation projection = FastMath.getProjection(currLoc, closestArchon, cluster);
+            Debug.setIndicatorLine(Debug.INDICATORS, cluster, projection, 255, 102, 255);
+            Debug.printString("proj dist: " + projection.distanceSquaredTo(cluster));
+            // If the projection is onto the archon, then the cluster is on the other side
+            if(!projection.equals(closestArchon) &&
+                cluster.isWithinDistanceSquared(projection, Util.MIN_DIST_FROM_PROJECTION)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public void reloadMoveTarget() throws GameActionException {
         MapLocation cluster = getClusterClosestTo(moveTarget);
         MapLocation closestArchon = currLoc;
@@ -792,7 +829,7 @@ public class Archon extends Robot {
             }
         }
 
-        if(!cluster.isWithinDistanceSquared(moveTarget, visionRadiusSquared)) {
+        if(!cluster.isWithinDistanceSquared(moveTarget, Util.MAX_CLUSTER_DIST_CHANGE)) {
             // This can happen if a cluster disappears for a turn.
             // In this case, we don't want to move towards the other one
             // so just keep the same target
@@ -842,20 +879,26 @@ public class Archon extends Robot {
             }
         }
 
-        if(closestArchon.equals(currLoc)) {
-            // Let's move closer and extend our advantage
-            moveTarget = cluster;
-            isCharging = true;
-            Debug.println("Charging target: " + moveTarget);
-            return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
-        }
+        // if(closestArchon.equals(currLoc)) {
+        //     // Let's move closer and extend our advantage
+        //     moveTarget = cluster;
+        //     isCharging = true;
+        //     Debug.println("Charging target: " + moveTarget);
+        //     return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
+        // }
 
+        // Only have the farthest one move
         if(!farthestArchon.equals(currLoc)) {
             // Debug.println("Am not the farthest archon away");
             return false;
         }
 
+        // Min dist to move
         if(currLoc.isWithinDistanceSquared(closestArchon, Util.MIN_DIST_TO_MOVE)) {
+            return false;
+        }
+
+        if(!checkWontRunThroughCluster(closestArchon)) {
             return false;
         }
 

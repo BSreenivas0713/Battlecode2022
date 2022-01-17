@@ -75,6 +75,8 @@ public class Util {
 
     static final int TURNS_NOT_PRIORITIZED_TO_MOVE = 50;
     static final int MIN_DIST_SQUARED_FROM_CLUSTER = RobotType.ARCHON.visionRadiusSquared * 2;
+    static final int MAX_CLUSTER_DIST_CHANGE = RobotType.ARCHON.visionRadiusSquared * 9;
+    static final int MIN_DIST_FROM_PROJECTION = RobotType.ARCHON.visionRadiusSquared;
     static final int MIN_TURNS_TO_MOVE_AGAIN = 100;
     static final int MIN_DIST_TO_MOVE = RobotType.ARCHON.visionRadiusSquared;
     static final int MIN_ADJ_RUBBLE_MULTIPLIER = 5;
@@ -129,6 +131,12 @@ public class Util {
     static Direction[] getInOrderDirections(Direction target_dir) {
         return new Direction[]{target_dir, target_dir.rotateRight(), target_dir.rotateLeft(), 
             target_dir.rotateRight().rotateRight(), target_dir.rotateLeft().rotateLeft()};
+    }
+    
+    static Direction[] getFullInOrderDirections(Direction target_dir) {
+        return new Direction[]{target_dir, target_dir.rotateRight(), target_dir.rotateLeft(), 
+            target_dir.rotateRight().rotateRight(), target_dir.rotateLeft().rotateLeft(), target_dir.rotateRight().rotateRight().rotateRight(), 
+            target_dir.rotateLeft().rotateLeft().rotateLeft(), target_dir.opposite()};
     }
 
     static Direction getFirstValidInOrderDirection(Direction dir){

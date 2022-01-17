@@ -24,6 +24,18 @@ public class FastMath {
         return lookupRand256.charAt(randIndex);
     }
 
+    public static MapLocation vecFromPoints(MapLocation start, MapLocation end) {
+        return new MapLocation(end.x - start.x, end.y - start.y);
+    }
+
+    public static MapLocation getProjection(MapLocation a, MapLocation b, MapLocation p) {
+        double dist = a.distanceSquaredTo(b);
+        if(dist == 0) return a;
+        MapLocation ab = vecFromPoints(a, b);
+        double t = Math.max(0, Math.min(1, dotVec(vecFromPoints(a, p), ab) / dist));
+        return addVec(a, multiplyVec(t, ab));
+    }
+
     public static MapLocation addVec(MapLocation a, MapLocation b) {
         return new MapLocation(a.x+b.x, a.y+b.y);
     }
