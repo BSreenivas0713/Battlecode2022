@@ -26,7 +26,7 @@ public class Builder extends Robot{
         if(!Comms.haveBuiltLab() && Comms.haveBuiltBuilderForFinalLab()) {
             int bestRubble = Integer.MAX_VALUE;
             Direction bestDir = null;
-            for(Direction Dir: Util.getInOrderDirections(currLoc.directionTo(home).opposite())) {
+            for(Direction Dir: Util.getFullInOrderDirections(currLoc.directionTo(home).opposite())) {
                 int currRubble = Util.getRubble(currLoc.add(Dir));
                 if (rc.canBuildRobot(RobotType.LABORATORY, Dir) && currRubble < bestRubble) {
                     bestRubble = currRubble;
