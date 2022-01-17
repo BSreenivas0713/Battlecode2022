@@ -30,7 +30,6 @@ public class Sage extends Robot{
     static int overallAttackingEnemyDy;
     static int numAttackingEnemies;
     static MapLocation averageAttackingEnemyLocation;
-    static int lastRoundSawEnemy;
 
     public Sage(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -91,9 +90,7 @@ public class Sage extends Robot{
             case EXPLORING:
                 // Run away if 1/3 health left
                 if(rc.getHealth() <= robotType.health / 3 ||
-                    (lastRoundSawEnemy >= rc.getRoundNum() + Util.MIN_TURNS_NO_ENEMY_TO_HEAL_HALF &&
-                        rc.getHealth() <= robotType.health / 2 &&
-                        !Comms.existsArchonMoving())) {
+                    (numAttackingEnemies == 0 && rc.getHealth() <= robotType.health / 2 && !Comms.existsArchonMoving())) {
                     if(canHeal && loadHealTarget()) {
                         currState = SageState.GOING_TO_HEAL;
                     }
@@ -113,7 +110,7 @@ public class Sage extends Robot{
                 break;
             case HEALING:
                 healCounter++;
-                if (healCounter >= Util.HealTimeout) {
+                if (healCounter == Util.HealTimeout) {
                     currState = SageState.EXPLORING;
                     canHeal = false;
                 } else if(rc.getHealth() == robotType.health) {
@@ -252,7 +249,6 @@ public class Sage extends Robot{
         }
         if (numAttackingEnemies != 0) {
             averageAttackingEnemyLocation = new MapLocation(overallAttackingEnemyDx / numAttackingEnemies, overallAttackingEnemyDy / numAttackingEnemies);
-            lastRoundSawEnemy = rc.getRoundNum();
         }
     }    
 
