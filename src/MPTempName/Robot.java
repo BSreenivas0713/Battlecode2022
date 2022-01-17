@@ -71,7 +71,7 @@ public class Robot {
         double AmountMinedBeforeWeGetThere = 0;
         for (RobotInfo friendlyRobot: FriendlySensable) {
             MapLocation robotLoc = friendlyRobot.getLocation();
-            double distToSource = Math.sqrt((double)robotLoc.distanceSquaredTo(robotLoc));
+            double distToSource = Math.sqrt((double)robotLoc.distanceSquaredTo(loc));
             if(distToSource < currDist) {
                 AmountMinedBeforeWeGetThere += (currDist - distToSource) * 5;
             }
