@@ -55,11 +55,13 @@ public class Archon extends Robot {
     static RobotInfo lastRobotHealed;
     static MapLocation[] archonSymmetryLocs; // only set for the last archon
 
+    static MapLocation lastClosestArchonToCluster;
     static MapLocation moveTarget;
     static int lastRoundMoved;
     static boolean isCharging;
 
     static int numEnemies;
+    static MapLocation closestEnemy;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -283,13 +285,20 @@ public class Archon extends Robot {
     public boolean checkUnderAttack() throws GameActionException {
         numEnemies = 0;
         int numFriendlies = 0;
+        closestEnemy = null;
+        int minDist = Integer.MAX_VALUE;
         for (RobotInfo enemy : EnemySensable) {
             RobotType enemyType = enemy.getType();
             if (Util.canAttackorArchon(enemyType)) {
                 numEnemies++;
+                if(enemy.location.isWithinDistanceSquared(currLoc, minDist)) {
+                    closestEnemy = enemy.location;
+                    minDist = currLoc.distanceSquaredTo(closestEnemy);
+                }
             }
         }
         for (RobotInfo bot : FriendlySensable) {
+            if(Clock.getBytecodeNum() >= 5000) break;
             RobotType botType = bot.getType();
             if (Util.canAttackorArchon(botType)) {
                 numFriendlies++;
@@ -305,6 +314,7 @@ public class Archon extends Robot {
         double bestLeadScore = Integer.MIN_VALUE;
         MapLocation bestLeadLoc = null;
         for(MapLocation loc: locs) {
+            if(Clock.getBytecodeNum() >= 13000) break;
             double currScore = getLeadDistTradeoffScore(loc, rc.senseLead(loc));
             if(currScore > bestLeadScore && !loc.equals(currLoc)) {
                 bestLeadScore = currScore;
@@ -441,6 +451,7 @@ public class Archon extends Robot {
                 break;
             case CHILLING:
                 Debug.printString("Chilling");
+                // writeLocation();
                 if((rc.getRoundNum() < Util.MIN_ROUND_FOR_LAB || Comms.haveBuiltLab())) {
                     if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold) {
                         currentBuild = Buildable.EMPTY;
@@ -496,6 +507,11 @@ public class Archon extends Robot {
                 Debug.printString("Moving");
                 reloadMoveTarget();
                 Nav.move(moveTarget);
+                // if(closestEnemy != null) {
+                //     moveSafely(closestEnemy, Robot.visionRadiusSquared);
+                // } else {
+                //     Nav.move(moveTarget);
+                // }
                 Debug.setIndicatorLine(Debug.INDICATORS, currLoc, moveTarget, 204, 0, 255);
                 break;
             case FINDING_GOOD_SPOT:
@@ -607,7 +623,7 @@ public class Archon extends Robot {
             case MOVING:
                 if(currLoc.isWithinDistanceSquared(moveTarget, 13) ||
                     (currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_SQUARED_FROM_CLUSTER) && numEnemies != 0)
-                    || !checkWontRunThroughCluster()) {
+                    || isOldArchonDead()) {
                     changeState(State.FINDING_GOOD_SPOT);
                 }
                 break;
@@ -626,7 +642,11 @@ public class Archon extends Robot {
                 break;
         }
     }
-    
+
+    public void writeLocation() throws GameActionException {
+        Comms.writeIfChanged(archonNumber, Comms.encodeLocation());
+    }
+
     public void changeState(State newState) throws GameActionException {
         currentState = newState;
         InformationCategory ic;
@@ -663,7 +683,7 @@ public class Archon extends Robot {
         RobotInfo maybeBuilder = null;
         RobotInfo maybeMiner = null;
         RobotInfo friendly = null;
-        for (int i = friendlies.length - 1; i >= 0; i--) {
+        for (int i = friendlies.length; --i >= 0;) {
             friendly = friendlies[i];
             switch(friendly.type) {
                 case SAGE:
@@ -762,6 +782,15 @@ public class Archon extends Robot {
         return cluster;
     }
 
+    // Abort moving if the archon died
+    public boolean isOldArchonDead() throws GameActionException {
+        for(MapLocation archonLoc : archonLocations) {
+            if(archonLoc == null) continue;
+            if(archonLoc.equals(lastClosestArchonToCluster)) return false;
+        }
+        return true;
+    }
+
     public MapLocation getClusterClosestTo(MapLocation loc) throws GameActionException {
         MapLocation[] clusters = Comms.getClusters();
         MapLocation cluster = null;
@@ -817,14 +846,14 @@ public class Archon extends Robot {
 
     public void reloadMoveTarget() throws GameActionException {
         MapLocation cluster = getClusterClosestTo(moveTarget);
-        MapLocation closestArchon = currLoc;
+        lastClosestArchonToCluster = currLoc;
         int minDist = Integer.MAX_VALUE;
         int dist;
         for(MapLocation archonLoc : archonLocations) {
             if(archonLoc == null) continue;
             dist = archonLoc.distanceSquaredTo(cluster);
             if(dist < minDist) {
-                closestArchon = archonLoc;
+                lastClosestArchonToCluster = archonLoc;
                 minDist = dist;
             }
         }
@@ -841,14 +870,14 @@ public class Archon extends Robot {
             return;
         }
 
-        if(closestArchon.isWithinDistanceSquared(cluster, Util.MIN_DIST_SQUARED_FROM_CLUSTER)) {
+        if(lastClosestArchonToCluster.isWithinDistanceSquared(cluster, Util.MIN_DIST_SQUARED_FROM_CLUSTER)) {
             // Small map? Just go to the closest archon
-            moveTarget = closestArchon;
+            moveTarget = lastClosestArchonToCluster;
         } else {
             // Otherwise, pick a location on the line from the cluster to the archon,
             // which is the correct distance away from the cluster
-            double vX = closestArchon.x - cluster.x;
-            double vY = closestArchon.y - cluster.y;
+            double vX = lastClosestArchonToCluster.x - cluster.x;
+            double vY = lastClosestArchonToCluster.y - cluster.y;
             double mag = Math.hypot(vX, vY);
             vX /= mag;
             vY /= mag;
@@ -859,18 +888,20 @@ public class Archon extends Robot {
         }
     }
 
+    // ~3k bytecode
     public boolean chooseInitialMoveTarget() throws GameActionException {
         MapLocation cluster = getClusterClosestToArchons();
-        MapLocation closestArchon = currLoc;
+        lastClosestArchonToCluster = currLoc;
         MapLocation farthestArchon = currLoc;
         int maxDist = Integer.MIN_VALUE;
         int minDist = Integer.MAX_VALUE;
         int dist;
         for(MapLocation archonLoc : archonLocations) {
             if(archonLoc == null) continue;
+            // Debug.printString(archonLoc.toString());
             dist = archonLoc.distanceSquaredTo(cluster);
             if(dist < minDist) {
-                closestArchon = archonLoc;
+                lastClosestArchonToCluster = archonLoc;
                 minDist = dist;
             }
             if(dist > maxDist) {
@@ -879,7 +910,7 @@ public class Archon extends Robot {
             }
         }
 
-        // if(closestArchon.equals(currLoc)) {
+        // if(lastClosestArchonToCluster.equals(currLoc)) {
         //     // Let's move closer and extend our advantage
         //     moveTarget = cluster;
         //     isCharging = true;
@@ -889,28 +920,29 @@ public class Archon extends Robot {
 
         // Only have the farthest one move
         if(!farthestArchon.equals(currLoc)) {
-            // Debug.println("Am not the farthest archon away");
+            // Debug.printString("Not farthest");
             return false;
         }
 
         // Min dist to move
-        if(currLoc.isWithinDistanceSquared(closestArchon, Util.MIN_DIST_TO_MOVE)) {
+        // if(currLoc.isWithinDistanceSquared(lastClosestArchonToCluster, Util.MIN_DIST_TO_MOVE)) {
+        //     return false;
+        // }
+
+        if(!checkWontRunThroughCluster(lastClosestArchonToCluster)) {
+            // Debug.printString("Cluster check");
             return false;
         }
 
-        if(!checkWontRunThroughCluster(closestArchon)) {
-            return false;
-        }
-
-        if(closestArchon.isWithinDistanceSquared(cluster, Util.MIN_DIST_SQUARED_FROM_CLUSTER)) {
+        if(lastClosestArchonToCluster.isWithinDistanceSquared(cluster, Util.MIN_DIST_SQUARED_FROM_CLUSTER)) {
             // Small map? Just go to the closest archon
-            moveTarget = closestArchon;
+            moveTarget = lastClosestArchonToCluster;
             Debug.println("Move target close: " + moveTarget);
         } else {
             // Otherwise, pick a location on the line from the cluster to the archon,
             // which is the correct distance away from the cluster
-            double vX = closestArchon.x - cluster.x;
-            double vY = closestArchon.y - cluster.y;
+            double vX = lastClosestArchonToCluster.x - cluster.x;
+            double vY = lastClosestArchonToCluster.y - cluster.y;
             double mag = Math.hypot(vX, vY);
             vX /= mag;
             vY /= mag;
@@ -945,13 +977,14 @@ public class Archon extends Robot {
     // Find the minimum rubble spot, breaking ties roughly by
     // the sum of adjacent rubble and the distance to the current location
     public void findGoodSpot() throws GameActionException {
-        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(currLoc, 13);
+        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(currLoc, 10);
         MapLocation bestLoc = null;
         MapLocation loc;
         int minScore = Integer.MAX_VALUE;
         int score;
         for(int i = locs.length; --i > 0;) {
             loc = locs[i];
+            if(Clock.getBytecodesLeft() < 8000) break;
             if(!rc.canSenseLocation(loc) || rc.isLocationOccupied(loc)) continue;
             score = getSpotScore(loc);
             if(score < minScore) {

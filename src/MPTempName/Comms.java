@@ -1249,7 +1249,8 @@ public class Comms {
         MapLocation[] archonLocs = new MapLocation[numArchons];
         for (int i = Comms.firstArchon; i < Comms.firstArchon + numArchons; i++) {
             int testFlag = rc.readSharedArray(i);
-            if(testFlag == DEAD_ARCHON_FLAG) {
+            // if(testFlag == DEAD_ARCHON_FLAG) {
+            if(testFlag == DEAD_ARCHON_FLAG || !isAlive(i - Comms.firstArchon + 1)) {
                 archonLocs[j++] = null;
             } else {
                 archonLocs[j++] = Comms.locationFromFlag(testFlag);
