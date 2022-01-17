@@ -984,7 +984,7 @@ public class Archon extends Robot {
         int score;
         for(int i = locs.length; --i > 0;) {
             loc = locs[i];
-            if(Clock.getBytecodesLeft() < 8000) break;
+            if(Clock.getBytecodesLeft() < 5000) break;
             if(!rc.canSenseLocation(loc) || rc.isLocationOccupied(loc)) continue;
             score = getSpotScore(loc);
             if(score < minScore) {
