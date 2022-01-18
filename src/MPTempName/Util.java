@@ -69,6 +69,7 @@ public class Util {
 
     // Distance a miner needs to be from home to deplete unit lead sources
     static final int MIN_DIST_TO_DEPLETE_UNIT_LEAD = 256;
+    static final int MAX_TURN_TO_CHECK_NEARBY_LEAD = 2000;
 
     static final int HEAL_DIST_TO_HOME = 5;
     static final int AVERAGE_HEALTH_TO_HEAL = 2 * RobotType.SOLDIER.health / 3;

@@ -70,6 +70,7 @@ public class Robot {
         double currDist = Math.sqrt((double) radiusSquared);
         double AmountMinedBeforeWeGetThere = 0;
         for (RobotInfo friendlyRobot: FriendlySensable) {
+            if(friendlyRobot.type != RobotType.MINER) continue;
             MapLocation robotLoc = friendlyRobot.getLocation();
             double distToSource = Math.sqrt((double)robotLoc.distanceSquaredTo(loc));
             if(distToSource < currDist) {

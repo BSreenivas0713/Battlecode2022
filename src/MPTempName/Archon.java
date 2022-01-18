@@ -310,6 +310,11 @@ public class Archon extends Robot {
     // pick a random lead ore for  a miner to go to, if spawned on this turn
     //
     public void updateClosestLeadOre() throws GameActionException{
+        if(rc.getRoundNum() >= Util.MAX_TURN_TO_CHECK_NEARBY_LEAD) {
+            closestLeadOre = null;
+            return;
+        }
+
         MapLocation[] locs = rc.senseNearbyLocationsWithLead(-1, 2);
         double bestLeadScore = Integer.MIN_VALUE;
         MapLocation bestLeadLoc = null;
@@ -937,7 +942,7 @@ public class Archon extends Robot {
         if(lastClosestArchonToCluster.isWithinDistanceSquared(cluster, Util.MIN_DIST_SQUARED_FROM_CLUSTER)) {
             // Small map? Just go to the closest archon
             moveTarget = lastClosestArchonToCluster;
-            Debug.println("Move target close: " + moveTarget);
+            // Debug.println("Move target close: " + moveTarget);
         } else {
             // Otherwise, pick a location on the line from the cluster to the archon,
             // which is the correct distance away from the cluster
@@ -950,7 +955,7 @@ public class Archon extends Robot {
             double x = cluster.x + Math.sqrt(Util.MIN_DIST_SQUARED_FROM_CLUSTER) * vX;
             double y = cluster.y + Math.sqrt(Util.MIN_DIST_SQUARED_FROM_CLUSTER) * vY;
             moveTarget = new MapLocation((int)x, (int)y);
-            Debug.println("Move target far: " + moveTarget);
+            // Debug.println("Move target far: " + moveTarget);
         }
 
         return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
@@ -959,15 +964,23 @@ public class Archon extends Robot {
     public int getSpotScore(MapLocation loc) throws GameActionException {
         int score = 0;
         MapLocation loc2;
-        for(int i = Util.directions.length; --i > 0;) {
-            loc2 = loc.add(Util.directions[i]);
-            if(rc.canSenseLocation(loc2)) {
-                score += rc.senseRubble(loc2);
-            } else {
-                // Penalize wall locations
-                score += 50;
-            }
-        }
+        loc2 = loc.add(Direction.NORTH);
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        loc2 = loc.add(Direction.NORTHEAST);
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        loc2 = loc.add(Direction.EAST);
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        loc2 = loc.add(Direction.SOUTHEAST);
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        loc2 = loc.add(Direction.SOUTHWEST);
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        loc2 = loc.add(Direction.SOUTHWEST);
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        loc2 = loc.add(Direction.WEST);
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        loc2 = loc.add(Direction.NORTHWEST);
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+
         score += rc.senseRubble(loc) * 20;
         score += Math.sqrt(loc.distanceSquaredTo(currLoc)) * 5;
         return score;
@@ -977,15 +990,18 @@ public class Archon extends Robot {
     // Find the minimum rubble spot, breaking ties roughly by
     // the sum of adjacent rubble and the distance to the current location
     public void findGoodSpot() throws GameActionException {
-        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(currLoc, 10);
+        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(currLoc, 13);
         MapLocation bestLoc = null;
         MapLocation loc;
         int minScore = Integer.MAX_VALUE;
         int score;
-        for(int i = locs.length; --i > 0;) {
+        for(int i = locs.length; --i >= 0;) {
             loc = locs[i];
-            if(Clock.getBytecodesLeft() < 5000) break;
-            if(!rc.canSenseLocation(loc) || rc.isLocationOccupied(loc)) continue;
+            if(Clock.getBytecodesLeft() < 4000) {
+                Debug.println("had to break finding good spot");
+                break;
+            }
+            if(rc.canSenseRobotAtLocation(loc) || !rc.canSenseLocation(loc)) continue;
             score = getSpotScore(loc);
             if(score < minScore) {
                 minScore = score;
@@ -998,7 +1014,7 @@ public class Archon extends Robot {
             int currTargetScore = getSpotScore(moveTarget);
             if(currTargetScore > minScore * 2) {
                 moveTarget = bestLoc;
-                Debug.println("New good spot: " + moveTarget.toString());
+                // Debug.println("New good spot: " + moveTarget.toString());
             }
         } else {
             moveTarget = bestLoc;
