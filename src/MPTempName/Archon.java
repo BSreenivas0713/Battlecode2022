@@ -463,7 +463,7 @@ public class Archon extends Robot {
                 tryToRepairLastBot();
                 break;
             case CHILLING:
-                // Debug.printString("Chilling");
+                Debug.printString("Chilling");
                 // writeLocation();
                 if((rc.getRoundNum() < Util.MIN_ROUND_FOR_LAB || Comms.haveBuiltLab())) {
                     if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold) {
@@ -969,7 +969,7 @@ public class Archon extends Robot {
         return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
     }
 
-    public int getSpotScore(MapLocation loc) throws GameActionException {
+    public int getSpotScoreSafe(MapLocation loc) throws GameActionException {
         int score = 0;
         MapLocation loc2;
         loc2 = loc.add(Direction.NORTH);
@@ -980,7 +980,7 @@ public class Archon extends Robot {
         score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
         loc2 = loc.add(Direction.SOUTHEAST);
         score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
-        loc2 = loc.add(Direction.SOUTHWEST);
+        loc2 = loc.add(Direction.SOUTH);
         score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
         loc2 = loc.add(Direction.SOUTHWEST);
         score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
@@ -994,32 +994,79 @@ public class Archon extends Robot {
         return score;
     }
 
+    public int getSpotScore(MapLocation loc) throws GameActionException {
+        int score = 0;
+        MapLocation loc2;
+        loc2 = loc.add(Direction.NORTH);
+        score += rc.senseRubble(loc2);
+        loc2 = loc.add(Direction.NORTHEAST);
+        score += rc.senseRubble(loc2);
+        loc2 = loc.add(Direction.EAST);
+        score += rc.senseRubble(loc2);
+        loc2 = loc.add(Direction.SOUTHEAST);
+        score += rc.senseRubble(loc2);
+        loc2 = loc.add(Direction.SOUTH);
+        score += rc.senseRubble(loc2);
+        loc2 = loc.add(Direction.SOUTHWEST);
+        score += rc.senseRubble(loc2);
+        loc2 = loc.add(Direction.WEST);
+        score += rc.senseRubble(loc2);
+        loc2 = loc.add(Direction.NORTHWEST);
+        score += rc.senseRubble(loc2);
+
+        score += rc.senseRubble(loc) * 20;
+        score += Math.sqrt(loc.distanceSquaredTo(currLoc)) * 5;
+        return score;
+    }
+
     // Choose a new spot if the new one is significantly better than the last one.
     // Find the minimum rubble spot, breaking ties roughly by
     // the sum of adjacent rubble and the distance to the current location
     public void findGoodSpot() throws GameActionException {
-        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(currLoc, 13);
+        // Note: We can probably get away with calculating only on movement cooldown
+        // We lost a game when I tested with this initially (prob rng)
+        // if(rc.isMovementReady()) return;
+
         MapLocation bestLoc = null;
-        MapLocation loc;
+        MapLocation loc = currLoc;
         int minScore = Integer.MAX_VALUE;
         int score;
-        for(int i = locs.length; --i >= 0;) {
-            loc = locs[i];
-            if(Clock.getBytecodesLeft() < 4000) {
-                Debug.println("had to break finding good spot");
-                break;
+        // Dir path goes 3 out, plus another for sensing the loc next to it.
+        if(Util.isLessThanDistOfEdge(currLoc, 4)) {
+            // Safe version that does rc.canSenseLocation checks
+            for(int i = Util.DIR_PATH_13.length; --i >= 0;) {
+                loc = loc.add(Util.DIR_PATH_13[i]);
+                if(Clock.getBytecodesLeft() < 4000) {
+                    Debug.println("Safe: had to break finding good spot");
+                    break;
+                }
+                if(rc.canSenseRobotAtLocation(loc) || !rc.canSenseLocation(loc)) continue;
+                score = getSpotScoreSafe(loc);
+                if(score < minScore) {
+                    minScore = score;
+                    bestLoc = loc;
+                }
             }
-            if(rc.canSenseRobotAtLocation(loc) || !rc.canSenseLocation(loc)) continue;
-            score = getSpotScore(loc);
-            if(score < minScore) {
-                minScore = score;
-                bestLoc = loc;
+        } else {
+            // Assumes all locations are sensable
+            for(int i = Util.DIR_PATH_13.length; --i >= 0;) {
+                loc = loc.add(Util.DIR_PATH_13[i]);
+                if(Clock.getBytecodesLeft() < 4000) {
+                    Debug.println("had to break finding good spot");
+                    break;
+                }
+                if(rc.canSenseRobotAtLocation(loc)) continue;
+                score = getSpotScore(loc);
+                if(score < minScore) {
+                    minScore = score;
+                    bestLoc = loc;
+                }
             }
         }
 
         if(rc.canSenseLocation(moveTarget) &&
             (!rc.isLocationOccupied(moveTarget) || moveTarget.equals(currLoc))) {
-            int currTargetScore = getSpotScore(moveTarget);
+            int currTargetScore = getSpotScoreSafe(moveTarget);
             if(currTargetScore > minScore * 2) {
                 moveTarget = bestLoc;
                 // Debug.println("New good spot: " + moveTarget.toString());

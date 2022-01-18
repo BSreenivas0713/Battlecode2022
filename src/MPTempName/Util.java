@@ -82,6 +82,12 @@ public class Util {
     static final int MIN_DIST_TO_MOVE = RobotType.ARCHON.visionRadiusSquared;
     static final int MIN_ADJ_RUBBLE_MULTIPLIER = 5;
 
+    // Spiral path going through all locations within radius 13
+    // Note: iterate through this backwards
+    static final Direction[] DIR_PATH_13 = new Direction[] {
+        Direction.NORTHWEST, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.NORTHWEST, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.WEST, Direction.WEST, Direction.WEST, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.EAST, Direction.EAST, Direction.SOUTH, Direction.SOUTH, Direction.WEST, Direction.NORTH, /* Direction.CENTER, */
+    };
+
     static void init(RobotController r) {
         rc = r;
         rng = new Random(rc.getRoundNum()*23981 + rc.getID()*10289);
@@ -166,6 +172,14 @@ public class Util {
     public static boolean onTheMap(MapLocation location) {
         return 0 <= location.x && location.x < MAP_WIDTH &&
                 0 <= location.y && location.y < MAP_HEIGHT;
+    }
+
+    // Note: Not distance squared
+    // Equivalent condition, can I add n to any dimension and
+    // still get a location within the map
+    public static boolean isLessThanDistOfEdge(MapLocation location, int n) {
+        return location.x < n || location.y < n ||
+                MAP_WIDTH <= location.x + n || MAP_HEIGHT <= location.y + n;
     }
 
     public static MapLocation[] guessEnemyLoc(MapLocation ourLoc) throws GameActionException {
