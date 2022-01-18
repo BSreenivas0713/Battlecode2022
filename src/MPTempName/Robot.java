@@ -64,17 +64,23 @@ public class Robot {
     public void loadArchonLocations() throws GameActionException {
         archonLocations = Comms.getFriendlyArchonLocations();
     }
-    public double getLeadDistTradeoffScore(MapLocation loc, int leadAmount) {
+    public double getLeadDistTradeoffScore(MapLocation loc, int leadAmount, int minerCap) {
         int radiusSquared = currLoc.distanceSquaredTo(loc);
         int minersMining = 0;
         double currDist = Math.sqrt((double) radiusSquared);
         double AmountMinedBeforeWeGetThere = 0;
+        int currMinerCount = 0;
         for (RobotInfo friendlyRobot: FriendlySensable) {
-            if(friendlyRobot.type != RobotType.MINER) continue;
-            MapLocation robotLoc = friendlyRobot.getLocation();
-            double distToSource = Math.sqrt((double)robotLoc.distanceSquaredTo(loc));
-            if(distToSource < currDist) {
-                AmountMinedBeforeWeGetThere += (currDist - distToSource) * 5;
+            if(currMinerCount > minerCap) {
+                break;
+            }
+            if(friendlyRobot.type == RobotType.MINER) {
+                currMinerCount++;
+                MapLocation robotLoc = friendlyRobot.getLocation();
+                double distToSource = Math.sqrt((double)robotLoc.distanceSquaredTo(loc));
+                if(distToSource < currDist) {
+                    AmountMinedBeforeWeGetThere += (currDist - distToSource) * 5;
+                }
             }
         }
         if(radiusSquared == 0 && leadAmount > 1){return Integer.MAX_VALUE;}

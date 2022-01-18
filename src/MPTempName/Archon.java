@@ -310,22 +310,30 @@ public class Archon extends Robot {
     // pick a random lead ore for  a miner to go to, if spawned on this turn
     //
     public void updateClosestLeadOre() throws GameActionException{
-        if(rc.getRoundNum() >= Util.MAX_TURN_TO_CHECK_NEARBY_LEAD) {
-            closestLeadOre = null;
-            return;
-        }
 
         MapLocation[] locs = rc.senseNearbyLocationsWithLead(-1, 2);
+        int numLocs = locs.length;
+        int numMinersPerLoc;
+        if(numLocs != 0) {
+            numMinersPerLoc = Util.MAX_MINER_LEAD_MULT / numLocs;
+        }
+        else {
+            numMinersPerLoc = 0;
+        }
+        // int currByteCode = Clock.getBytecodesLeft();
+        // Debug.printString("locs: " + numLocs + ", miners: " + numMinersPerLoc);
         double bestLeadScore = Integer.MIN_VALUE;
         MapLocation bestLeadLoc = null;
         for(MapLocation loc: locs) {
-            if(Clock.getBytecodeNum() >= 13000) break;
-            double currScore = getLeadDistTradeoffScore(loc, rc.senseLead(loc));
+            double currScore = getLeadDistTradeoffScore(loc, rc.senseLead(loc), numMinersPerLoc);
             if(currScore > bestLeadScore && !loc.equals(currLoc)) {
                 bestLeadScore = currScore;
                 bestLeadLoc = loc;
             }
         }
+        // int newByteCode = Clock.getBytecodesLeft();
+        // int byteCodeUsed = currByteCode - newByteCode;
+        // Debug.printString("byte: " + byteCodeUsed);
         if (bestLeadLoc != null) {
             closestLeadOre = bestLeadLoc;
             // Debug.printString("ore: " + closestLeadOre);
@@ -455,7 +463,7 @@ public class Archon extends Robot {
                 tryToRepairLastBot();
                 break;
             case CHILLING:
-                Debug.printString("Chilling");
+                // Debug.printString("Chilling");
                 // writeLocation();
                 if((rc.getRoundNum() < Util.MIN_ROUND_FOR_LAB || Comms.haveBuiltLab())) {
                     if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold) {
@@ -473,7 +481,7 @@ public class Archon extends Robot {
                 }
                 else {
                     if(!amImportant() && !Comms.haveBuiltBuilderForFinalLab()) {
-                        Debug.printString("not imp, make lab bulder");
+                        // Debug.printString("not imp, make lab bulder");
                         currentBuild = Buildable.BUILDER;
                         nextBuild = Buildable.EMPTY;
                         buildRobot(RobotType.BUILDER);
