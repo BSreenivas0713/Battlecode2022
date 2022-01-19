@@ -33,6 +33,8 @@ public class Sage extends Robot{
     static MapLocation closestSage;
     static int closestSageDist;
     static int numDangerousEnemies;
+    static int bestOverallSoldierHealth;
+    static int predictedDamage;
 
     static int overallAttackingEnemyDx;
     static int overallAttackingEnemyDy;
@@ -173,6 +175,22 @@ public class Sage extends Robot{
                                 Direction[] dirs = Util.getInOrderDirections(newDir);
                                 tryMoveDest(dirs);
                             }
+                        } else if (closestSoldierDist <= RobotType.SOLDIER.visionRadiusSquared) {
+                            if (tryAttack()) {
+                                Direction dir = closestSoldier.directionTo(currLoc);
+                                Direction newDir = makeDirBetter(dir);
+                                if (canMoveRubble(newDir)) {
+                                    Direction[] dirs = Util.getInOrderDirections(newDir);
+                                    tryMoveDest(dirs);
+                                }
+                            } else {
+                                Direction moveDir = makeDirBetter(currLoc.directionTo(averageAttackingEnemyLocation));
+                                if (canMoveRubble(moveDir)) {
+                                    Direction[] dirs = Util.getInOrderDirections(moveDir);
+                                    tryMoveDest(dirs);
+                                }
+                                tryAttack();
+                            }
                         } else if (closestSoldierDist <= RobotType.SAGE.actionRadiusSquared) {
                             tryAttack();
                         } else {
@@ -308,6 +326,8 @@ public class Sage extends Robot{
         closestSoldierDist = Util.MAP_MAX_DIST_SQUARED;
         closestSage = null;
         closestSageDist = Util.MAP_MAX_DIST_SQUARED;
+        bestOverallSoldierHealth = 0;
+        predictedDamage = 0;
         RobotInfo robot;
         MapLocation loc;
         int dist;
@@ -315,8 +335,26 @@ public class Sage extends Robot{
         for (int i = EnemySensable.length; --i >= 0;) {
             robot = EnemySensable[i];
             switch(robot.type) {
-                case SAGE:
                 case SOLDIER:
+                    if (robot.health > bestOverallSoldierHealth) {
+                        bestOverallSoldierHealth = robot.health;
+                    }
+                    dist = robot.location.distanceSquaredTo(currLoc);
+                    if (dist < closestSoldierDist) {
+                        closestSoldier = robot.location;
+                        closestSoldierDist = dist;
+                    }
+                    loc = robot.location;
+                    overallAttackingEnemyDx += loc.x;
+                    overallAttackingEnemyDy += loc.y;
+                    numAttackingEnemies++;
+                    break;
+                case SAGE:
+                    dist = robot.location.distanceSquaredTo(currLoc);
+                    if (dist < closestSageDist) {
+                        closestSage = robot.location;
+                        closestSageDist = dist;
+                    }
                 case WATCHTOWER:
                     loc = robot.location;
                     overallAttackingEnemyDx += loc.x;
@@ -338,12 +376,7 @@ public class Sage extends Robot{
                         bestSoldierHealth = robot.health;
                         bestSoldier = robot.location;
                     }
-                    dist = robot.location.distanceSquaredTo(currLoc);
-                    if (dist < closestSoldierDist) {
-                        closestSoldier = robot.location;
-                        closestSoldierDist = dist;
-                    }
-                    totalHealth += robot.type.getMaxHealth(1) / 10;
+                    totalHealth += Math.min(robot.type.getMaxHealth(1) * 22 / 100, robot.health);
                     numDangerousEnemies++;
                     break;
                     // Intentional fallthrough
@@ -352,15 +385,10 @@ public class Sage extends Robot{
                         bestSageHealth = robot.health;
                         bestSage = robot.location;
                     }
-                    dist = robot.location.distanceSquaredTo(currLoc);
-                    if (dist < closestSageDist) {
-                        closestSage = robot.location;
-                        closestSageDist = dist;
-                    }
                     numDangerousEnemies++;
                 case MINER:
                 case BUILDER:
-                    totalHealth += robot.type.getMaxHealth(1) / 10;
+                    totalHealth += Math.min(robot.type.getMaxHealth(1) * 22 / 100, robot.health);
                     break;
                 case ARCHON:
                     inRangeArchon = robot;
@@ -375,25 +403,34 @@ public class Sage extends Robot{
         if (bestSageHealth > 45) {
             bestSageHealth = 45;
         }
+        if (numAttackingEnemies != 0) {
+            predictedDamage = totalHealth;
+            averageAttackingEnemyLocation = new MapLocation(overallAttackingEnemyDx / numAttackingEnemies, overallAttackingEnemyDy / numAttackingEnemies);
+        }
         if (bestSageHealth >= totalHealth) {
+            predictedDamage = bestSageHealth;
             attackTarget = bestSage;
         } else if (bestSoldierHealth >= totalHealth) {
+            predictedDamage = bestSoldierHealth;
             attackTarget = bestSoldier;
-        }
-        if (numAttackingEnemies != 0) {
-            averageAttackingEnemyLocation = new MapLocation(overallAttackingEnemyDx / numAttackingEnemies, overallAttackingEnemyDy / numAttackingEnemies);
         }
     }    
 
-    public void tryAttack() throws GameActionException {
+    public boolean tryAttack() throws GameActionException {
+        if (closestSage == null && predictedDamage < bestOverallSoldierHealth * 2 / 3) {
+            return false;
+        }
         if (attackTarget == null && numDangerousEnemies > 0 
             && victims.length > 0 && rc.canEnvision(AnomalyType.CHARGE)) {
             Debug.printString("Envisioning Charge");
             rc.envision(AnomalyType.CHARGE);
+            return true;
         } else if (attackTarget != null && victims.length > 0 && rc.canAttack(attackTarget)) {
             Debug.printString("Attacking " + attackTarget);
             rc.attack(attackTarget);
+            return true;
         }
+        return false;
     }
 
     public void moveTowardsCluster() throws GameActionException {
