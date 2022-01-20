@@ -85,7 +85,6 @@ public class Sage extends Robot{
             runSemaphore--;
         }
         tryAttackArchon();
-        checkAvoidCharge();
         scanEnemies();
         boolean almostReady = rc.getActionCooldownTurns() < GameConstants.COOLDOWN_LIMIT + GameConstants.COOLDOWNS_PER_TURN;
         trySwitchState();
@@ -223,6 +222,7 @@ public class Sage extends Robot{
                     }
                 } else {
                     if (!isRunning || runSemaphore <= 0) {
+                        checkAvoidCharge();
                         isRunning = false;
                         moveTowardsCluster();
                     } else {
