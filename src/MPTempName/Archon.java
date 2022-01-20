@@ -219,6 +219,7 @@ public class Archon extends Robot {
         boolean isObese = checkForObesity();
         toggleState(underAttack, isObese);
         doStateAction();
+        // trySacrifice();
         Comms.advanceTurn();
         // Debug.setIndicatorString(leadToUse + "; " + robotCounter + "; num alive enemies: " + Comms.aliveEnemyArchonCount());
         // if (Comms.enemyArchonCount() > 0) {
@@ -1108,6 +1109,31 @@ public class Archon extends Robot {
             } else {
                 moveTarget = bestLoc;
             }
+        }
+    }
+
+    public void trySacrifice() throws GameActionException {
+        MapLocation cluster = Comms.getClosestCluster(currLoc);
+        if (rc.getRoundNum() == 1 || cluster == null) {
+            return;
+        }
+        MapLocation farthestArchon = null;
+        int farthestDist = 0;
+        for (int i = Comms.firstArchon; i < Comms.firstArchon + Comms.friendlyArchonCount(); i++) {
+            MapLocation tempLoc = Comms.locationFromFlag(rc.readSharedArray(i));
+            int tempDist = tempLoc.distanceSquaredTo(cluster);
+            if (tempDist > farthestDist) {
+                farthestArchon = tempLoc;
+                farthestDist = tempDist;
+            }
+        }
+        int count = rc.getArchonCount();
+        if (count > 2 && count == Comms.friendlyArchonCount() 
+            && farthestArchon.equals(currLoc) && numMinersBuilt > 0) {
+            if (Comms.getTurn() == rc.getArchonCount()) {
+                Comms.advanceTurn();
+            }
+            rc.disintegrate();
         }
     }
 }
