@@ -1114,6 +1114,46 @@ public class Comms {
         rc.writeSharedArray(NUM_ENEMIES_IDX, numEnemies + 1);
     }
 
+    public static void updateAvgEnemyLoc(int totalX, int totalY, int numAdded) throws GameActionException {
+        if(robotType != RobotType.ARCHON) {
+            setNeedToResetEnemyLocs();
+        }
+        int numClusters = 0;
+        for (int i = 0; i < 3; i++) {
+            if (rc.readSharedArray(i * 4 + CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_1) != 0) {
+                numClusters++;
+            }
+        }
+
+        MapLocation enemyLoc = new MapLocation (totalX / numAdded, totalY / numAdded);
+        MapLocation[] currAvgLocs = getCurrentClusters();
+        int closestClusterDist = Integer.MAX_VALUE;
+        int closestClusterIdx = -1;
+        for (int i = 0; i < numClusters; i++) {
+            MapLocation clusterLoc = currAvgLocs[i];
+            int distToCluster = clusterLoc.distanceSquaredTo(enemyLoc);
+            if (distToCluster < closestClusterDist) {
+                closestClusterDist = distToCluster;
+                closestClusterIdx = i;
+            }
+        }
+        if (closestClusterDist > Util.MAP_MAX_DIST_SQUARED / 9 && numClusters < 3) {
+            closestClusterIdx = numClusters;
+        }
+
+        int X_IDX = CURR_ROUND_TOTAL_ENEMY_LOC_X_IDX_1 + 4 * closestClusterIdx;
+        int Y_IDX = CURR_ROUND_TOTAL_ENEMY_LOC_Y_IDX_1 + 4 * closestClusterIdx;
+        int NUM_ENEMIES_IDX = CURR_ROUND_NUM_ENEMIES_IDX_1 + 4 * closestClusterIdx;
+        int numEnemies = rc.readSharedArray(NUM_ENEMIES_IDX);
+        int currX = rc.readSharedArray(X_IDX);
+        int currY = rc.readSharedArray(Y_IDX);
+        int newX = currX + totalX;
+        int newY = currY + totalY;
+        rc.writeSharedArray(X_IDX, newX);
+        rc.writeSharedArray(Y_IDX, newY);
+        rc.writeSharedArray(NUM_ENEMIES_IDX, numEnemies + numAdded);
+    }
+
     public static boolean existsArchonMoving() throws GameActionException {
         return ((rc.readSharedArray(setupFlag) >> EXISTS_ARCHON_MOVING_OFFSET) & 1) != 0;
     }

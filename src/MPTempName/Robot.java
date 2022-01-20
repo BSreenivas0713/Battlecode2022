@@ -94,22 +94,37 @@ public class Robot {
 
 
     public void reportEnemies() throws GameActionException {
+        int count = 0;
+        int totalX = 0;
+        int totalY = 0;
         for (RobotInfo bot : EnemySensable) {
+            if (count == 20) {
+                break;
+            }
             switch(bot.getType()) {
                 case SOLDIER:
                 case WATCHTOWER:
                 case ARCHON:
                 case SAGE:
-                    Comms.updateAvgEnemyLoc(bot.getLocation());
+                    totalX += bot.location.x;
+                    totalY += bot.location.y;
+                    count++;
                     break;
                 case MINER:
                 case BUILDER:
                 case LABORATORY:
-                    if(!Comms.foundEnemySoldier)
-                        Comms.updateAvgEnemyLoc(bot.getLocation());
+                    if(!Comms.foundEnemySoldier) {
+                        totalX += bot.location.x;
+                        totalY += bot.location.y;
+                        count++;
+                    }
                     break;
             }
         }
+        if (count != 0) {
+            Comms.updateAvgEnemyLoc(totalX, totalY, count);
+        }
+        
     }
 
     public void initTurn() throws GameActionException {
