@@ -31,8 +31,11 @@ public class Sage extends Robot{
     static int closestSoldierDist;
     static MapLocation closestSage;
     static int closestSageDist;
+    static MapLocation closestWatchtower;
+    static int closestWatchtowerDist;
     static int bestOverallSoldierHealth;
     static int predictedDamage;
+    static int watchtowerDamage;
     static int numVictims;
 
     static int overallAttackingEnemyDx;
@@ -198,7 +201,8 @@ public class Sage extends Robot{
                         }
                     } else {
                         if (closestSoldierDist > RobotType.SOLDIER.visionRadiusSquared
-                            && closestSageDist > RobotType.SAGE.visionRadiusSquared) {
+                            && closestSageDist > RobotType.SAGE.visionRadiusSquared
+                            && closestWatchtowerDist > RobotType.WATCHTOWER.visionRadiusSquared) {
                             return;
                         }
                         Debug.printString("Running!");
@@ -207,6 +211,8 @@ public class Sage extends Robot{
                             dir = closestSage.directionTo(currLoc);
                         } else if (closestSoldierDist <= RobotType.SOLDIER.visionRadiusSquared) {
                             dir = closestSoldier.directionTo(currLoc);
+                        } else if (closestWatchtowerDist <= RobotType.WATCHTOWER.actionRadiusSquared) {
+                            dir = closestWatchtower.directionTo(currLoc);
                         }
                         Direction newDir = chooseBackupDirection(dir);
                         Direction[] dirs = Util.getInOrderDirections(newDir);
@@ -306,6 +312,7 @@ public class Sage extends Robot{
         inRangeArchon = null;
         attackTarget = null;
         int totalHealth = 0;
+        watchtowerDamage = 0;
         MapLocation bestSoldier = null;
         int bestSoldierHealth = 0;
         MapLocation bestSage = null;
@@ -317,6 +324,8 @@ public class Sage extends Robot{
         closestSoldierDist = Util.MAP_MAX_DIST_SQUARED;
         closestSage = null;
         closestSageDist = Util.MAP_MAX_DIST_SQUARED;
+        closestWatchtower = null;
+        closestWatchtowerDist = Util.MAP_MAX_DIST_SQUARED;
         bestOverallSoldierHealth = 0;
         predictedDamage = 0;
         RobotInfo robot;
@@ -368,6 +377,20 @@ public class Sage extends Robot{
                     numAttackingEnemies++;
                     break;
                 case WATCHTOWER:
+                    if (dist <= RobotType.SAGE.actionRadiusSquared) {
+                        if (robot.level == 1) {
+                            watchtowerDamage += Math.min(15, robot.health);
+                        } else if (robot.level == 2) {
+                            watchtowerDamage += Math.min(27, robot.health);
+                        } else {
+                            watchtowerDamage += Math.min(48, robot.health);
+                        }
+                        
+                    }
+                    if (robot.mode == RobotMode.TURRET && dist < closestWatchtowerDist) {
+                        closestWatchtower = robot.location;
+                        closestWatchtowerDist = dist;
+                    }
                     loc = robot.location;
                     overallAttackingEnemyDx += loc.x;
                     overallAttackingEnemyDy += loc.y;
@@ -413,10 +436,16 @@ public class Sage extends Robot{
     }    
 
     public boolean tryAttack() throws GameActionException {
-        if (closestSage == null && predictedDamage < bestOverallSoldierHealth * 2 / 3) {
+        if (closestSage == null && predictedDamage < bestOverallSoldierHealth * 2 / 3 
+            && watchtowerDamage < 30) {
             return false;
         }
-        if (attackTarget == null && numAttackingEnemies > 0 
+        if (watchtowerDamage > predictedDamage && numAttackingEnemies > 0 
+            && numVictims > 0 && rc.canEnvision(AnomalyType.FURY)) {
+            Debug.printString("Envisioning Fury");
+            rc.envision(AnomalyType.FURY);
+            return true;
+        } else if (attackTarget == null && numAttackingEnemies > 0 
             && numVictims > 0 && rc.canEnvision(AnomalyType.CHARGE)) {
             Debug.printString("Envisioning Charge");
             rc.envision(AnomalyType.CHARGE);
