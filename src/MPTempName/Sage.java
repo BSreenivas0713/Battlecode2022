@@ -445,6 +445,8 @@ public class Sage extends Robot{
         Direction bestDirSoFar = null;
         int bestRubble = 101;
         int bestEnemiesStillSeen = Integer.MAX_VALUE;
+        RobotInfo[] enemyAttackable = getEnemyAttackable();
+        RobotInfo enemy;
         for(Direction newDir: dirsToConsider) {
             if (rc.canMove(newDir)) {
                 MapLocation targetLoc = currLoc.add(newDir);
@@ -452,7 +454,8 @@ public class Sage extends Robot{
                 int newDirRubble = rc.senseRubble(targetLoc);
                 boolean notTooMuchRubble = newDirRubble < (10 + locRubble);
                 int currEnemiesStillSeen = 0;
-                for (RobotInfo enemy: getEnemyAttackable()) {
+                for(int i = enemyAttackable.length; --i >= 0;) {
+                    enemy = enemyAttackable[i];
                     MapLocation enemyLoc = enemy.getLocation();
                     int enemyActionRadius = enemy.getType().actionRadiusSquared;
                     if(enemyLoc.distanceSquaredTo(targetLoc) <= enemyActionRadius) {

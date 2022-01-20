@@ -295,31 +295,22 @@ public class Robot {
 
     public RobotInfo[] getEnemyAttackable() throws GameActionException {
         int size = 0;
-        for (RobotInfo enemyRobot: EnemySensable) {
+        RobotInfo[] maxEnemyAttackable = new RobotInfo[EnemySensable.length];
+        RobotInfo enemyRobot;
+        for (int i = EnemySensable.length; --i >= 0;) {
+            enemyRobot = EnemySensable[i];
             switch(enemyRobot.getType()) {
                 case SOLDIER:
                 case WATCHTOWER:
                 case SAGE:
-                    size++;
+                    maxEnemyAttackable[size++] = enemyRobot;
                     break;
                 default: 
                     break;
             }
         }
         RobotInfo[] enemyAttackable = new RobotInfo[size];
-        int counter = 0;
-        for (RobotInfo enemyRobot: EnemySensable) {
-            switch(enemyRobot.getType()) {
-                case SOLDIER:
-                case WATCHTOWER:
-                case SAGE:
-                    enemyAttackable[counter] = enemyRobot;
-                    counter++;
-                    break;
-                default: 
-                    break;
-            }
-        }
+        System.arraycopy(maxEnemyAttackable, 0, enemyAttackable, 0, size);
         return enemyAttackable;
     }
 
