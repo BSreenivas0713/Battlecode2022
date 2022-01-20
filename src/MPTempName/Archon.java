@@ -583,6 +583,18 @@ public class Archon extends Robot {
         }
     }
 
+    public boolean shouldMoveToBetterRubble() throws GameActionException {
+        int currRubble = rc.senseRubble(currLoc);
+        if (currRubble < 30) {
+            return false;
+        }
+        for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(currLoc, visionRadiusSquared)) {
+            if (rc.onTheMap(loc) && (currRubble - rc.senseRubble(loc)) >= 20) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public void toggleState(boolean underAttack, boolean isObese) throws GameActionException {
         switch (currentState) {
@@ -599,6 +611,15 @@ public class Archon extends Robot {
                     stateStack.push(State.CHILLING);
                     changeState(State.OBESITY);
                 }
+                else if (robotCounter >= 2 && shouldMoveToBetterRubble() &&
+                        rc.isTransformReady() && !Comms.existsArchonMoving()) {
+                    rc.writeSharedArray(archonNumber, Comms.DEAD_ARCHON_FLAG);
+                    stateStack.push(currentState);
+                    changeState(State.FINDING_GOOD_SPOT);
+                    moveTarget = currLoc;
+                    rc.transform();
+                    Comms.setArchonMoving();
+                }
                 break;
             case UNDER_ATTACK:
                 if (!underAttack) {
@@ -612,7 +633,19 @@ public class Archon extends Robot {
                 } else if (isObese) {
                     stateStack.push(currentState);
                     changeState(State.OBESITY);
-                } else if(rc.getRoundNum() > lastRoundPrioritized + Util.TURNS_NOT_PRIORITIZED_TO_MOVE &&
+                } else if (shouldMoveToBetterRubble() && 
+                            (rc.getRoundNum() > lastRoundPrioritized + Util.TURNS_NOT_PRIORITIZED_TO_MOVE || 
+                            currLoc.distanceSquaredTo(Comms.getClosestCluster(currLoc)) > 1.5 * visionRadiusSquared) &&
+                            rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_TO_MOVE_AGAIN && 
+                            rc.isTransformReady() && !Comms.existsArchonMoving()) {
+                    rc.writeSharedArray(archonNumber, Comms.DEAD_ARCHON_FLAG);
+                    stateStack.push(currentState);
+                    changeState(State.FINDING_GOOD_SPOT);
+                    moveTarget = currLoc;
+                    rc.transform();
+                    Comms.setArchonMoving();
+                }
+                else if(rc.getRoundNum() > lastRoundPrioritized + Util.TURNS_NOT_PRIORITIZED_TO_MOVE &&
                             rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_TO_MOVE_AGAIN &&
                             rc.isTransformReady() &&
                             !Comms.existsArchonMoving() &&
@@ -1064,15 +1097,17 @@ public class Archon extends Robot {
             }
         }
 
-        if(rc.canSenseLocation(moveTarget) &&
-            (!rc.isLocationOccupied(moveTarget) || moveTarget.equals(currLoc))) {
-            int currTargetScore = getSpotScoreSafe(moveTarget);
-            if(currTargetScore > minScore * 2) {
+        if (bestLoc != null) {
+            if(rc.canSenseLocation(moveTarget) &&
+                (!rc.isLocationOccupied(moveTarget) || moveTarget.equals(currLoc))) {
+                int currTargetScore = getSpotScoreSafe(moveTarget);
+                if(currTargetScore > minScore * 2) {
+                    moveTarget = bestLoc;
+                    // Debug.println("New good spot: " + moveTarget.toString());
+                }
+            } else {
                 moveTarget = bestLoc;
-                // Debug.println("New good spot: " + moveTarget.toString());
             }
-        } else {
-            moveTarget = bestLoc;
         }
     }
 }
