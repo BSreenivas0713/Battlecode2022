@@ -612,7 +612,7 @@ public class Archon extends Robot {
                     stateStack.push(State.CHILLING);
                     changeState(State.OBESITY);
                 }
-                else if (robotCounter >= 2 && shouldMoveToBetterRubble() &&
+                else if (robotCounter >= 3 && shouldMoveToBetterRubble() &&
                         rc.isTransformReady() && !Comms.existsArchonMoving()) {
                     rc.writeSharedArray(archonNumber, Comms.DEAD_ARCHON_FLAG);
                     stateStack.push(currentState);
