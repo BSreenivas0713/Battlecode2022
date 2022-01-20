@@ -76,6 +76,8 @@ public class Sage extends Robot{
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         Debug.printString("Cool: " + rc.getActionCooldownTurns());
+        Comms.incrementSageCounter();
+        checkAvoidCharge();
         if (isRunning) {
             runSemaphore--;
         }

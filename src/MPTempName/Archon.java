@@ -17,6 +17,7 @@ public class Archon extends Robot {
         INIT,
         MOVING,
         FINDING_GOOD_SPOT,
+        BUILDING_LAB,
     };
 
     static Direction[] BUILD_DIRECTIONS;
@@ -32,6 +33,7 @@ public class Archon extends Robot {
     static int minerCount;
     static int soldierCount;
     static int builderCount;
+    static int sageCount;
 
     static int numMinersBuilt;
     static int minerDirOffset;
@@ -62,6 +64,8 @@ public class Archon extends Robot {
 
     static int numEnemies;
     static MapLocation closestEnemy;
+    static int roundsSinceUnderAttack;
+    static int TimeToStartFarming;
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
@@ -81,6 +85,7 @@ public class Archon extends Robot {
         leadNeededByBuilders = 0;
         soldierCount = 0;
         builderCount = 0;
+        roundsSinceUnderAttack = -1;
         maxLeadUsedByArchons = 75 * ((1 + rc.getArchonCount()) - archonNumber);
         leadObesity = 180 + maxLeadUsedByArchons;
         minerDirOffset = Util.rng.nextInt(8);
@@ -88,6 +93,12 @@ public class Archon extends Robot {
         pruneExploreDirections();
         if (Comms.getTurn() == rc.getArchonCount()) {
             archonSymmetryLocs = guessAndSortSymmetryLocs();
+        }
+        if(!isSmallMap()) {
+            TimeToStartFarming = 100;
+        }
+        else {
+            TimeToStartFarming = 250;
         }
     }
 
@@ -173,13 +184,14 @@ public class Archon extends Robot {
         }
         for(Direction dir : orderedDirs) {
             if (rc.canBuildRobot(toBuild, dir)){
-                if(toBuild == RobotType.BUILDER && rc.getRoundNum() >= Util.MIN_ROUND_FOR_LAB) {
+                if(toBuild == RobotType.BUILDER && !Comms.haveBuiltBuilderForFinalLab()) {
                     Comms.signalBuilderBuilt();
                 }
                 if (Comms.getTurn() != rc.getArchonCount()) {
                     Comms.useLead(toBuild);
                 }
                 Comms.encodeBuildGuess(archonNumber, nextBuild);
+                Comms.signalBuiltRobot();
                 rc.buildRobot(toBuild, dir);
                 RobotInfo robot = rc.senseRobotAtLocation(rc.getLocation().add(dir));
                 //in future, add info about this new robot to maps
@@ -202,6 +214,7 @@ public class Archon extends Robot {
             Comms.clearUsedLead();
             Comms.clearBuildGuesses();
             Comms.resetNumTroopsHealing();
+            sageCount = Comms.getSageCount();
             //todo: zero out the symmetry cluster bit
         }
         Comms.setAlive(archonNumber);
@@ -344,8 +357,15 @@ public class Archon extends Robot {
     }
 
     public void updateRobotCounts() throws GameActionException {
+        if(roundsSinceUnderAttack != -1) {
+            roundsSinceUnderAttack++;
+        }
+        if(Comms.AnyoneUnderAttack()) {
+            roundsSinceUnderAttack = 0;
+        }
         minerCount = Comms.getMinerCount();
         soldierCount = Comms.getSoldierCount();
+        Comms.setSteadySoldierIdx(soldierCount);
         builderCount = Comms.getBuilderCount();
     }
 
@@ -463,35 +483,34 @@ public class Archon extends Robot {
                 initCounter = firstRounds(4, initCounter);
                 tryToRepairLastBot();
                 break;
+            case BUILDING_LAB:
+                // Debug.printString("not imp, make lab bulder");
+                currentBuild = Buildable.BUILDER;
+                nextBuild = Buildable.EMPTY;
+                if(!Comms.haveBuiltBuilderForFinalLab() && !amImportant()) {
+                    buildRobot(RobotType.BUILDER);
+                }
+                break;
             case CHILLING:
                 Debug.printString("Chilling");
                 // writeLocation();
-                if((rc.getRoundNum() < Util.MIN_ROUND_FOR_LAB || Comms.haveBuiltLab())) {
-                    if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold) {
-                        currentBuild = Buildable.EMPTY;
-                        nextBuild = Buildable.SOLDIER;
-                        buildRobot(RobotType.SAGE);
-                        break;
-                    }
-                    if(minerCount <= MIN_NUM_MINERS && soldierCount >= (1/3) * minerCount) {
-                        chillingCounter = minerSoldier31(chillingCounter);
-                    }
-                    else {
-                        chillingCounter = minerSoldierRatio(7, chillingCounter);
-                    }
+                if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold) {
+                    currentBuild = Buildable.EMPTY;
+                    nextBuild = Buildable.SOLDIER;
+                    buildRobot(RobotType.SAGE);
+                    break;
+                }
+                if(minerCount <= MIN_NUM_MINERS && soldierCount >= (1/3) * minerCount) {
+                    chillingCounter = minerSoldier31(chillingCounter);
                 }
                 else {
-                    if(!amImportant() && !Comms.haveBuiltBuilderForFinalLab()) {
-                        // Debug.printString("not imp, make lab bulder");
-                        currentBuild = Buildable.BUILDER;
-                        nextBuild = Buildable.EMPTY;
-                        buildRobot(RobotType.BUILDER);
-                    }
+                    chillingCounter = minerSoldierRatio(7, chillingCounter);
                 }
                 tryToRepairLastBot();
                 break;
             case UNDER_ATTACK:
                 // Debug.printString("Under Attack");
+                roundsSinceUnderAttack = 0;
                 chillingCounter = buildSoldier(chillingCounter);
                 tryToRepairLowestHealth();
                 break;
@@ -598,10 +617,11 @@ public class Archon extends Robot {
     }
 
     public void toggleState(boolean underAttack, boolean isObese) throws GameActionException {
-        switch (currentState) {
+        switch (currentState) { 
             case INIT:
                 // Debug.printString("lead obesity: " + leadObesity);
                 if(underAttack) {
+                    Comms.signalUnderAttack();
                     stateStack.push(State.CHILLING);
                     changeState(State.UNDER_ATTACK);
                 }
@@ -624,11 +644,13 @@ public class Archon extends Robot {
                 break;
             case UNDER_ATTACK:
                 if (!underAttack) {
+                    Comms.signalNotUnderAttack();
                     changeState(stateStack.pop());
                 }
                 break;
             case CHILLING:
                 if (underAttack) {
+                    Comms.signalUnderAttack();
                     stateStack.push(currentState);
                     changeState(State.UNDER_ATTACK);
                 } else if (isObese) {
@@ -657,14 +679,21 @@ public class Archon extends Robot {
                     changeState(State.MOVING);
                     rc.transform();
                     Comms.setArchonMoving();
+                } else if(!Comms.haveBuiltBuilderForFinalLab() && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1) && rc.getRoundNum() > TimeToStartFarming) {
+                    stateStack.push(currentState);
+                    changeState(State.BUILDING_LAB);
                 }
                 break;
             case OBESITY:
                 if (underAttack) {
+                    Comms.signalUnderAttack();
                     stateStack.push(currentState);
                     changeState(State.UNDER_ATTACK);
                 } else if (rc.getTeamLeadAmount(rc.getTeam()) < leadObesity) {
                     changeState(stateStack.pop());
+                } else if(!amImportant() && !Comms.haveBuiltBuilderForFinalLab() && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1)) {
+                    stateStack.push(currentState);
+                    changeState(State.BUILDING_LAB);
                 }
                 break;
             case MOVING:
@@ -685,6 +714,15 @@ public class Archon extends Robot {
                     isCharging = false;
                 }
                 break;
+            case BUILDING_LAB:
+                if(underAttack) {
+                    Comms.signalUnderAttack();
+                    stateStack.push(currentState);
+                    changeState(State.UNDER_ATTACK);
+                }
+                if(Comms.haveBuiltLab()) {
+                    changeState(stateStack.pop());
+                }
             default:
                 break;
         }

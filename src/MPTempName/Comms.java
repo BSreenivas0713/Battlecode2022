@@ -47,6 +47,8 @@ public class Comms {
 
     static final int NUM_HEALING_IDX = 41;
     static final int LAST_NUM_HEALING_IDX = 42;
+    static final int SAGE_COUNTER_IDX = 43;
+    static final int STEADY_SOLDIER_COUNTER_IDX = 44;
 
     // Setup flag masks
     // Bits 1-3 are friendly Archon count
@@ -133,6 +135,32 @@ public class Comms {
         SOLDIER,
         MINER, 
         BUILDER,
+    }
+
+    public static void signalBuiltRobot() throws GameActionException {
+        int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
+        writeIfChanged(BUILDER_LAB_IDX, oldFlag | 8);    
+    }
+    public static void resetBuiltRobot() throws GameActionException {
+        int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
+        writeIfChanged(BUILDER_LAB_IDX, oldFlag & ~(1 << 3));    
+    }
+
+    public static boolean AnyoneBuilt() throws GameActionException {
+        return ((rc.readSharedArray(BUILDER_LAB_IDX) & 8) >> 3) == 1;
+    }
+
+    public static void signalUnderAttack() throws GameActionException {
+        int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
+        writeIfChanged(BUILDER_LAB_IDX, oldFlag | 4);
+    }
+    public static void signalNotUnderAttack() throws GameActionException {
+        int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
+        writeIfChanged(BUILDER_LAB_IDX, oldFlag & ~(1 << 2));
+    }
+
+    public static boolean AnyoneUnderAttack() throws GameActionException {
+        return ((rc.readSharedArray(BUILDER_LAB_IDX) & 4) >> 2) == 1;
     }
 
     public static void signalBuilderBuilt()  throws GameActionException {
@@ -828,6 +856,39 @@ public class Comms {
             rc.writeSharedArray(MINER_MINING_COUNTER_IDX, 1);
         } else {
             rc.writeSharedArray(MINER_MINING_COUNTER_IDX, currCount + 1);
+        }
+    }
+
+    public static void setSteadySoldierIdx(int i) throws GameActionException {
+        writeIfChanged(STEADY_SOLDIER_COUNTER_IDX, i);
+    }
+    public static int getSteadySoldierIdx() throws GameActionException {
+        return rc.readSharedArray(STEADY_SOLDIER_COUNTER_IDX);
+    }
+
+    public static int readSageCount() throws GameActionException {
+        int sageFlag = rc.readSharedArray(SAGE_COUNTER_IDX);
+        int lastCount = (sageFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
+        return lastCount;
+    }
+
+    public static int getSageCount() throws GameActionException {
+        int sageFlag = rc.readSharedArray(SAGE_COUNTER_IDX);
+        int lastCount = (sageFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
+        int currCount = sageFlag & MINER_MASK;
+        writeIfChanged(SAGE_COUNTER_IDX, currCount << MINER_COUNTER_OFFSET);
+        return currCount;
+    }
+
+    // The lower half holds the running count updated by the miners.
+    // Miners zero out the upper half if they see it's not 0.
+    public static void incrementSageCounter() throws GameActionException {
+        int sageFlag = rc.readSharedArray(SAGE_COUNTER_IDX);
+        int lastCount = (sageFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
+        int currCount = sageFlag & MINER_MASK;
+
+        if (currCount < 255) {
+            rc.writeSharedArray(SAGE_COUNTER_IDX, lastCount << MINER_COUNTER_OFFSET | (currCount + 1));
         }
     }
     
