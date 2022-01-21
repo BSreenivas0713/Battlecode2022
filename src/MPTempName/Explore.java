@@ -152,7 +152,7 @@ public class Explore {
     public static MapLocation explorePathfinding() throws GameActionException {
         // Debug.println(Debug.PATHFINDING, "Exploring");
         if(!rc.isMovementReady())
-            return new MapLocation(0, 0);
+            return rc.getLocation();
         
         if(lastExploreDir == null) {
             Direction oppositeFromHome = Util.randomDirection();
@@ -176,8 +176,9 @@ public class Explore {
             pickNewExploreDir();
         }
 
-        MapLocation target = rc.getLocation().translate(lastExploreDir.getDeltaX() * 10, 
-                                                        lastExploreDir.getDeltaY() * 10);
+        Direction dir = rotateAwayFromWallIfNecessary(lastExploreDir);
+        MapLocation target = rc.getLocation().translate(dir.getDeltaX() * 10, 
+                                                        dir.getDeltaY() * 10);
         return target;//Util.getInOrderDirections(Nav.navTo(target));
     }
 
