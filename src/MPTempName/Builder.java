@@ -87,16 +87,33 @@ public class Builder extends Robot{
 
     public void repairIfPossible() throws GameActionException{
         for(RobotInfo robot: FriendlySensable) {
-            if(currLoc.distanceSquaredTo(robot.location) < actionRadiusSquared && (robot.getType() == RobotType.WATCHTOWER || robot.getType() == RobotType.LABORATORY)) {
-                if(robot.health < robot.getType().getMaxHealth(robot.level)) {
-                    if(rc.canRepair(robot.location)) {
-                        rc.repair(robot.location);
-                    }
-                    repairing = true;
-                    Debug.printString("Repairing " + robot.location.toString() + ", Health " + robot.health + "/" + Util.WatchTowerHealths[robot.level - 1]);
-                }
-                if(rc.canMutate(robot.location)) {
-                    rc.mutate(robot.location);
+            if(currLoc.distanceSquaredTo(robot.location) <= actionRadiusSquared) {
+                switch (robot.type) {
+                    case WATCHTOWER:
+                    case LABORATORY:
+                        if(robot.health < robot.getType().getMaxHealth(robot.level)) {
+                            if(rc.canRepair(robot.location)) {
+                                rc.repair(robot.location);
+                            }
+                            repairing = true;
+                            Debug.printString("Repairing " + robot.location.toString() + ", Health " + robot.health + "/" + Util.WatchTowerHealths[robot.level - 1]);
+                        }
+                        if(rc.canMutate(robot.location)) {
+                            rc.mutate(robot.location);
+                        }
+                        break;
+                    case ARCHON:
+                        if (robot.health < RobotType.ARCHON.getMaxHealth(robot.level)) {
+                            if (rc.canRepair(robot.location)) {
+                                moveToLowerRubble(currLoc, currLoc.directionTo(robot.location));
+                                rc.repair(robot.location);
+                            }
+                            repairing = true;
+                            Debug.printString("Repairing Archon");
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -178,6 +195,36 @@ public class Builder extends Robot{
                     tryMoveDest(Util.getInOrderDirections(dir));
                 }
             }
+        }
+    }
+
+    public void moveToLowerRubble(MapLocation moveFrom, Direction dir) throws GameActionException {
+        int myRubble = Util.getRubble(moveFrom);
+        Direction left = dir.rotateLeft();
+        Direction right = dir.rotateRight();
+        int rubble0 = Util.getRubble(moveFrom.add(dir));
+        if (rubble0 <= myRubble && rc.canMove(dir)) {
+            rc.move(dir);
+            return;
+        }
+        int rubble1 = Util.getRubble(moveFrom.add(left));
+        int rubble2 = Util.getRubble(moveFrom.add(right));
+        if (rubble1 < myRubble) {
+            if (rubble1 < rubble2) {
+                if (rc.canMove(left)) {
+                    rc.move(left);
+                } else if (rubble2 < myRubble && rc.canMove(right)) {
+                    rc.move(right);
+                }
+            } else {
+                if (rc.canMove(right)) {
+                    rc.move(right);
+                } else if (rc.canMove(left)) {
+                    rc.move(left);
+                }
+            }
+        } else if (rubble2 < myRubble && rc.canMove(right)) {
+            rc.move(right);
         }
     }
 }

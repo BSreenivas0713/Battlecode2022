@@ -436,7 +436,7 @@ public class Sage extends Robot{
 
     public boolean tryAttack() throws GameActionException {
         if (closestSage == null && predictedDamage < bestOverallSoldierHealth * 2 / 3 
-            && watchtowerDamage < 30) {
+            && watchtowerDamage < 50) {
             return false;
         }
         if (watchtowerDamage > predictedDamage && numAttackingEnemies > 0 
