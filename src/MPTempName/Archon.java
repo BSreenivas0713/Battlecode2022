@@ -616,6 +616,20 @@ public class Archon extends Robot {
         return false;
     }
 
+    public boolean isFarFromCluster() throws GameActionException {
+        if (rc.getArchonCount() == 1) {
+            if (currLoc.distanceSquaredTo(Comms.getClosestCluster(currLoc)) > 3 * visionRadiusSquared) {
+                return true;
+            }
+        }
+        else {
+            if (currLoc.distanceSquaredTo(Comms.getClosestCluster(currLoc)) > 1.5 * visionRadiusSquared) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void toggleState(boolean underAttack, boolean isObese) throws GameActionException {
         switch (currentState) { 
             case INIT:
@@ -657,8 +671,7 @@ public class Archon extends Robot {
                     stateStack.push(currentState);
                     changeState(State.OBESITY);
                 } else if (shouldMoveToBetterRubble() && 
-                            (rc.getRoundNum() > lastRoundPrioritized + Util.TURNS_NOT_PRIORITIZED_TO_MOVE || 
-                            currLoc.distanceSquaredTo(Comms.getClosestCluster(currLoc)) > 1.5 * visionRadiusSquared) &&
+                            (rc.getRoundNum() > lastRoundPrioritized + Util.TURNS_NOT_PRIORITIZED_TO_MOVE || isFarFromCluster()) &&
                             rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_TO_MOVE_AGAIN && 
                             rc.isTransformReady() && !Comms.existsArchonMoving()) {
                     rc.writeSharedArray(archonNumber, Comms.DEAD_ARCHON_FLAG);
