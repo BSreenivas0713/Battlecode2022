@@ -187,7 +187,7 @@ public class Explore {
         if(!rc.isMovementReady())
             return rc.getLocation();
 
-		if(lastExploreDir == null) {
+        if(lastExploreDir == null) {
             Direction oppositeFromHome = Util.randomDirection();
             if (Robot.home != null) {
                 oppositeFromHome = rc.getLocation().directionTo(Robot.home).opposite();
@@ -198,10 +198,10 @@ public class Explore {
         }
 
         // Pick a kinda new direction if you've gone in the same direction for a while
-		if(boredom >= EXPLORE_BOREDOM) {
+        if(boredom >= EXPLORE_BOREDOM) {
             boredom = 0;
             pickNewExploreDir();
-		}
+        }
         boredom++;
 
         // Pick a new direction if you ran into a wall.
