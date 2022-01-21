@@ -5,12 +5,16 @@ import MPTempName.Debug.*;
 import MPTempName.Util.*;
 
 public class Laboratory extends Robot{
+    static int startRound;
     public Laboratory(RobotController r) throws GameActionException {
         super(r);
+        startRound = rc.getRoundNum();
+        
     }
     
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        Comms.signalLabStillAlive();
         int soldierCount = Comms.getSteadySoldierIdx();
         int sageCount = Comms.readSageCount();
         Debug.printString("soldCount: " + soldierCount + "sageCount: " + sageCount);

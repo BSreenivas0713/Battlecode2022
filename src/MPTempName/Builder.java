@@ -10,8 +10,10 @@ public class Builder extends Robot{
     static boolean repairing;
     static boolean making;
     static MapLocation closestEmptySpotToHome;
+    static int startRound;
     public Builder(RobotController r) throws GameActionException {
         super(r);
+        startRound = rc.getRoundNum();
     }
     public boolean enemyNear() throws GameActionException {
         for (RobotInfo robot: EnemySensable) {
@@ -23,7 +25,7 @@ public class Builder extends Robot{
         return false;
     }
     public boolean makeLabIfPossible() throws GameActionException {
-        if(!Comms.haveBuiltLab() && Comms.haveBuiltBuilderForFinalLab()) {
+        if(!Comms.haveBuiltLab()) {
             int bestRubble = Integer.MAX_VALUE;
             Direction bestDir = null;
             for(Direction Dir: Util.getFullInOrderDirections(currLoc.directionTo(home).opposite())) {
@@ -36,7 +38,7 @@ public class Builder extends Robot{
             if (bestDir != null) {
                 making = true;
                 rc.buildRobot(RobotType.LABORATORY, bestDir);
-                Comms.signalLabBuilt();
+                Comms.signalLabStillAlive();
             }
             return true;
         }
