@@ -618,12 +618,13 @@ public class Archon extends Robot {
 
     public boolean isFarFromCluster() throws GameActionException {
         if (rc.getArchonCount() == 1) {
-            if (currLoc.distanceSquaredTo(Comms.getClosestCluster(currLoc)) > 3 * visionRadiusSquared) {
+            if (Util.distance(currLoc, Comms.getClosestCluster(currLoc)) > 
+                0.25 * Util.cooldownTurnsRemaining(rc.senseRubble(currLoc), 100)) {
                 return true;
             }
         }
         else {
-            if (currLoc.distanceSquaredTo(Comms.getClosestCluster(currLoc)) > 1.5 * visionRadiusSquared) {
+            if (currLoc.distanceSquaredTo(Comms.getClosestCluster(currLoc)) > 2.25 * visionRadiusSquared) {
                 return true;
             }
         }

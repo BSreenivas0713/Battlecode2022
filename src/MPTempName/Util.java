@@ -404,4 +404,8 @@ public class Util {
         }
         return currDist1 > currDist2;
     }
+
+    public static int cooldownTurnsRemaining(int rubble, int baseCooldown) {
+        return (int) Math.floor((1 + (rubble / 10)) * baseCooldown);
+    }
 }
