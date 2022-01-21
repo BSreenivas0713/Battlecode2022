@@ -37,6 +37,8 @@ public class Soldier extends Robot {
     static int healTargetIdx;
     static int healCounter;
     static boolean canHeal;
+    static boolean healthLow;
+    static boolean healthHigh;
 
     public Soldier(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -170,6 +172,8 @@ public class Soldier extends Robot {
         healTarget = null;
         int bestWait = Integer.MAX_VALUE;
         int bestWaitIdx = -1;
+        healthLow = false;
+        healthHigh = false;
         for(int i = 0; i < Comms.friendlyArchonCount(); i++) {
             MapLocation archonLoc = archonLocations[i];
             if(archonLoc == null || Comms.isAtHealingCap(i)) continue;
@@ -196,11 +200,12 @@ public class Soldier extends Robot {
         overallEnemySoldierDx = 0;
         overallEnemySoldierDy = 0;
         int closestSoldierDist = Integer.MAX_VALUE;
+        RobotInfo closestEnemyInfo = null;
         for (RobotInfo bot : EnemySensable) {
             MapLocation candidateLoc = bot.getLocation();
             int candidateDist = currLoc.distanceSquaredTo(candidateLoc);
             boolean isWatchtower = bot.getType() == RobotType.WATCHTOWER;
-            if (bot.getType() == RobotType.SOLDIER || isWatchtower) {
+            if (bot.getType() == RobotType.SOLDIER || isWatchtower || bot.getType() == RobotType.SAGE) {
                 // This code makes it so that we don't consider Portables as attacking enemies - it made our bot worse as of Hooray for spring
                 // so it is commented out for now
                 /*boolean canAttack = false;
@@ -216,12 +221,17 @@ public class Soldier extends Robot {
                 if (candidateDist < closestSoldierDist) {
                     closestSoldierDist = candidateDist;
                     closestAttackingEnemy = candidateLoc;
+                    closestEnemyInfo = bot;
                 }
             }
         }
         MapLocation closestEnemyLocation = currLoc;
         if(closestAttackingEnemy != null) {
             closestEnemyLocation = closestAttackingEnemy;
+            int enemyHealth = closestEnemyInfo.getHealth();
+            healthLow = rc.getHealth() <= enemyHealth - 15;
+            healthHigh = rc.getHealth() >= 1.3 * enemyHealth;
+
         }
         for (RobotInfo Fbot : FriendlySensable) {
             RobotType FbotType = Fbot.getType();
@@ -239,7 +249,10 @@ public class Soldier extends Robot {
         //Not only should there be no soldiers attacking us, but if we see 2 soldiers between our action radius and our vision radius, we should not go forward
         //Consider changing the numFriendlies < numEnemies to <= and retesting
         // Debug.printString("enemyAction: " + numEnemySoldiersAttackingUs + "enemy: " + numEnemies + "friends: " + numFriendlies);
-        return numEnemySoldiersAttackingUs > 0 || (numFriendlies + 1 < numEnemies);
+        boolean tooManyEnemies = numFriendlies + 1 < numEnemies;
+        boolean healthTooLowForEqualFight = numFriendlies + 1 == numEnemies && healthLow;
+        boolean healthReallyLow = rc.getHealth() <= 6;
+        return !healthReallyLow && (numEnemySoldiersAttackingUs > 0 || tooManyEnemies || healthTooLowForEqualFight);
     }
 
     public void moveAndAttack(Direction[] targetDirs, boolean attackFirst) throws GameActionException{
@@ -399,7 +412,7 @@ public class Soldier extends Robot {
                     dir = chooseForwardDirection(dest);
                     attackFirst = false;
                     if (dir == null) {
-                        Debug.printString("Fw bad");
+                        Debug.printString("Fw bad; ");
                         tryAttackBestEnemy();
                         return true;
                     }
