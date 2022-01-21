@@ -49,6 +49,13 @@ public class Explore {
 
     static int initialX, initialY;
 
+    static enum ExploreType {
+        PATHFINDING,
+        GREEDY,
+    }
+
+    static ExploreType exploreType;
+
     public static void init(RobotController r){
         rc = r;
         visionRadius = rc.getType().visionRadiusSquared;
@@ -57,6 +64,7 @@ public class Explore {
         initExploreDir();
         initialX = rc.getLocation().x;
         initialY = rc.getLocation().y;
+        exploreType = ExploreType.GREEDY;
     }
     
     // Don't continue in this explore dir if it will bring you too close to a wall.
@@ -141,21 +149,26 @@ public class Explore {
         }
     }
 
-	public static Direction[] explorePathfinding() throws GameActionException {
+    public static MapLocation explorePathfinding() throws GameActionException {
         // Debug.println(Debug.PATHFINDING, "Exploring");
         if(!rc.isMovementReady())
-            return new Direction[0];
+            return rc.getLocation();
         
-		if(lastExploreDir == null) {
-            lastExploreDir = rc.getLocation().directionTo(Robot.home).opposite();
-			boredom = 0;
+        if(lastExploreDir == null) {
+            Direction oppositeFromHome = Util.randomDirection();
+            if (Robot.home != null) {
+                oppositeFromHome = rc.getLocation().directionTo(Robot.home).opposite();
+            }
+            Direction[] oppositeFromHomeDirs = {oppositeFromHome, oppositeFromHome.rotateLeft(), oppositeFromHome.rotateRight()};
+            lastExploreDir = oppositeFromHomeDirs[Util.rng.nextInt(3)];
+            boredom = 0;
         }
         
         // Pick a kinda new direction if you've gone in the same direction for a while
-		if(boredom >= EXPLORE_BOREDOM) {
+        if(boredom >= EXPLORE_BOREDOM) {
             boredom = 0;
             pickNewExploreDir();
-		}
+        }
         boredom++;
 
         // Pick a new direction if you ran into a wall.
@@ -163,9 +176,42 @@ public class Explore {
             pickNewExploreDir();
         }
 
-        MapLocation target = rc.getLocation().translate(lastExploreDir.getDeltaX() * 5, 
-                                                        lastExploreDir.getDeltaY() * 5);
-        return Util.getInOrderDirections(Nav.navTo(target));
+        Direction dir = rotateAwayFromWallIfNecessary(lastExploreDir);
+        MapLocation target = rc.getLocation().translate(dir.getDeltaX() * 10, 
+                                                        dir.getDeltaY() * 10);
+        return target;//Util.getInOrderDirections(Nav.navTo(target));
+    }
+
+    public static MapLocation getExplorePathfindingTarget() throws GameActionException {
+        // Debug.println(Debug.PATHFINDING, "Exploring");
+        if(!rc.isMovementReady())
+            return rc.getLocation();
+
+        if(lastExploreDir == null) {
+            Direction oppositeFromHome = Util.randomDirection();
+            if (Robot.home != null) {
+                oppositeFromHome = rc.getLocation().directionTo(Robot.home).opposite();
+            }
+            Direction[] oppositeFromHomeDirs = {oppositeFromHome, oppositeFromHome.rotateLeft(), oppositeFromHome.rotateRight()};
+            lastExploreDir = oppositeFromHomeDirs[Util.rng.nextInt(3)];
+            boredom = 0;
+        }
+
+        // Pick a kinda new direction if you've gone in the same direction for a while
+        if(boredom >= EXPLORE_BOREDOM) {
+            boredom = 0;
+            pickNewExploreDir();
+        }
+        boredom++;
+
+        // Pick a new direction if you ran into a wall.
+        if(!isValidExploreDir(lastExploreDir)) {
+            pickNewExploreDir();
+        }
+
+        Direction dir = rotateAwayFromWallIfNecessary(lastExploreDir);
+        return rc.getLocation().translate(dir.getDeltaX() * 5,
+                                            dir.getDeltaY() * 5);
     }
 
     // If you're traveling south *right* next to a wall, you should go southwest/east for a turn
@@ -213,7 +259,7 @@ public class Explore {
         if(!rc.isMovementReady())
             return new Direction[0];
         
-		if(lastExploreDir == null) {
+        if(lastExploreDir == null) {
             // Debug.println(Debug.INFO, "changing last Explore Dir");
             Direction oppositeFromHome = Util.randomDirection();
             if (Robot.home != null) {
@@ -221,14 +267,14 @@ public class Explore {
             }
             Direction[] oppositeFromHomeDirs = {oppositeFromHome, oppositeFromHome.rotateLeft(), oppositeFromHome.rotateRight()};
             lastExploreDir = oppositeFromHomeDirs[Util.rng.nextInt(3)];
-			boredom = 0;
+            boredom = 0;
         }
         
-		if(boredom >= EXPLORE_BOREDOM) {
+        if(boredom >= EXPLORE_BOREDOM) {
             // Debug.println(Debug.INFO, "changing last Explore Dir because of boredom");
             boredom = 0;
             pickNewExploreDir();
-		}
+        }
         boredom++;
         
         // Pick a new direction if you ran into a wall.
@@ -247,8 +293,14 @@ public class Explore {
     }
 
     public static MapLocation getLegacyExploreTarget() throws GameActionException {
-        Direction[] exploreDirs = explore();
-        return rc.getLocation().add(Util.getFirstMoveableDir(exploreDirs));
+        switch(exploreType) {
+            case PATHFINDING:
+                return getExplorePathfindingTarget();
+            case GREEDY:
+                Direction[] exploreDirs = exploreGreedy();
+                return rc.getLocation().add(Util.getFirstMoveableDir(exploreDirs));
+        }
+        return rc.getLocation();
     }
 
     static void initExploreDir() {

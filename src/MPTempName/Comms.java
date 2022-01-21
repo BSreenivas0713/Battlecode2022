@@ -150,32 +150,54 @@ public class Comms {
         return ((rc.readSharedArray(BUILDER_LAB_IDX) & 8) >> 3) == 1;
     }
 
-    public static void signalUnderAttack() throws GameActionException {
+    public static void builderLabSignal(int bit) throws GameActionException{
         int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
-        writeIfChanged(BUILDER_LAB_IDX, oldFlag | 4);
+        writeIfChanged(BUILDER_LAB_IDX, oldFlag | (1 << bit));        
+    }
+    public static void removeBuilderLabSignal(int bit) throws GameActionException {
+        int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
+        writeIfChanged(BUILDER_LAB_IDX, oldFlag & ~(1 << bit));
+    }
+    public static boolean checkBuilderLabBit(int bit) throws GameActionException {
+        return ((rc.readSharedArray(BUILDER_LAB_IDX) & (1 << bit)) >> bit) == 1;
+    }
+
+    public static void signalLabStillAlive() throws GameActionException {
+        builderLabSignal(4);
+    }
+
+    public static void removeLabStillAlive() throws GameActionException {
+        removeBuilderLabSignal(4);
+    }
+    public static boolean checkLabStillAlive() throws GameActionException {
+        return checkBuilderLabBit(4);
+    }    
+
+    public static void signalUnderAttack() throws GameActionException {
+        builderLabSignal(2);
     }
     public static void signalNotUnderAttack() throws GameActionException {
-        int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
-        writeIfChanged(BUILDER_LAB_IDX, oldFlag & ~(1 << 2));
+        removeBuilderLabSignal(2);
     }
 
     public static boolean AnyoneUnderAttack() throws GameActionException {
-        return ((rc.readSharedArray(BUILDER_LAB_IDX) & 4) >> 2) == 1;
+        return checkBuilderLabBit(2);
     }
 
     public static void signalBuilderBuilt()  throws GameActionException {
-        int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
-        writeIfChanged(BUILDER_LAB_IDX, oldFlag | 1) ;      
+        builderLabSignal(0);      
+    }
+    public static void signalLabNotBuilt() throws GameActionException {
+        removeBuilderLabSignal(1);
     }
     public static void signalLabBuilt()  throws GameActionException {
-        int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
-        writeIfChanged(BUILDER_LAB_IDX, oldFlag | 2);
+        builderLabSignal(1);
     }
     public static boolean haveBuiltLab() throws GameActionException {
-        return ((rc.readSharedArray(BUILDER_LAB_IDX) & 2) >> 1) == 1;
+        return checkBuilderLabBit(1);
     }
     public static boolean haveBuiltBuilderForFinalLab() throws GameActionException {
-        return (rc.readSharedArray(BUILDER_LAB_IDX) & 1) == 1;
+        return checkBuilderLabBit(0);
     }
 
     public static int encodeArchonInfo(ArchonInfo cat) {
