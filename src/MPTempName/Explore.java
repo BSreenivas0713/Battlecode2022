@@ -149,10 +149,10 @@ public class Explore {
         }
     }
 
-	public static Direction[] explorePathfinding() throws GameActionException {
+	public static MapLocation explorePathfinding() throws GameActionException {
         // Debug.println(Debug.PATHFINDING, "Exploring");
         if(!rc.isMovementReady())
-            return new Direction[0];
+            return new MapLocation(0, 0);
         
 		if(lastExploreDir == null) {
             Direction oppositeFromHome = Util.randomDirection();
@@ -176,10 +176,9 @@ public class Explore {
             pickNewExploreDir();
         }
 
-        Direction dir = rotateAwayFromWallIfNecessary(lastExploreDir);
-        MapLocation target = rc.getLocation().translate(dir.getDeltaX() * 5,
-                                                        dir.getDeltaY() * 5);
-        return Util.getInOrderDirections(Nav.navTo(target));
+        MapLocation target = rc.getLocation().translate(lastExploreDir.getDeltaX() * 10, 
+                                                        lastExploreDir.getDeltaY() * 10);
+        return target;//Util.getInOrderDirections(Nav.navTo(target));
     }
 
 	public static MapLocation getExplorePathfindingTarget() throws GameActionException {

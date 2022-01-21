@@ -128,7 +128,7 @@ public class Miner extends Robot {
         boolean canMine = rc.senseNearbyLocationsWithLead(2, 2).length > 0;
         if (!amMining && !canMine) {
             // target = Explore.getExploreTarget();
-            target = Explore.getLegacyExploreTarget();
+            target = Explore.explorePathfinding();
             str = "Exploring: " + target.toString();
             // Debug.setIndicatorDot(Debug.INDICATORS, target, 255, 204, 102);
         }
