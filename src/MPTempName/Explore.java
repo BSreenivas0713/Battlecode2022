@@ -149,26 +149,26 @@ public class Explore {
         }
     }
 
-	public static MapLocation explorePathfinding() throws GameActionException {
+    public static MapLocation explorePathfinding() throws GameActionException {
         // Debug.println(Debug.PATHFINDING, "Exploring");
         if(!rc.isMovementReady())
             return new MapLocation(0, 0);
         
-		if(lastExploreDir == null) {
+        if(lastExploreDir == null) {
             Direction oppositeFromHome = Util.randomDirection();
             if (Robot.home != null) {
                 oppositeFromHome = rc.getLocation().directionTo(Robot.home).opposite();
             }
             Direction[] oppositeFromHomeDirs = {oppositeFromHome, oppositeFromHome.rotateLeft(), oppositeFromHome.rotateRight()};
             lastExploreDir = oppositeFromHomeDirs[Util.rng.nextInt(3)];
-			boredom = 0;
+            boredom = 0;
         }
         
         // Pick a kinda new direction if you've gone in the same direction for a while
-		if(boredom >= EXPLORE_BOREDOM) {
+        if(boredom >= EXPLORE_BOREDOM) {
             boredom = 0;
             pickNewExploreDir();
-		}
+        }
         boredom++;
 
         // Pick a new direction if you ran into a wall.
@@ -181,7 +181,7 @@ public class Explore {
         return target;//Util.getInOrderDirections(Nav.navTo(target));
     }
 
-	public static MapLocation getExplorePathfindingTarget() throws GameActionException {
+    public static MapLocation getExplorePathfindingTarget() throws GameActionException {
         // Debug.println(Debug.PATHFINDING, "Exploring");
         if(!rc.isMovementReady())
             return rc.getLocation();
@@ -193,7 +193,7 @@ public class Explore {
             }
             Direction[] oppositeFromHomeDirs = {oppositeFromHome, oppositeFromHome.rotateLeft(), oppositeFromHome.rotateRight()};
             lastExploreDir = oppositeFromHomeDirs[Util.rng.nextInt(3)];
-			boredom = 0;
+            boredom = 0;
         }
 
         // Pick a kinda new direction if you've gone in the same direction for a while
@@ -258,7 +258,7 @@ public class Explore {
         if(!rc.isMovementReady())
             return new Direction[0];
         
-		if(lastExploreDir == null) {
+        if(lastExploreDir == null) {
             // Debug.println(Debug.INFO, "changing last Explore Dir");
             Direction oppositeFromHome = Util.randomDirection();
             if (Robot.home != null) {
@@ -266,14 +266,14 @@ public class Explore {
             }
             Direction[] oppositeFromHomeDirs = {oppositeFromHome, oppositeFromHome.rotateLeft(), oppositeFromHome.rotateRight()};
             lastExploreDir = oppositeFromHomeDirs[Util.rng.nextInt(3)];
-			boredom = 0;
+            boredom = 0;
         }
         
-		if(boredom >= EXPLORE_BOREDOM) {
+        if(boredom >= EXPLORE_BOREDOM) {
             // Debug.println(Debug.INFO, "changing last Explore Dir because of boredom");
             boredom = 0;
             pickNewExploreDir();
-		}
+        }
         boredom++;
         
         // Pick a new direction if you ran into a wall.
