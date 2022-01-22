@@ -104,6 +104,7 @@ public class Archon extends Robot {
         else {
             TimeToStartFarming = 250;
         }
+        lastRoundMoved = Util.MIN_TURN_TO_MOVE - Util.MIN_TURNS_TO_MOVE_AGAIN;
     }
 
     // Loads build directions in order of increasing rubble, randomly breaking ties.
@@ -1120,54 +1121,68 @@ public class Archon extends Robot {
         return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
     }
 
-    public int getSpotScoreSafe(MapLocation loc) throws GameActionException {
-        int score = 0;
+    public int getSpotScoreSafe(MapLocation loc, int initialScore) throws GameActionException {
+        int score = initialScore;
         MapLocation loc2;
         loc2 = loc.add(Direction.NORTH);
-        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) / 4 : 50;
         loc2 = loc.add(Direction.NORTHEAST);
-        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) / 4 : 50;
         loc2 = loc.add(Direction.EAST);
-        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) / 4 : 50;
         loc2 = loc.add(Direction.SOUTHEAST);
-        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) / 4 : 50;
         loc2 = loc.add(Direction.SOUTH);
-        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) / 4 : 50;
         loc2 = loc.add(Direction.SOUTHWEST);
-        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) / 4 : 50;
         loc2 = loc.add(Direction.WEST);
-        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) / 4 : 50;
         loc2 = loc.add(Direction.NORTHWEST);
-        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) : 50;
+        score += rc.canSenseLocation(loc2) ? rc.senseRubble(loc2) / 4 : 50;
 
         score += rc.senseRubble(loc) * 20;
         score += Math.sqrt(loc.distanceSquaredTo(currLoc)) * 5;
         return score;
     }
 
-    public int getSpotScore(MapLocation loc) throws GameActionException {
-        int score = 0;
+    public int getSpotScore(MapLocation loc, int initialScore) throws GameActionException {
+        int score = initialScore;
         MapLocation loc2;
         loc2 = loc.add(Direction.NORTH);
-        score += rc.senseRubble(loc2);
+        score += rc.senseRubble(loc2) / 4;
         loc2 = loc.add(Direction.NORTHEAST);
-        score += rc.senseRubble(loc2);
+        score += rc.senseRubble(loc2) / 4;
         loc2 = loc.add(Direction.EAST);
-        score += rc.senseRubble(loc2);
+        score += rc.senseRubble(loc2) / 4;
         loc2 = loc.add(Direction.SOUTHEAST);
-        score += rc.senseRubble(loc2);
+        score += rc.senseRubble(loc2) / 4;
         loc2 = loc.add(Direction.SOUTH);
-        score += rc.senseRubble(loc2);
+        score += rc.senseRubble(loc2) / 4;
         loc2 = loc.add(Direction.SOUTHWEST);
-        score += rc.senseRubble(loc2);
+        score += rc.senseRubble(loc2) / 4;
         loc2 = loc.add(Direction.WEST);
-        score += rc.senseRubble(loc2);
+        score += rc.senseRubble(loc2) / 4;
         loc2 = loc.add(Direction.NORTHWEST);
-        score += rc.senseRubble(loc2);
+        score += rc.senseRubble(loc2) / 4;
 
         score += rc.senseRubble(loc) * 20;
         score += Math.sqrt(loc.distanceSquaredTo(currLoc)) * 5;
         return score;
+    }
+
+    public MapLocation getCloseArchon() throws GameActionException {
+        MapLocation closeArchon = null;
+        int minDist = RobotType.ARCHON.visionRadiusSquared * 4;
+        for(MapLocation archonLoc : archonLocations) {
+            if(archonLoc == null) continue;
+            if(archonLoc.isWithinDistanceSquared(currLoc, minDist)) {
+                closeArchon = archonLoc;
+                minDist = archonLoc.distanceSquaredTo(currLoc);
+            }
+        }
+
+        return closeArchon;
     }
 
     // Choose a new spot if the new one is significantly better than the last one.
@@ -1178,6 +1193,8 @@ public class Archon extends Robot {
         // We lost a game when I tested with this initially (prob rng)
         // if(rc.isMovementReady()) return;
 
+        MapLocation closeArchon = getCloseArchon();
+        closeArchon = closeArchon == null ? moveTarget : closeArchon;
         MapLocation bestLoc = null;
         MapLocation loc = currLoc;
         int minScore = Integer.MAX_VALUE;
@@ -1192,7 +1209,8 @@ public class Archon extends Robot {
                     break;
                 }
                 if(rc.canSenseRobotAtLocation(loc) || !rc.canSenseLocation(loc)) continue;
-                score = getSpotScoreSafe(loc);
+                score = getSpotScoreSafe(loc, moveTarget.distanceSquaredTo(loc) + 
+                                            closeArchon.distanceSquaredTo(loc));
                 if(score < minScore) {
                     minScore = score;
                     bestLoc = loc;
@@ -1207,7 +1225,8 @@ public class Archon extends Robot {
                     break;
                 }
                 if(rc.canSenseRobotAtLocation(loc)) continue;
-                score = getSpotScore(loc);
+                score = getSpotScore(loc, moveTarget.distanceSquaredTo(loc) + 
+                                            closeArchon.distanceSquaredTo(loc));
                 if(score < minScore) {
                     minScore = score;
                     bestLoc = loc;
@@ -1218,7 +1237,7 @@ public class Archon extends Robot {
         if (bestLoc != null) {
             if(rc.canSenseLocation(moveTarget) &&
                 (!rc.isLocationOccupied(moveTarget) || moveTarget.equals(currLoc))) {
-                int currTargetScore = getSpotScoreSafe(moveTarget);
+                int currTargetScore = getSpotScoreSafe(moveTarget, 0);
                 if(currTargetScore > minScore * 2) {
                     moveTarget = bestLoc;
                     // Debug.println("New good spot: " + moveTarget.toString());
