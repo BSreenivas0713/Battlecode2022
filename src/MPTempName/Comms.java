@@ -152,6 +152,14 @@ public class Comms {
         return ((rc.readSharedArray(BUILDER_LAB_IDX) & 8) >> 3) == 1;
     }
 
+    public static void signalMakingINITBuilder() throws GameActionException {
+        builderLabSignal(3);
+    }
+
+    public static boolean checkMakingINITBuilder() throws GameActionException {
+        return checkBuilderLabBit(2);
+    }
+    
     public static void builderLabSignal(int bit) throws GameActionException{
         int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
         writeIfChanged(BUILDER_LAB_IDX, oldFlag | (1 << bit));        

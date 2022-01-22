@@ -45,6 +45,8 @@ public class Archon extends Robot {
     static ArrayDeque<State> stateStack;
 
     static int leadNeededByBuilders;
+
+    static boolean changedOutOfINIT;
     
     static int leadObesity;
     static int maxLeadUsedByArchons;
@@ -444,7 +446,7 @@ public class Archon extends Robot {
     }
 
     public int minerSoldier31(int counter) throws GameActionException {
-        switch(counter % 3) {
+        switch(counter % 5) {
             case 0: 
                 currentBuild = Buildable.SOLDIER;
                 nextBuild = Buildable.SOLDIER;
@@ -454,6 +456,16 @@ public class Archon extends Robot {
                 currentBuild = Buildable.SOLDIER;
                 nextBuild = Buildable.MINER;
                 counter = buildSoldier(counter);
+                break;
+            case 2:
+                currentBuild = Buildable.SOLDIER;
+                nextBuild = Buildable.MINER;
+                counter = buildSoldier(counter);
+                break;
+            case 3:
+                currentBuild = Buildable.MINER;
+                nextBuild = Buildable.MINER;
+                counter = buildMiner(counter);
                 break;
             default:
                 currentBuild = Buildable.MINER;
@@ -513,10 +525,12 @@ public class Archon extends Robot {
                 break;
             case BUILDING_LAB:
                 // Debug.printString("not imp, make lab bulder");
-                currentBuild = Buildable.BUILDER;
+                currentBuild = Buildable.EMPTY;
                 nextBuild = Buildable.EMPTY;
                 if(builderCount == 0 && !Comms.haveBuiltBuilderForFinalLab() && !amImportant()) {
                     buildRobot(RobotType.BUILDER);
+                    currentBuild = Buildable.BUILDER;
+                    nextBuild = Buildable.SOLDIER;
                 }
                 break;
             case CHILLING:
@@ -588,25 +602,7 @@ public class Archon extends Robot {
     }
 
     public int firstRounds(int mod, int counter) throws GameActionException {
-        if (!isSmallMap()) {
-            if (counter != mod - 1) {
-                currentBuild = Buildable.MINER;
-                counter = buildMiner(counter);
-                if(counter == mod - 2) {
-                    nextBuild = Buildable.MINER;
-                }
-                else {
-                    nextBuild = Buildable.SOLDIER;
-                }
-            }
-            else {
-                counter = buildSoldier(counter);
-                currentBuild = Buildable.SOLDIER;
-                nextBuild = Buildable.MINER;
-            }
-            return counter;
-        }
-        else {
+        if (isSmallMap()) {
             if (counter != mod - 1 && counter != mod - 2) {
                 currentBuild = Buildable.MINER;
                 counter = buildMiner(counter);
@@ -627,6 +623,37 @@ public class Archon extends Robot {
                     nextBuild = Buildable.MINER;
                 }
             }
+            return counter;
+        }
+        else if (Comms.haveBuiltLab()) {
+            Debug.printString("Correct location");
+            if (counter != mod - 1) {
+                currentBuild = Buildable.MINER;
+                counter = buildMiner(counter);
+                if(counter == mod - 2) {
+                    nextBuild = Buildable.MINER;
+                }
+                else {
+                    nextBuild = Buildable.SOLDIER;
+                }
+            }
+            else {
+                counter = buildSoldier(counter);
+                currentBuild = Buildable.SOLDIER;
+                nextBuild = Buildable.MINER;
+            }
+            return counter;
+        }
+        else {
+            Debug.printString("Incorrect location");
+            currentBuild = Buildable.MINER;
+            if(counter != 3) {
+                nextBuild = Buildable.MINER;
+            }
+            else {
+                nextBuild = Buildable.BUILDER;
+            }
+            counter = buildMiner(counter);
             return counter;
         }
     }
@@ -684,6 +711,12 @@ public class Archon extends Robot {
                     rc.transform();
                     Comms.setArchonMoving();
                 }
+                else if (!isSmallMap() && !changedOutOfINIT && (initCounter == 3 || Comms.checkMakingINITBuilder())) {
+                    changedOutOfINIT = true;
+                    Comms.signalMakingINITBuilder();
+                    stateStack.push(State.INIT);
+                    changeState(State.BUILDING_LAB);                    
+                }
                 break;
             case UNDER_ATTACK:
                 if (!underAttack) {
@@ -721,7 +754,7 @@ public class Archon extends Robot {
                     changeState(State.MOVING);
                     rc.transform();
                     Comms.setArchonMoving();
-                } else if(!labStillAlive && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1) && rc.getRoundNum() > TimeToStartFarming) {
+                } else if(!labStillAlive && !isSmallMap() && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1) && rc.getRoundNum() > TimeToStartFarming) {
                     stateStack.push(currentState);
                     changeState(State.BUILDING_LAB);
                 }
@@ -761,6 +794,10 @@ public class Archon extends Robot {
                     Comms.signalUnderAttack();
                     stateStack.push(currentState);
                     changeState(State.UNDER_ATTACK);
+                }
+                else if (Comms.foundEnemy && stateStack.peek() == State.INIT) {
+                    stateStack.pop();
+                    changeState(State.CHILLING);
                 }
                 if(Comms.haveBuiltLab()) {
                     changeState(stateStack.pop());

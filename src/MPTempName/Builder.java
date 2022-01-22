@@ -194,13 +194,11 @@ public class Builder extends Robot{
     public void trySwitchState() throws GameActionException {
         switch(currState) {
             case NORMAL:
-                if(Comms.haveBuiltLab()) {
-                    if(making && maybePrototype != null) {
-                        currState = BuilderState.REPAIRING;
-                        repairTarget = maybePrototype;
-                    } else if(checkNeedHelp()) {
-                        currState = BuilderState.GOING_TO_HEAL;
-                    }
+                if(making && maybePrototype != null) {
+                    currState = BuilderState.REPAIRING;
+                    repairTarget = maybePrototype;
+                } else if(Comms.haveBuiltLab() && checkNeedHelp()) {
+                    currState = BuilderState.GOING_TO_HEAL;
                 }
                 break;
             case REPAIRING:
@@ -273,11 +271,13 @@ public class Builder extends Robot{
         MapLocation archonLoc;
         int minDist = Integer.MAX_VALUE;
         healTarget = null;
+        Debug.printString("Checking for help");
 
         for(int i = 0; i < numArchons; i++) {
             archonLoc = archonLocations[i];
             if(archonLoc == null) continue;
             if(Comms.getArchonNeedsHeal(i) && archonLoc.isWithinDistanceSquared(currLoc, minDist)) {
+                Debug.printString("" + archonLoc);
                 healTarget = archonLoc;
                 minDist = archonLoc.distanceSquaredTo(currLoc);
             }
@@ -316,14 +316,27 @@ public class Builder extends Robot{
         repairIfPossible();
         if(!repairing && !making) {
             if(!Comms.haveBuiltLab()) {
-                if(currLoc.distanceSquaredTo(home) < robotType.ARCHON.visionRadiusSquared) {
-                    Debug.printString("getting good Lab Loc");
+                if(currLoc.distanceSquaredTo(home) <= robotType.ARCHON.visionRadiusSquared) {
                     MapLocation avgEnemyLoc = home;
                     MapLocation betterEnemyLoc = Comms.getClosestCluster(currLoc);
                     if(betterEnemyLoc != null) {
                         avgEnemyLoc = betterEnemyLoc;
                     }
-                    tryMoveDest(Util.getInOrderDirections(Nav.getGreedyDirection(currLoc.directionTo(avgEnemyLoc).opposite())));
+                    int currRubble = rc.senseRubble(currLoc);
+                    Direction bestDir = null;
+                    int bestRubble = Integer.MAX_VALUE;
+                    Debug.printString("" + currLoc.directionTo(avgEnemyLoc).opposite());
+                    for(Direction dir: Util.getInOrderDirections(currLoc.directionTo(avgEnemyLoc).opposite())) {
+                        MapLocation newLoc = currLoc.add(dir);
+                        int newRubble = Util.getRubble(newLoc);
+                        if (rc.canMove(dir) && newRubble <= 5 + currRubble && newRubble < bestRubble && newLoc.distanceSquaredTo(home) <= robotType.ARCHON.visionRadiusSquared) {
+                            bestDir = dir;
+                            bestRubble = newRubble;
+                        }
+                    }
+                    if(bestDir != null) {
+                        tryMoveDest(Util.getInOrderDirections(bestDir));
+                    }
                 }
             } else if(!runFromEnemy()) {
                 if(currLoc.isWithinDistanceSquared(home, 2)) {
