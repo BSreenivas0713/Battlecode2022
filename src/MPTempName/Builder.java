@@ -7,14 +7,27 @@ import MPTempName.fast.FastIterableLocSet;
 
 
 public class Builder extends Robot{
+    static enum BuilderState {
+        REPAIRING,
+        NORMAL,
+        GOING_TO_HEAL,
+    }
+
+    static BuilderState currState;
     static boolean repairing;
     static boolean making;
-    static MapLocation closestEmptySpotToHome;
     static int startRound;
+
+    static RobotInfo maybePrototype;
+    static RobotInfo repairTarget;
+    static MapLocation healTarget;
+
     public Builder(RobotController r) throws GameActionException {
         super(r);
         startRound = rc.getRoundNum();
+        currState = BuilderState.NORMAL;
     }
+
     public boolean enemyNear() throws GameActionException {
         for (RobotInfo robot: EnemySensable) {
             RobotType robottype = robot.getType();
@@ -24,6 +37,7 @@ public class Builder extends Robot{
         }
         return false;
     }
+
     public boolean makeLabIfPossible() throws GameActionException {
         if(!Comms.haveBuiltLab()) {
             int bestRubble = Integer.MAX_VALUE;
@@ -38,16 +52,16 @@ public class Builder extends Robot{
             if (bestDir != null) {
                 making = true;
                 rc.buildRobot(RobotType.LABORATORY, bestDir);
+                maybePrototype = rc.senseRobotAtLocation(rc.getLocation().add(bestDir));
                 Comms.signalLabStillAlive();
             }
             return true;
         }
         return false;
     }
+
     public boolean makeWatchtowerIfPossible() throws GameActionException{
         boolean seenFriendly = false;
-        closestEmptySpotToHome = null;
-        int distClosetsEmptySpotToHome = -1;
         RobotInfo robot;
         int archonTowerCount = 0;
         for (RobotInfo Friend: FriendlySensable) {
@@ -55,6 +69,8 @@ public class Builder extends Robot{
                 archonTowerCount++;
             }
         }
+        int[] ArchonOrder = Comms.getArchonOrderGivenClusters();
+        int numImportantArchons = ArchonOrder[4];
         for (int i = FriendlySensable.length - 1; i >= 0; i--) {
             robot = FriendlySensable[i];
             switch(robot.type) {
@@ -65,18 +81,17 @@ public class Builder extends Robot{
                     }
                     MapLocation robotLoc = robot.location;
                     for(MapLocation newLoc: Util.makePattern(robotLoc)) {
-                        if(!(Comms.haveBuiltBuilderForFinalLab() && !Comms.haveBuiltLab()) &&  robot.mode == RobotMode.TURRET && archonTowerCount < 13 && currLoc.distanceSquaredTo(newLoc) <= 2 && rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc))) {
+                        if(!(Comms.haveBuiltBuilderForFinalLab() &&
+                            !Comms.haveBuiltLab()) &&
+                            robot.mode == RobotMode.TURRET &&
+                            archonTowerCount < 13 &&
+                            currLoc.distanceSquaredTo(newLoc) <= 2 &&
+                            rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc)) &&
+                            rc.getTeamLeadAmount(team) >= 75 * numImportantArchons + 150) {
                             Debug.printString("Building a Watchtower");
                             making = true;
                             rc.buildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc));
-                        }
-                        if((closestEmptySpotToHome == null || newLoc.distanceSquaredTo(home) < distClosetsEmptySpotToHome)) {
-                            if(rc.canSenseLocation(newLoc)) {
-                                if(rc.senseRobotAtLocation(newLoc) == null) {
-                                    closestEmptySpotToHome = newLoc;
-                                    distClosetsEmptySpotToHome = newLoc.distanceSquaredTo(home);
-                                }
-                            }
+                            maybePrototype = rc.senseRobotAtLocation(newLoc);
                         }
                     }
                     break;
@@ -88,6 +103,7 @@ public class Builder extends Robot{
     }
 
     public void repairIfPossible() throws GameActionException{
+        maybePrototype = null;
         for(RobotInfo robot: FriendlySensable) {
             if(currLoc.distanceSquaredTo(robot.location) <= actionRadiusSquared) {
                 switch (robot.type) {
@@ -98,10 +114,13 @@ public class Builder extends Robot{
                                 rc.repair(robot.location);
                             }
                             repairing = true;
-                            Debug.printString("Repairing " + robot.location.toString() + ", Health " + robot.health + "/" + Util.WatchTowerHealths[robot.level - 1]);
+                            Debug.printString("Repairing " + robot.location.toString() + ", Health " + robot.health + "/" + robot.getType().getMaxHealth(robot.level));
                         }
-                        if(rc.canMutate(robot.location)) {
-                            rc.mutate(robot.location);
+                        // if(rc.canMutate(robot.location)) {
+                        //     rc.mutate(robot.location);
+                        // }
+                        if(robot.mode == RobotMode.PROTOTYPE) {
+                            maybePrototype = robot;
                         }
                         break;
                     case ARCHON:
@@ -109,9 +128,9 @@ public class Builder extends Robot{
                             if (rc.canRepair(robot.location)) {
                                 moveToLowerRubble(currLoc, currLoc.directionTo(robot.location));
                                 rc.repair(robot.location);
+                                repairing = true;
+                                Debug.printString("Repairing Archon");
                             }
-                            repairing = true;
-                            Debug.printString("Repairing Archon");
                         }
                         break;
                     default:
@@ -144,57 +163,190 @@ public class Builder extends Robot{
         }
     }
 
+    // Updates home to the closest archon
+    public void updateHome() throws GameActionException {
+        MapLocation closestArchonToHome = null;
+        int minDist = Integer.MAX_VALUE;
+        for(MapLocation archonLoc : archonLocations) {
+            if(archonLoc == null) continue;
+            if(archonLoc.isWithinDistanceSquared(home, minDist)) {
+                closestArchonToHome = archonLoc;
+                minDist = archonLoc.distanceSquaredTo(home);
+            }
+        }
+        home = closestArchonToHome;
+    }
+
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         Comms.incrementBuilderCount();
+        loadArchonLocations();
+        updateHome();
         repairing = false;
         making = false;
-        boolean runningFromEnemy = runFromEnemy();
         makeLabIfPossible();
-        boolean needToMakeLab = !Comms.haveBuiltLab();
         boolean seenFriendly = makeWatchtowerIfPossible();
+
+        trySwitchState();
+        doStateAction();
+    }
+
+    public void trySwitchState() throws GameActionException {
+        switch(currState) {
+            case NORMAL:
+                if(making && maybePrototype != null) {
+                    currState = BuilderState.REPAIRING;
+                    repairTarget = maybePrototype;
+                } else if(Comms.haveBuiltLab() && checkNeedHelp()) {
+                    currState = BuilderState.GOING_TO_HEAL;
+                }
+                break;
+            case REPAIRING:
+                if(repairTarget == null || !rc.canSenseRobot(repairTarget.ID)) {
+                    currState = BuilderState.NORMAL;
+                } else {
+                    RobotInfo robot = rc.senseRobot(repairTarget.ID);
+                    if(robot.health >= robot.type.getMaxHealth(robot.level)) {
+                        currState = BuilderState.NORMAL;
+                    }
+                }
+                break;
+            case GOING_TO_HEAL:
+                if(!checkNeedHelp()) {
+                    currState = BuilderState.NORMAL;
+                } else if(currLoc.isWithinDistanceSquared(healTarget, RobotType.BUILDER.actionRadiusSquared)) {
+                    currState = BuilderState.REPAIRING;
+                    repairTarget = null;
+                    if(rc.canSenseLocation(healTarget)) {
+                        RobotInfo robot = rc.senseRobotAtLocation(healTarget);
+                        switch(robot.type) {
+                            case ARCHON:
+                                if(robot.health < robot.getType().getMaxHealth(robot.level)) {
+                                    repairTarget = robot;
+                                    healTarget = null;
+                                    home = robot.location;
+                                }
+                        }
+                    }
+
+                    if(repairTarget == null) {
+                        loadRepairTarget();
+                        if(repairTarget == null) {
+                            currState = BuilderState.NORMAL;
+                        } else {
+                            currState = BuilderState.REPAIRING;
+                            home = repairTarget.location;
+                        }
+                    }
+                }
+                break;
+        }
+    }
+
+    // This should really only ever load an archon
+    public void loadRepairTarget() throws GameActionException {
+        for(RobotInfo robot: FriendlySensable) {
+            switch (robot.type) {
+                case WATCHTOWER:
+                case LABORATORY:
+                    if(robot.health < robot.getType().getMaxHealth(robot.level)) {
+                        repairTarget = robot;
+                    }
+                    break;
+                case ARCHON:
+                    if (robot.health < RobotType.ARCHON.getMaxHealth(robot.level)) {
+                        repairTarget = robot;
+                        break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    // Checks if any archons currently need help and goes to the closest
+    public boolean checkNeedHelp() throws GameActionException {
+        int numArchons = Comms.friendlyArchonCount();
+        MapLocation archonLoc;
+        int minDist = Integer.MAX_VALUE;
+        healTarget = null;
+        Debug.printString("Checking for help");
+
+        for(int i = 0; i < numArchons; i++) {
+            archonLoc = archonLocations[i];
+            if(archonLoc == null) continue;
+            if(Comms.getArchonNeedsHeal(i) && archonLoc.isWithinDistanceSquared(currLoc, minDist)) {
+                Debug.printString("" + archonLoc);
+                healTarget = archonLoc;
+                minDist = archonLoc.distanceSquaredTo(currLoc);
+            }
+        }
+
+        return healTarget != null;
+    }
+
+    public boolean existsProto() throws GameActionException {
+        return maybePrototype != null;
+    }
+
+    public void doStateAction() throws GameActionException {
+        switch(currState) {
+            case NORMAL:
+                Debug.printString("Normal");
+                doNormalAction();
+                break;
+            case REPAIRING:
+                Debug.printString("Repairing");
+                repairTarget = rc.senseRobot(repairTarget.ID);
+                MapLocation target = Nav.getBestRubbleSquareAdjacentTo(repairTarget.getLocation());
+                Nav.move(target);
+                if(rc.canRepair(repairTarget.getLocation())) {
+                    rc.repair(repairTarget.getLocation());
+                }
+                break;
+            case GOING_TO_HEAL:
+                Debug.printString("Going to repair");
+                Nav.move(healTarget);
+                break;
+        }
+    }
+
+    public void doNormalAction() throws GameActionException {
         repairIfPossible();
-
-
-
-        if(!repairing && !making && !runningFromEnemy) {
-            if(needToMakeLab) {
-                if(currLoc.distanceSquaredTo(home) < robotType.ARCHON.visionRadiusSquared) {
-                    Debug.printString("getting good Lab Loc");
+        if(!repairing && !making) {
+            if(!Comms.haveBuiltLab()) {
+                if(currLoc.distanceSquaredTo(home) <= robotType.ARCHON.visionRadiusSquared) {
                     MapLocation avgEnemyLoc = home;
                     MapLocation betterEnemyLoc = Comms.getClosestCluster(currLoc);
                     if(betterEnemyLoc != null) {
                         avgEnemyLoc = betterEnemyLoc;
                     }
-                    tryMoveDest(Util.getInOrderDirections(Nav.getGreedyDirection(currLoc.directionTo(avgEnemyLoc).opposite())));
-                }
-            }
-            else if(closestEmptySpotToHome != null) {
-                Debug.printString("Moving towards location that needs to be filled");
-                tryMoveDest(Util.getInOrderDirections(currLoc.directionTo(closestEmptySpotToHome)));
-            }
-
-            else if(seenFriendly) {
-                Debug.printString("Friendly near, moving away from home");
-                Direction awayFromHome = currLoc.directionTo(home).opposite();
-                if(!rc.onTheMap(currLoc.add(awayFromHome))) {
-                    Direction dir = Nav.getBestDir(currLoc.add(Util.turnRight90(currLoc.directionTo(home))));
-                    if(dir != null) {
-                        tryMoveDest(Util.getInOrderDirections(dir));
+                    int currRubble = rc.senseRubble(currLoc);
+                    Direction bestDir = null;
+                    int bestRubble = Integer.MAX_VALUE;
+                    Debug.printString("" + currLoc.directionTo(avgEnemyLoc).opposite());
+                    for(Direction dir: Util.getInOrderDirections(currLoc.directionTo(avgEnemyLoc).opposite())) {
+                        MapLocation newLoc = currLoc.add(dir);
+                        int newRubble = Util.getRubble(newLoc);
+                        if (rc.canMove(dir) && newRubble <= 5 + currRubble && newRubble < bestRubble && newLoc.distanceSquaredTo(home) <= robotType.ARCHON.visionRadiusSquared) {
+                            bestDir = dir;
+                            bestRubble = newRubble;
+                        }
+                    }
+                    if(bestDir != null) {
+                        tryMoveDest(Util.getInOrderDirections(bestDir));
                     }
                 }
-                else {
-                    Direction dir = Nav.getBestDir(currLoc.add(awayFromHome));
-                    if(dir != null) {
-                        tryMoveDest(Util.getInOrderDirections(dir));
+            } else if(!runFromEnemy()) {
+                if(currLoc.isWithinDistanceSquared(home, 2)) {
+                    Debug.printString("Moving away from home");
+                    Direction awayFromHome = currLoc.directionTo(home).opposite();
+                    if(!rc.onTheMap(currLoc.add(awayFromHome))) {
+                        Nav.move(currLoc.add(Util.turnRight90(currLoc.directionTo(home))));
+                    } else {
+                        Nav.move(currLoc.add(awayFromHome));
                     }
-                }
-            }
-            else {
-                Debug.printString("No Friendly near, moving towards home");
-                Direction dir = Nav.getBestDir(home);
-                if(dir != null) {
-                    tryMoveDest(Util.getInOrderDirections(dir));
                 }
             }
         }
