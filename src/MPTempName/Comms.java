@@ -50,6 +50,8 @@ public class Comms {
     static final int SAGE_COUNTER_IDX = 43;
     static final int STEADY_SOLDIER_COUNTER_IDX = 44;
 
+    static final int ARCHONS_NEED_HEAL_IDX = 45;
+
     // Setup flag masks
     // Bits 1-3 are friendly Archon count
     // Bits 4-6 are enemy Archon count
@@ -1421,5 +1423,23 @@ public class Comms {
             }
         }
         return numHealing;
+    }
+
+    // @requres 0 <= i <= 3
+    public static void setArchonNeedsHeal(int i) throws GameActionException {
+        int oldFlag = rc.readSharedArray(ARCHONS_NEED_HEAL_IDX);
+        int newFlag = oldFlag | (1 << i);
+        writeIfChanged(ARCHONS_NEED_HEAL_IDX, newFlag);
+    }
+
+    public static void resetArchonNeedsHeal(int i) throws GameActionException {
+        int oldFlag = rc.readSharedArray(ARCHONS_NEED_HEAL_IDX);
+        int newFlag = oldFlag & ~(1 << i);
+        writeIfChanged(ARCHONS_NEED_HEAL_IDX, newFlag);
+    }
+
+    public static boolean getArchonNeedsHeal(int i) throws GameActionException {
+        int oldFlag = rc.readSharedArray(ARCHONS_NEED_HEAL_IDX);
+        return ((oldFlag >> i) & 1) == 1;
     }
 }

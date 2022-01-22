@@ -58,11 +58,7 @@ public class Nav {
         MapLocation bestLoc = null;
         MapLocation loc;
         int rubble;
-        // This is a bug but it does worse??? I hate life.
-        // Maybe because it biases towards a square, 
-        // try breaking ties based on distance
-        // for(int i = Util.directions.length; --i >= 0;) {
-        for(int i = Util.directions.length - 1; --i >= 0;) {
+        for(int i = Util.directions.length; --i >= 0;) {
             loc = dest.add(Util.directions[i]);
             if(rc.canSenseLocation(loc)) {
                 rubble = rc.senseRubble(loc);

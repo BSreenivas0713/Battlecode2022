@@ -232,6 +232,7 @@ public class Archon extends Robot {
         updateRobotCounts();
         updateClosestLeadOre();
         loadArchonLocations();
+        signalNeedHeal();
         boolean isObese = checkForObesity();
         toggleState(underAttack, isObese);
         doStateAction();
@@ -241,6 +242,14 @@ public class Archon extends Robot {
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
+    }
+
+    public void signalNeedHeal() throws GameActionException {
+        if(rc.getHealth() != RobotType.ARCHON.getMaxHealth(rc.getLevel())) {
+            Comms.setArchonNeedsHeal(archonNumber - 1);
+        } else {
+            Comms.resetArchonNeedsHeal(archonNumber - 1);
+        }
     }
     
     public void confirmLabAlive() throws GameActionException {
