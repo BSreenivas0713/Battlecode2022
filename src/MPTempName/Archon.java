@@ -257,11 +257,15 @@ public class Archon extends Robot {
     }
 
     public boolean amImportant() throws GameActionException {
+        int archonMoving = 0;
+        if(Comms.existsArchonMoving()) {
+            archonMoving = 1;
+        }
         int numArchons = rc.getArchonCount();
         int[] ArchonOrder = Comms.getArchonOrderGivenClusters();
         int numImportantArchons = ArchonOrder[4];
         Debug.printString("num Imp" + numImportantArchons);
-        if (numImportantArchons == numArchons) {
+        if (numImportantArchons == numArchons - archonMoving) {
             return false; //Everyone is close to action, anyone can build a builder;
         }
         else {
