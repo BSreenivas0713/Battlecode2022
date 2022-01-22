@@ -406,6 +406,6 @@ public class Util {
     }
 
     public static int cooldownTurnsRemaining(int rubble, int baseCooldown) {
-        return (int) Math.floor((1 + (rubble / 10)) * baseCooldown);
+        return (int) (Math.floor((1 + (rubble / 10)) * baseCooldown) / 10);
     }
 }
