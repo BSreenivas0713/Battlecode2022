@@ -153,11 +153,12 @@ public class Comms {
     }
 
     public static void signalMakingINITBuilder() throws GameActionException {
-        builderLabSignal(3);
+        builderLabSignal(5);
+        Debug.printString("signaling");
     }
 
     public static boolean checkMakingINITBuilder() throws GameActionException {
-        return checkBuilderLabBit(2);
+        return checkBuilderLabBit(5);
     }
     
     public static void builderLabSignal(int bit) throws GameActionException{

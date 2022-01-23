@@ -276,7 +276,7 @@ public class Archon extends Robot {
         int numArchons = rc.getArchonCount();
         int[] ArchonOrder = Comms.getArchonOrderGivenClusters();
         int numImportantArchons = ArchonOrder[4];
-        Debug.printString("num Imp" + numImportantArchons);
+        Debug.printString("num Imp: " + numImportantArchons);
         if (numImportantArchons == numArchons - archonMoving) {
             return false; //Everyone is close to action, anyone can build a builder;
         }
@@ -438,6 +438,29 @@ public class Archon extends Robot {
         return counter;
     }
 
+    public Direction findGoodRubbleDirection() throws GameActionException {
+        MapLocation[] allLocs = rc.getAllLocationsWithinRadiusSquared(currLoc, visionRadiusSquared);
+        int bestRubble = Integer.MAX_VALUE;
+        MapLocation bestLoc = null;
+        int bestDistance = Integer.MIN_VALUE;
+        MapLocation enemyLoc = Comms.getClosestCluster(currLoc);
+        if(enemyLoc == null) {
+            enemyLoc = currLoc;
+        }
+        for (MapLocation loc: allLocs) {
+            int currRubble = rc.senseRubble(loc);
+            int currDist = loc.distanceSquaredTo(enemyLoc);
+            if(currRubble < bestRubble || (currRubble == bestRubble && currDist > bestDistance)) {
+                bestRubble = currRubble;
+                bestDistance = currDist;
+                bestLoc = loc;
+            }
+        }
+        Debug.printString("best loc: " + bestLoc);
+        return home.directionTo(bestLoc);
+    }
+
+
     public int buildBuilder(int counter) throws GameActionException {
         Debug.printString("Building builder, num builders: " + builderCount);
         if(buildRobot(RobotType.BUILDER)) {
@@ -525,11 +548,11 @@ public class Archon extends Robot {
                 tryToRepairLastBot();
                 break;
             case BUILDING_LAB:
-                // Debug.printString("not imp, make lab bulder");
+                Debug.printString("Building Lab");
                 currentBuild = Buildable.EMPTY;
                 nextBuild = Buildable.EMPTY;
                 if(builderCount == 0 && !Comms.haveBuiltBuilderForFinalLab() && !amImportant()) {
-                    buildRobot(RobotType.BUILDER);
+                    buildRobot(RobotType.BUILDER, findGoodRubbleDirection());
                     currentBuild = Buildable.BUILDER;
                     nextBuild = Buildable.SOLDIER;
                 }
@@ -552,7 +575,7 @@ public class Archon extends Robot {
                 tryToRepairLastBot();
                 break;
             case UNDER_ATTACK:
-                // Debug.printString("Under Attack");
+                Debug.printString("Under Attack");
                 roundsSinceUnderAttack = 0;
                 chillingCounter = buildSoldier(chillingCounter);
                 tryToRepairLowestHealth();
@@ -1080,13 +1103,13 @@ public class Archon extends Robot {
             }
         }
 
-        // if(lastClosestArchonToCluster.equals(currLoc)) {
-        //     // Let's move closer and extend our advantage
-        //     moveTarget = cluster;
-        //     isCharging = true;
-        //     Debug.println("Charging target: " + moveTarget);
-        //     return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
-        // }
+        if(lastClosestArchonToCluster.equals(currLoc)) {
+            // Let's move closer and extend our advantage
+            moveTarget = cluster;
+            isCharging = true;
+            Debug.println("Charging target: " + moveTarget);
+            return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
+        }
 
         // Only have the farthest one move
         if(!farthestArchon.equals(currLoc)) {

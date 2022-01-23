@@ -17,6 +17,7 @@ public class Builder extends Robot{
     static boolean repairing;
     static boolean making;
     static int startRound;
+    static MapLocation labLoc;
 
     static RobotInfo maybePrototype;
     static RobotInfo repairTarget;
@@ -40,11 +41,31 @@ public class Builder extends Robot{
 
     public boolean makeLabIfPossible() throws GameActionException {
         if(!Comms.haveBuiltLab()) {
+            MapLocation[] allLocs = rc.getAllLocationsWithinRadiusSquared(currLoc, visionRadiusSquared);
             int bestRubble = Integer.MAX_VALUE;
+            MapLocation bestLoc = null;
+            int bestDistance = Integer.MIN_VALUE;
+            MapLocation enemyLoc = Comms.getClosestCluster(currLoc);
+            if(enemyLoc == null) {
+                enemyLoc = currLoc;
+            }
+            for (MapLocation loc: allLocs) {
+                int currRubble = rc.senseRubble(loc);
+                int currDist = loc.distanceSquaredTo(enemyLoc);
+                int distToHome = loc.distanceSquaredTo(home);
+                boolean OnSquare = currLoc.add(currLoc.directionTo(loc)).equals(loc);
+                if(!OnSquare && (currRubble < bestRubble || (currRubble == bestRubble && currDist > bestDistance && distToHome <= RobotType.ARCHON.visionRadiusSquared))) {
+                    bestRubble = currRubble;
+                    bestDistance = currDist;
+                    bestLoc = loc;
+                }
+            }
+            Debug.printString("bestLoc: " + bestLoc);
+            labLoc = bestLoc;
             Direction bestDir = null;
             for(Direction Dir: Util.getFullInOrderDirections(currLoc.directionTo(home).opposite())) {
                 int currRubble = Util.getRubble(currLoc.add(Dir));
-                if (rc.canBuildRobot(RobotType.LABORATORY, Dir) && currRubble < bestRubble) {
+                if (rc.canBuildRobot(RobotType.LABORATORY, Dir) && currRubble == bestRubble) {
                     bestRubble = currRubble;
                     bestDir = Dir;
                 }
@@ -317,28 +338,16 @@ public class Builder extends Robot{
         if(!repairing && !making) {
             if(!Comms.haveBuiltLab()) {
                 if(currLoc.distanceSquaredTo(home) <= robotType.ARCHON.visionRadiusSquared) {
-                    MapLocation avgEnemyLoc = home;
-                    MapLocation betterEnemyLoc = Comms.getClosestCluster(currLoc);
-                    if(betterEnemyLoc != null) {
-                        avgEnemyLoc = betterEnemyLoc;
-                    }
-                    int currRubble = rc.senseRubble(currLoc);
                     Direction bestDir = null;
-                    int bestRubble = Integer.MAX_VALUE;
-                    Debug.printString("" + currLoc.directionTo(avgEnemyLoc).opposite());
-                    for(Direction dir: Util.getInOrderDirections(currLoc.directionTo(avgEnemyLoc).opposite())) {
-                        MapLocation newLoc = currLoc.add(dir);
-                        int newRubble = Util.getRubble(newLoc);
-                        if (rc.canMove(dir) && newRubble <= 5 + currRubble && newRubble < bestRubble && newLoc.distanceSquaredTo(home) <= robotType.ARCHON.visionRadiusSquared) {
-                            bestDir = dir;
-                            bestRubble = newRubble;
+                    if(labLoc != null) {
+                        bestDir = currLoc.directionTo(labLoc);
+                        if(!currLoc.add(bestDir).equals(labLoc)) {
+                            Nav.move(labLoc);
+                            //we are in the direction of the lab, no need to move
                         }
                     }
-                    if(bestDir != null) {
-                        tryMoveDest(Util.getInOrderDirections(bestDir));
-                    }
                 }
-            } else if(!runFromEnemy()) {
+            } else if(!runFromEnemy() && home != null) {
                 if(currLoc.isWithinDistanceSquared(home, 2)) {
                     Debug.printString("Moving away from home");
                     Direction awayFromHome = currLoc.directionTo(home).opposite();
