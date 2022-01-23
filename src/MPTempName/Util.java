@@ -75,11 +75,13 @@ public class Util {
     static final int AVERAGE_HEALTH_TO_HEAL = 2 * RobotType.SOLDIER.health / 3;
     static final int MIN_HEALTH_TO_MAINTAIN = 9;
 
-    static final int TURNS_NOT_PRIORITIZED_TO_MOVE = 40;
+    static final int TURNS_NOT_PRIORITIZED_TO_MOVE = 5;
+    static final int PRIORITIZED_ARCHON_TURNS_NOT_PRIORITIZED_TO_MOVE = 40;
     static final int MIN_DIST_SQUARED_FROM_CLUSTER = RobotType.ARCHON.visionRadiusSquared * 2;
     static final int MAX_CLUSTER_DIST_CHANGE = RobotType.ARCHON.visionRadiusSquared * 9;
     static final int MIN_DIST_FROM_PROJECTION = 25;
-    static final int MIN_TURNS_TO_MOVE_AGAIN = 100;
+    static final int MIN_TURNS_TO_MOVE_AGAIN = 30;
+    static final int MIN_TURNS_PRIORITIZED_TO_MOVE_AGAIN = 100;
     static final int MIN_TURN_TO_MOVE = 50;
     static final int MIN_DIST_TO_MOVE = RobotType.ARCHON.visionRadiusSquared;
     static final int MIN_ADJ_RUBBLE_MULTIPLIER = 5;
