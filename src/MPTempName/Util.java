@@ -73,6 +73,7 @@ public class Util {
 
     static final int HEAL_DIST_TO_HOME = 5;
     static final int AVERAGE_HEALTH_TO_HEAL = 2 * RobotType.SOLDIER.health / 3;
+    static final int MIN_HEALTH_TO_MAINTAIN = 9;
 
     static final int TURNS_NOT_PRIORITIZED_TO_MOVE = 40;
     static final int MIN_DIST_SQUARED_FROM_CLUSTER = RobotType.ARCHON.visionRadiusSquared * 2;

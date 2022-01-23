@@ -841,7 +841,7 @@ public class Archon extends Robot {
         }
     }
 
-    public RobotInfo getNextRobotToRepair() throws GameActionException {
+    public RobotInfo getLowestHealthRobotToRepair() throws GameActionException {
         RobotInfo[] friendlies = rc.senseNearbyRobots(actionRadiusSquared, rc.getTeam());
         RobotInfo maybeSage = null;
         RobotInfo maybeSoldier = null;
@@ -894,18 +894,24 @@ public class Archon extends Robot {
 
         if(lastRobotHealed != null && rc.canSenseRobot(lastRobotHealed.ID)) {
             RobotInfo lastRobot = rc.senseRobot(lastRobotHealed.ID);
+            RobotInfo newRobot = getLowestHealthRobotToRepair();
             // Switch targets if you have a miner now and a soldier can be healed
-            if(lastRobot.type == RobotType.MINER) {
-                RobotInfo newRobot = getNextRobotToRepair();
-                if(newRobot != null && newRobot.type != RobotType.MINER) {
+            if(newRobot != null) {
+                if(lastRobot.type == RobotType.MINER && newRobot.type != RobotType.MINER) {
                     lastRobot = newRobot;
+                }
+                if(newRobot.health < Util.MIN_HEALTH_TO_MAINTAIN &&
+                    rc.canRepair(newRobot.location)) {
+                    Debug.printString("Healing");
+                    lastRobotHealed = lastRobot;
+                    rc.repair(newRobot.location);
+                    return;
                 }
             }
             if(rc.canRepair(lastRobot.location) && lastRobot.health < getMaxHealth(lastRobot.type)) {
                 Debug.printString("Healing");
                 lastRobotHealed = lastRobot;
                 rc.repair(lastRobot.location);
-                Debug.setIndicatorLine(Debug.INDICATORS, currLoc, lastRobot.location, 0, 255, 0);
                 return;
             }
         }
@@ -917,12 +923,11 @@ public class Archon extends Robot {
     public void tryToRepairLowestHealth() throws GameActionException {
         if(!rc.isActionReady()) return;
 
-        RobotInfo robotToRepair = getNextRobotToRepair();
+        RobotInfo robotToRepair = getLowestHealthRobotToRepair();
         if(robotToRepair != null) {
             Debug.printString("Healing");
             rc.repair(robotToRepair.location);
             lastRobotHealed = robotToRepair;
-            Debug.setIndicatorLine(Debug.INDICATORS, currLoc, robotToRepair.location, 0, 255, 0);
         }
     }
 

@@ -252,7 +252,7 @@ public class Soldier extends Robot {
         boolean tooManyEnemies = numFriendlies + 1 < numEnemies;
         boolean healthTooLowForEqualFight = numFriendlies + 1 == numEnemies && healthLow;
         boolean healthReallyLow = rc.getHealth() <= 6;
-        return !healthReallyLow && (numEnemySoldiersAttackingUs > 0 || tooManyEnemies || healthTooLowForEqualFight);
+        return healthReallyLow || numEnemySoldiersAttackingUs > 0 || tooManyEnemies || healthTooLowForEqualFight;
     }
 
     public void moveAndAttack(Direction[] targetDirs, boolean attackFirst) throws GameActionException{
