@@ -7,6 +7,8 @@ import MPTempName.Comms.InformationCategory;
 
 public class Laboratory extends Robot{
     static int startRound;
+    static int MIN_NUM_MINERS;
+
 
     public Laboratory(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -16,10 +18,10 @@ public class Laboratory extends Robot{
         super(r);
         startRound = rc.getRoundNum();
         homeFlagIdx = homeFlagIndex;
-//         MAX_NUM_MINERS = Math.min(Util.MAX_MINERS,
-//         rc.getMapWidth() * rc.getMapHeight() /
-//         Util.MAX_MAP_SIZE_TO_MINER_RATIO);
-// MIN_NUM_MINERS = MAX_NUM_MINERS / 5;
+        int MAX_NUM_MINERS = Math.min(Util.MAX_MINERS,
+        rc.getMapWidth() * rc.getMapHeight() /
+        Util.MAX_MAP_SIZE_TO_MINER_RATIO);
+        MIN_NUM_MINERS = MAX_NUM_MINERS / 5;
     }
     
     public void takeTurn() throws GameActionException {
@@ -30,7 +32,7 @@ public class Laboratory extends Robot{
         int sageCount = Comms.readSageCount();
         int minerCount = Comms.getSteadyMinerIdx();
         Debug.printString("mineCount: " + minerCount + "sageCount: " + sageCount);
-        if(rc.canTransmute() && (minerCount >= (5 * sageCount)/6)) {
+        if(rc.canTransmute() && (minerCount >= (sageCount)/2) || minerCount >= MIN_NUM_MINERS) {
             Debug.printString("transmuting");
             rc.transmute();
         }

@@ -272,6 +272,15 @@ public class Comms {
     public static void signaljustBuiltBuilder()  throws GameActionException {
         builderLabSignal(6);
     }
+    public static boolean existsEnemyAttackable() throws GameActionException {
+        return checkBuilderLabBit(7);
+    }
+    public static void signalNotEnemyAttackable() throws GameActionException {
+        removeBuilderLabSignal(7);
+    }
+    public static void signalEnemyAttackable()  throws GameActionException {
+        builderLabSignal(7);
+    }
     // Deprecated
     // public static boolean haveBuiltLab() throws GameActionException {
     //     return checkBuilderLabBit(1);
