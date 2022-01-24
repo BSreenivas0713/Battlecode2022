@@ -214,8 +214,10 @@ public class Sage extends Robot{
                             dir = closestWatchtower.directionTo(currLoc);
                         }
                         Direction newDir = chooseBackupDirection(dir);
-                        Direction[] dirs = Util.getInOrderDirections(newDir);
-                        tryMoveDest(dirs);
+                        if (canMoveRubble(newDir)) {
+                            Direction[] dirs = Util.getInOrderDirections(newDir);
+                            tryMoveDest(dirs);
+                        }
                         runSemaphore = 5;
                         isRunning = true;
                         runDirection = dir;
@@ -228,8 +230,10 @@ public class Sage extends Robot{
                     } else {
                         Debug.printString("Running!");
                         Direction newDir = chooseBackupDirection(runDirection);
-                        Direction[] dirs = Util.getInOrderDirections(newDir);
-                        tryMoveDest(dirs);
+                        if (canMoveRubble(newDir)) {
+                            Direction[] dirs = Util.getInOrderDirections(newDir);
+                            tryMoveDest(dirs);
+                        }
                     }
                 }
                 break;
