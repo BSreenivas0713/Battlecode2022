@@ -790,6 +790,7 @@ public class Archon extends Robot {
                             rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_TO_MOVE_AGAIN &&
                             rc.isTransformReady() &&
                             !Comms.existsArchonMoving() &&
+                            Comms.foundEnemy &&
                             chooseInitialMoveTarget()) {
                     // Just mark yourself as dead in archon locations so units don't come to get healed
                     rc.writeSharedArray(archonNumber, Comms.DEAD_ARCHON_FLAG);
@@ -1184,19 +1185,19 @@ public class Archon extends Robot {
             }
         }
 
-        if(lastClosestArchonToCluster.equals(currLoc)) {
-            // Let's move closer and extend our advantage
-            if(rc.getRoundNum() > lastRoundPrioritized + Util.PRIORITIZED_ARCHON_TURNS_NOT_PRIORITIZED_TO_MOVE &&
-                rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_PRIORITIZED_TO_MOVE_AGAIN) {
-                moveTarget = cluster;
-                isCharging = true;
-                Debug.println("Charging target: " + moveTarget);
-                return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
-            }
-            else {
-                return false;
-            }
-        }
+        // if(lastClosestArchonToCluster.equals(currLoc)) {
+        //     // Let's move closer and extend our advantage
+        //     if(rc.getRoundNum() > lastRoundPrioritized + Util.PRIORITIZED_ARCHON_TURNS_NOT_PRIORITIZED_TO_MOVE &&
+        //         rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_PRIORITIZED_TO_MOVE_AGAIN) {
+        //         moveTarget = cluster;
+        //         isCharging = true;
+        //         Debug.println("Charging target: " + moveTarget);
+        //         return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
+        //     }
+        //     else {
+        //         return false;
+        //     }
+        // }
 
         // Min dist to move
         // if(currLoc.isWithinDistanceSquared(lastClosestArchonToCluster, Util.MIN_DIST_TO_MOVE)) {
