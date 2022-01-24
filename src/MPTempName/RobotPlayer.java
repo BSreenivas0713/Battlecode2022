@@ -53,9 +53,9 @@ public strictfp class RobotPlayer {
             case SOLDIER:
                 bot = new Soldier(rc, homeFlagIdx);
                 break;
-            case LABORATORY: bot = new Laboratory(rc);  break;
+            case LABORATORY: bot = new Laboratory(rc, homeFlagIdx);  break;
             case WATCHTOWER: bot = new Watchtower(rc);  break;
-            case BUILDER:    bot = new Builder(rc);  break;
+            case BUILDER:    bot = new Builder(rc, homeFlagIdx);  break;
             case SAGE:       
                 bot = new Sage(rc, homeFlagIdx); 
                 break;

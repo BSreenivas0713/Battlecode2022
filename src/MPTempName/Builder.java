@@ -1,6 +1,7 @@
 package MPTempName;
 
 import battlecode.common.*;
+import MPTempName.Comms.InformationCategory;
 import MPTempName.Debug.*;
 import MPTempName.Util.*;
 import MPTempName.fast.FastIterableLocSet;
@@ -24,9 +25,14 @@ public class Builder extends Robot{
     static MapLocation healTarget;
 
     public Builder(RobotController r) throws GameActionException {
+        this(r, Comms.firstArchonFlag);
+    }
+
+    public Builder(RobotController r, int homeFlagIndex) throws GameActionException {
         super(r);
         startRound = rc.getRoundNum();
         currState = BuilderState.NORMAL;
+        homeFlagIdx = homeFlagIndex;
     }
 
     public boolean enemyNear() throws GameActionException {
@@ -40,7 +46,7 @@ public class Builder extends Robot{
     }
 
     public boolean makeLabIfPossible() throws GameActionException {
-        if(!Comms.haveBuiltLab()) {
+        if(Comms.checkIfArchonBuildingLab()) {
             MapLocation[] allLocs = rc.getAllLocationsWithinRadiusSquared(currLoc, visionRadiusSquared);
             int bestRubble = Integer.MAX_VALUE;
             MapLocation bestLoc = null;
@@ -75,7 +81,7 @@ public class Builder extends Robot{
                 making = true;
                 rc.buildRobot(RobotType.LABORATORY, bestDir);
                 maybePrototype = rc.senseRobotAtLocation(rc.getLocation().add(bestDir));
-                Comms.signalLabStillAlive();
+                Comms.incrementAliveLabs();
             }
             return true;
         }

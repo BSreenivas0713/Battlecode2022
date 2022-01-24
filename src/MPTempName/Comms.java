@@ -51,6 +51,8 @@ public class Comms {
     static final int STEADY_SOLDIER_COUNTER_IDX = 44;
 
     static final int ARCHONS_NEED_HEAL_IDX = 45;
+    //below is TOP_BITS...(last round labs)(last round labs)(curr round labs)(curr round labs)
+    static final int LAB_COUNT_IDX = 46;
 
     // Setup flag masks
     // Bits 1-3 are friendly Archon count
@@ -79,6 +81,7 @@ public class Comms {
     static final int NONZERO_DX_DY_OFFSET = 2;
     static final int SOLDIER_NEAR_CLUSTER_BUT_NO_ENEMIES_OFFSET = 1;
     static final int CLUSTER_SET_BY_SYMMETRY_OFFSET = 0;
+    static final int LAB_COUNT_MASK = 3;
 
     static final int MAX_TROOPS_HEALING = 0x7;
     static final int TROOPS_HEALING_MASK = 0xF;
@@ -113,6 +116,7 @@ public class Comms {
         DEFENSE_SOLDIERS,
         UNDER_ATTACK,
         DIRECTION,
+        BUILDING_LAB,
     }
 
 
@@ -138,6 +142,58 @@ public class Comms {
         MINER, 
         BUILDER,
     }
+
+    public static int getAliveLabs() throws GameActionException {
+        int oldFlag = rc.readSharedArray(LAB_COUNT_IDX);
+        int numLabs = (oldFlag >> 2) & LAB_COUNT_MASK;
+        return numLabs;
+    }
+
+    //alive labs at bottom 2 bits
+    public static void incrementAliveLabs() throws GameActionException {
+        int oldFlag = rc.readSharedArray(LAB_COUNT_IDX);
+        int numLabs = oldFlag & LAB_COUNT_MASK;
+        int newFlag = ((oldFlag & 0xFFFC) | (numLabs + 1));
+        rc.writeSharedArray(LAB_COUNT_IDX, newFlag);
+    }
+
+    public static void resetAliveLabs() throws GameActionException {
+        int oldFlag = rc.readSharedArray(LAB_COUNT_IDX);
+        int tempFlag = oldFlag & 0xFFF3;
+        int numLabs = tempFlag & LAB_COUNT_MASK;
+        int newFlag = (tempFlag & 0xFFFC) | (numLabs << 2); // putting old num labs in top 2 bits 
+        writeIfChanged(LAB_COUNT_IDX, newFlag);
+    }
+
+    public static void signalArchonBuildingLab() throws GameActionException {
+        int oldFlag = rc.readSharedArray(LAB_COUNT_IDX);
+        int newFlag = oldFlag | (1 << 15); //adding 1 to top bit
+        writeIfChanged(LAB_COUNT_IDX, newFlag);
+    }
+
+    public static void stopSignalingArchonBuildingLab() throws GameActionException {
+        int oldFlag = rc.readSharedArray(LAB_COUNT_IDX);
+        int newFlag = oldFlag & ~(1 << 15); //clearing top bit
+        writeIfChanged(LAB_COUNT_IDX, newFlag);
+    }
+
+    public static boolean checkIfArchonBuildingLab() throws GameActionException {
+        int oldFlag = rc.readSharedArray(LAB_COUNT_IDX);
+        return (((oldFlag >> 15) & 1) == 1);
+    }
+
+    // //builder alive at 5th bit from bottom
+    // public static void setBuilderAlive() throws GameActionException {
+    //     int oldFlag = rc.readSharedArray(BUILDER_LAB_COUNT_IDX);
+    //     int newFlag = oldFlag | (1 << 5); //adding a 1 to the 5th from bottom bit
+    //     writeIfChanged(BUILDER_LAB_COUNT_IDX, newFlag);
+    // }
+
+    // public static void resetBuilderAlive() throws GameActionException {
+    //     int oldFlag = rc.readSharedArray(BUILDER_LAB_COUNT_IDX);
+    //     int newFlag = oldFlag & 0xFFEF; //clearing 5th from bottom bit
+    //     writeIfChanged(BUILDER_LAB_COUNT_IDX, newFlag);
+    // }
 
     public static void signalBuiltRobot() throws GameActionException {
         int oldFlag = rc.readSharedArray(BUILDER_LAB_IDX);
