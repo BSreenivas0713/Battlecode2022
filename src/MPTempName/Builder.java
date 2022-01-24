@@ -109,9 +109,7 @@ public class Builder extends Robot{
                     }
                     MapLocation robotLoc = robot.location;
                     for(MapLocation newLoc: Util.makePattern(robotLoc)) {
-                        if(!(Comms.haveBuiltBuilderForFinalLab() &&
-                            !Comms.haveBuiltLab()) &&
-                            robot.mode == RobotMode.TURRET &&
+                        if( robot.mode == RobotMode.TURRET &&
                             archonTowerCount < 13 &&
                             currLoc.distanceSquaredTo(newLoc) <= 2 &&
                             rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc)) &&

@@ -27,7 +27,9 @@ public class Soldier extends Robot {
     static MapLocation avgEnemyLoc;
     static RobotInfo closestEnemy;
     static int numFriendlies;
+    static int numFriendlySages;
     static int numEnemies;
+    static int numEnemySages;
     static MapLocation closestAttackingEnemy;
     static int numEnemySoldiersAttackingUs;
 
@@ -57,6 +59,7 @@ public class Soldier extends Robot {
         resetShouldRunAway();
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
+        updateNumEnemySages();
         avgEnemyLoc = Comms.getClosestCluster(currLoc);
         Comms.incrementSoldierCounter();
         trySwitchState();
@@ -191,9 +194,18 @@ public class Soldier extends Robot {
 
         return healTarget != null;
     }
+    public void updateNumEnemySages() throws GameActionException {
+        numEnemySages = 0;
+        for(RobotInfo enemyRobot: enemyAttackable) {
+            if(enemyRobot.getType() == RobotType.SAGE) {
+                numEnemySages++;
+            }
+        }
+    }
 
     public void resetShouldRunAway() throws GameActionException {
         numEnemySoldiersAttackingUs = 0;
+        numFriendlySages = 0;
         numFriendlies = 0;
         closestAttackingEnemy = null;
         numEnemies = 0;
@@ -235,12 +247,16 @@ public class Soldier extends Robot {
         }
         for (RobotInfo Fbot : FriendlySensable) {
             RobotType FbotType = Fbot.getType();
-            if (FbotType == RobotType.SOLDIER || FbotType == RobotType.WATCHTOWER) {
+            if (FbotType == RobotType.SOLDIER || FbotType == RobotType.WATCHTOWER || FbotType == RobotType.SAGE) {
                 MapLocation FbotLocation = Fbot.getLocation();
                 // Debug.printString(" " + FbotLocation + " ");
                 if((FbotLocation).distanceSquaredTo(closestEnemyLocation) <= FbotType.visionRadiusSquared) {
                     numFriendlies++;
+                    if(FbotType == RobotType.SAGE) {
+                        numFriendlySages++;
+                    }
                 }
+                
             }
         }
     }
@@ -252,7 +268,7 @@ public class Soldier extends Robot {
         boolean tooManyEnemies = numFriendlies + 1 < numEnemies;
         boolean healthTooLowForEqualFight = numFriendlies + 1 == numEnemies && healthLow;
         boolean healthReallyLow = rc.getHealth() <= 6;
-        return healthReallyLow || numEnemySoldiersAttackingUs > 0 || tooManyEnemies || healthTooLowForEqualFight;
+        return healthReallyLow || numEnemySoldiersAttackingUs > 0 || tooManyEnemies || healthTooLowForEqualFight || numFriendlySages < numEnemySages;
     }
 
     public void moveAndAttack(Direction[] targetDirs, boolean attackFirst) throws GameActionException{

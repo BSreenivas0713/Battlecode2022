@@ -779,6 +779,7 @@ public class Archon extends Robot {
                 }
                 break;
             case CHILLING:
+                Debug.printString("uA: " + roundsSinceUnderAttack + " " + rc.getRoundNum() + " " + roundsSinceLastLabBuilt);
                 if (underAttack) {
                     Comms.signalUnderAttack();
                     stateStack.push(currentState);
@@ -810,10 +811,10 @@ public class Archon extends Robot {
                     turnsBeingClosest = 0;
                     rc.transform();
                     Comms.setArchonMoving();
-                } else if(rc.getRoundNum() > roundsSinceLastLabBuilt + 12 &&
-                    (soldierCount >= Util.SOLDIER_LAB_MULT * labCount) &&
-                    (labCount < Util.MAX_NUM_LABS) &&
-                    !isSmallMap() && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1)) {
+                } else if((rc.getRoundNum() > roundsSinceLastLabBuilt + 12 || isSmallMap()) &&
+                    (labCount == 0 || (labCount == 1 && soldierCount >= 15) || (labCount == 2 && soldierCount >= 30)) && 
+                    (!isSmallMap() || roundsSinceUnderAttack > 200 || (roundsSinceUnderAttack == -1 && rc.getRoundNum() > 200)) 
+                    && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1)) {
                     stateStack.push(currentState);
                     changeState(State.BUILDING_LAB);
                 }
