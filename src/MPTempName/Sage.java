@@ -597,6 +597,10 @@ public class Sage extends Robot{
     }
 
     public void checkAvoidCharge() throws GameActionException {
+        if(rc.getRoundNum() > 1500) {
+            return;
+        }
+
         int round = rc.getRoundNum();
         for (int i = nextCharge; i < chargeRounds.length; i++) {
             if (round > chargeRounds[i]) {

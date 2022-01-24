@@ -82,10 +82,10 @@ public class Archon extends Robot {
     public Archon(RobotController r) throws GameActionException {
         super(r);
         if(Util.MAP_AREA >= Util.MIN_AREA_FOR_MORE_MINERS) {
-            numINITminers = (int) Math.ceil((double)(10 / rc.getArchonCount()));
+            numINITminers = (int) Math.ceil((double)(12 / rc.getArchonCount()));
         }
         else {
-            numINITminers = (int) Math.ceil((double)(4 / rc.getArchonCount()));
+            numINITminers = (int) Math.ceil((double)(8 / rc.getArchonCount()));
         }
         //writing all Archon locations immediately on round 0
         stateStack = new ArrayDeque<State>();
@@ -235,6 +235,9 @@ public class Archon extends Robot {
             Comms.resetNumTroopsHealing();
             sageCount = Comms.getSageCount();
             //todo: zero out the symmetry cluster bit
+        }
+        else {
+            sageCount = Comms.readSageCount();
         }
         Comms.setAlive(archonNumber);
         Comms.setCanBuild(archonNumber, rc.isActionReady());
