@@ -53,6 +53,7 @@ public class Comms {
     static final int ARCHONS_NEED_HEAL_IDX = 45;
     //below is TOP_BITS...(last round labs)(last round labs)(curr round labs)(curr round labs)
     static final int LAB_COUNT_IDX = 46;
+    static final int STEADY_MINER_COUNTER_IDX = 47;
 
     // Setup flag masks
     // Bits 1-3 are friendly Archon count
@@ -972,6 +973,13 @@ public class Comms {
     }
     public static int getSteadySoldierIdx() throws GameActionException {
         return rc.readSharedArray(STEADY_SOLDIER_COUNTER_IDX);
+    }
+
+    public static void setSteadyMinerIdx(int i) throws GameActionException {
+        writeIfChanged(STEADY_MINER_COUNTER_IDX, i);
+    }
+    public static int getSteadyMinerIdx() throws GameActionException {
+        return rc.readSharedArray(STEADY_MINER_COUNTER_IDX);
     }
 
     public static int readSageCount() throws GameActionException {

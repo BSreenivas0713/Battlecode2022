@@ -447,17 +447,19 @@ public class Soldier extends Robot {
         MapLocation target;
         if(avgEnemyLoc != null) {
             target = avgEnemyLoc;
-            Debug.printString("going for it");
-        } else {
-            boolean seeArchonInSensable = false;
-            for (RobotInfo bot : EnemySensable) {
-                if (bot.getType() == RobotType.ARCHON) {
-                    seeArchonInSensable = true;
+            if (currLoc.distanceSquaredTo(target) <= visionRadiusSquared) {
+                boolean seeArchonInSensable = false;
+                for (RobotInfo bot : EnemySensable) {
+                    if (bot.getType() == RobotType.ARCHON) {
+                        seeArchonInSensable = true;
+                    }
+                }
+                if (!seeArchonInSensable) {
+                    Comms.broadcastSoldierNearClusterButNothingFound();
                 }
             }
-            if (!seeArchonInSensable) {
-                Comms.broadcastSoldierNearClusterButNothingFound();
-            }
+            Debug.printString("going for it");
+        } else {
             target = Explore.getLegacyExploreTarget();
             Debug.printString("Exploring: " + target.toString());
         }

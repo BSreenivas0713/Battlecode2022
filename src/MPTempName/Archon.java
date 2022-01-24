@@ -436,6 +436,7 @@ public class Archon extends Robot {
         minerCount = Comms.getMinerCount();
         soldierCount = Comms.getSoldierCount();
         Comms.setSteadySoldierIdx(soldierCount);
+        Comms.setSteadyMinerIdx(minerCount);
     }
 
     public void signalNextExploreDirection() {
@@ -509,7 +510,7 @@ public class Archon extends Robot {
 
     public int minerSoldier(int counter) throws GameActionException {
         switch(counter % 2) {
-            case 0: 
+            case 1: 
                 currentBuild = Buildable.SOLDIER;
                 nextBuild = Buildable.MINER;
                 counter = buildSoldier(counter);
@@ -593,11 +594,11 @@ public class Archon extends Robot {
                     buildRobot(RobotType.SAGE);
                     break;
                 }
-                else if(soldierCount <= minerCount - 1) {
-                    chillingCounter = buildSoldier(chillingCounter);
-                }
                 else if(minerCount <= MIN_NUM_MINERS) {
                     chillingCounter = minerSoldier(chillingCounter);
+                }
+                else if(soldierCount <= minerCount - 1) {
+                    chillingCounter = buildSoldier(chillingCounter);
                 }
                 else {
                     chillingCounter = minerSoldierRatio(7, chillingCounter);
