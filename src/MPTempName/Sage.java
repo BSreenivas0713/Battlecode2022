@@ -498,6 +498,17 @@ public class Sage extends Robot{
     public void moveTowardsCluster() throws GameActionException {
         Debug.printString("Following clusters");
         MapLocation clusterLoc = Comms.getClosestCluster(currLoc);
+        if (currLoc.distanceSquaredTo(clusterLoc) <= visionRadiusSquared) {
+            boolean seeArchonInSensable = false;
+            for (RobotInfo bot : EnemySensable) {
+                if (bot.getType() == RobotType.ARCHON) {
+                    seeArchonInSensable = true;
+                }
+            }
+            if (!seeArchonInSensable) {
+                Comms.broadcastSoldierNearClusterButNothingFound();
+            }
+        }
         Nav.move(clusterLoc);
     }
 
