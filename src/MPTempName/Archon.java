@@ -585,8 +585,9 @@ public class Archon extends Robot {
             case CHILLING:
                 Debug.printString("Chilling");
                 // writeLocation();
-                if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold &&
-                    isPrioritizedArchon) {
+                int goldAmount = rc.getTeamGoldAmount(team);
+                if ((goldAmount >= RobotType.SAGE.buildCostGold && isPrioritizedArchon) ||
+                    (goldAmount >= 2 * RobotType.SAGE.buildCostGold)) {
                     currentBuild = Buildable.EMPTY;
                     nextBuild = Buildable.SOLDIER;
                     buildRobot(RobotType.SAGE);
