@@ -86,6 +86,9 @@ public class Util {
     static final int MIN_DIST_TO_MOVE = RobotType.ARCHON.visionRadiusSquared;
     static final int MIN_ADJ_RUBBLE_MULTIPLIER = 5;
 
+    static final int SOLDIER_LAB_MULT = 5;
+    static final int MAX_NUM_LABS = 8;
+
     // Spiral path going through all locations within radius 13
     // Note: iterate through this backwards
     static final Direction[] DIR_PATH_13 = new Direction[] {

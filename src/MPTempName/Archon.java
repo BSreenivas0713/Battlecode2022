@@ -811,7 +811,8 @@ public class Archon extends Robot {
                     rc.transform();
                     Comms.setArchonMoving();
                 } else if(rc.getRoundNum() > roundsSinceLastLabBuilt + 12 &&
-                    (labCount == 0 || (labCount == 1 && soldierCount >= 15) || (labCount == 2 && soldierCount >= 30)) && 
+                    (soldierCount >= Util.SOLDIER_LAB_MULT * labCount) &&
+                    (labCount < Util.MAX_NUM_LABS) &&
                     !isSmallMap() && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1)) {
                     stateStack.push(currentState);
                     changeState(State.BUILDING_LAB);
