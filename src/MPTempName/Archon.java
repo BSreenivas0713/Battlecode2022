@@ -246,6 +246,8 @@ public class Archon extends Robot {
         reportEnemies();
         tryUpdateSymmetry();
         boolean underAttack = checkUnderAttack();
+        //Doesn't do anything atm
+        signalEnemyAttackable();
         updateRobotCounts();
         updateClosestLeadOre();
         loadArchonLocations();
@@ -260,6 +262,14 @@ public class Archon extends Robot {
         // if (Comms.enemyArchonCount() > 0) {
         //     System.out.println(rc.readSharedArray(Comms.firstEnemy) + "; " + rc.readSharedArray(Comms.firstEnemy + 1) + "; " + rc.readSharedArray(Comms.firstEnemy + 2) + "; " + rc.readSharedArray(Comms.firstEnemy + 3));
         // }
+    }
+
+    public void signalEnemyAttackable() throws GameActionException {
+        int enemyAttackableNum = getEnemyAttackable().length;
+        if(enemyAttackableNum != 0) {
+            Comms.signalEnemyAttackable();
+        }
+
     }
 
     public void signalNeedHeal() throws GameActionException {
@@ -613,7 +623,7 @@ public class Archon extends Robot {
                     buildRobot(RobotType.SAGE);
                     break;
                 }
-                else if (minerCount <= (5 *sageCount) / 6) {
+                else if (minerCount <= (sageCount) / 2 && minerCount <= MIN_NUM_MINERS) {
                     chillingCounter = buildMiner(chillingCounter);
                 }
                 // else if(soldierCount <= minerCount - 1) {
