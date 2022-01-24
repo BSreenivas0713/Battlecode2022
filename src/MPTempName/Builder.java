@@ -350,14 +350,12 @@ public class Builder extends Robot{
         if(!repairing && !making) {
             if(Comms.checkIfArchonBuildingLab()) {
                 Debug.printString("no built lab");
-                if(currLoc.distanceSquaredTo(home) <= robotType.ARCHON.visionRadiusSquared) {
-                    Direction bestDir = null;
-                    if(labLoc != null) {
-                        bestDir = currLoc.directionTo(labLoc);
-                        if(!currLoc.add(bestDir).equals(labLoc)) {
-                            Nav.move(labLoc);
-                            //we are in the direction of the lab, no need to move
-                        }
+                Direction bestDir = null;
+                if(labLoc != null) {
+                    bestDir = currLoc.directionTo(labLoc);
+                    if(!currLoc.add(bestDir).equals(labLoc)) {
+                        Nav.move(labLoc);
+                        //we are in the direction of the lab, no need to move
                     }
                 }
             } else if(!runFromEnemy() && home != null) {
