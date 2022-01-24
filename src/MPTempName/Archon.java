@@ -85,7 +85,7 @@ public class Archon extends Robot {
             numINITminers = (int) Math.ceil((double)(10 / rc.getArchonCount()));
         }
         else {
-            numINITminers = (int) Math.ceil((double)(4 / rc.getArchonCount()));
+            numINITminers = (int) Math.ceil((double)(6 / rc.getArchonCount()));
         }
         //writing all Archon locations immediately on round 0
         stateStack = new ArrayDeque<State>();
