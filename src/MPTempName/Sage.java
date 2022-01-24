@@ -328,6 +328,8 @@ public class Sage extends Robot{
         int bestMinerDamageScore = 0;
         MapLocation bestLab = null;
         int bestLabDamageScore = 0;
+        MapLocation bestBuilder = null;
+        int bestBuilderDamageScore = 0;
         overallAttackingEnemyDx = 0;
         overallAttackingEnemyDy = 0;
         numAttackingEnemies = 0;
@@ -450,10 +452,19 @@ public class Sage extends Robot{
                     break;
                 case BUILDER:
                     if (dist <= RobotType.SAGE.actionRadiusSquared) {
+                        int damageScore = Math.min(45, robot.health);
+                        if (robot.health <= 45) {
+                            damageScore += 5;
+                        }
+                        if (damageScore > bestBuilderDamageScore) {
+                            bestBuilderDamageScore = damageScore;
+                            bestBuilder = robot.location;
+                        }
                         totalHealth += Math.min(6, robot.health);
                         if (robot.health <= 6) {
                             totalHealth += 5;
                         }
+                        numVictims++;
                     }
                     break;
                 case LABORATORY:
@@ -473,6 +484,7 @@ public class Sage extends Robot{
                         } else {
                             totalBuildingHealth += Math.min(32, robot.health);
                         }
+                        numVictims++;
                     }
                 default:
                     break;
@@ -494,11 +506,14 @@ public class Sage extends Robot{
         } else if (bestMinerDamageScore > totalHealth) {
             predictedDamage = bestMinerDamageScore;
             attackTarget = bestMiner;
+        } else if (bestBuilderDamageScore > totalHealth) {
+            predictedDamage = bestBuilderDamageScore;
+            attackTarget = bestBuilder;
         }
     }    
 
     public boolean tryAttack() throws GameActionException {
-        if (totalBuildingHealth >= 45 && totalBuildingHealth > predictedDamage
+        if (totalBuildingHealth > predictedDamage
             && rc.canEnvision(AnomalyType.FURY)) {
             Debug.printString("Envisioning Fury");
             rc.envision(AnomalyType.FURY);
