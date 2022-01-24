@@ -32,7 +32,10 @@ public class Laboratory extends Robot{
         int sageCount = Comms.readSageCount();
         int minerCount = Comms.getSteadyMinerIdx();
         Debug.printString("mineCount: " + minerCount + "sageCount: " + sageCount);
-        if(rc.canTransmute() && (minerCount >= (sageCount)/2) || minerCount >= MIN_NUM_MINERS) {
+        if(rc.canTransmute() &&
+            ((minerCount >= (sageCount)/2) || 
+                minerCount >= MIN_NUM_MINERS ||
+                rc.getTeamLeadAmount(team) >= 75)) {
             Debug.printString("transmuting");
             rc.transmute();
         }
