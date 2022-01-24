@@ -348,7 +348,7 @@ public class Builder extends Robot{
     public void doNormalAction() throws GameActionException {
         repairIfPossible();
         if(!repairing && !making) {
-            if(!Comms.haveBuiltLab()) {
+            if(Comms.checkIfArchonBuildingLab()) {
                 Debug.printString("no built lab");
                 if(currLoc.distanceSquaredTo(home) <= robotType.ARCHON.visionRadiusSquared) {
                     Direction bestDir = null;
