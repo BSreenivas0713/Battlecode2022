@@ -236,6 +236,9 @@ public class Archon extends Robot {
             sageCount = Comms.getSageCount();
             //todo: zero out the symmetry cluster bit
         }
+        else {
+            sageCount = Comms.readSageCount();
+        }
         Comms.setAlive(archonNumber);
         Comms.setCanBuild(archonNumber, rc.isActionReady());
         Comms.resetAvgEnemyLoc();
