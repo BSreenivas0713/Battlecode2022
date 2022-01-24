@@ -36,7 +36,7 @@ public class Sage extends Robot{
     static int closestWatchtowerDist;
     static int bestOverallSoldierHealth;
     static int predictedDamage;
-    static int watchtowerDamage;
+    static int totalBuildingHealth;
     static int numVictims;
 
     static int overallAttackingEnemyDx;
@@ -224,10 +224,12 @@ public class Sage extends Robot{
                     }
                 } else {
                     if (!isRunning || runSemaphore <= 0) {
+                        tryAttack();
                         checkAvoidCharge();
                         isRunning = false;
                         moveTowardsCluster();
                     } else {
+                        tryAttack();
                         Debug.printString("Running!");
                         Direction newDir = chooseBackupDirection(runDirection);
                         if (canMoveRubble(newDir)) {
@@ -317,13 +319,15 @@ public class Sage extends Robot{
         isTurret = false;
         attackTarget = null;
         int totalHealth = 0;
-        watchtowerDamage = 0;
+        totalBuildingHealth = 0;
         MapLocation bestSoldier = null;
         int bestSoldierDamageScore = 0;
         MapLocation bestSage = null;
         int bestSageDamageScore = 0;
         MapLocation bestMiner = null;
         int bestMinerDamageScore = 0;
+        MapLocation bestLab = null;
+        int bestLabDamageScore = 0;
         overallAttackingEnemyDx = 0;
         overallAttackingEnemyDy = 0;
         numAttackingEnemies = 0;
@@ -403,11 +407,11 @@ public class Sage extends Robot{
                     }
                     if (dist <= RobotType.SAGE.actionRadiusSquared) {
                         if (robot.level == 1) {
-                            watchtowerDamage += Math.min(15, robot.health);
+                            totalBuildingHealth += Math.min(15, robot.health);
                         } else if (robot.level == 2) {
-                            watchtowerDamage += Math.min(27, robot.health);
+                            totalBuildingHealth += Math.min(27, robot.health);
                         } else {
-                            watchtowerDamage += Math.min(48, robot.health);
+                            totalBuildingHealth += Math.min(48, robot.health);
                         }
                         
                     }
@@ -452,6 +456,24 @@ public class Sage extends Robot{
                         }
                     }
                     break;
+                case LABORATORY:
+                    if (dist <= RobotType.SAGE.actionRadiusSquared) {
+                        int damageScore = Math.min(45, robot.health);
+                        if (robot.health <= 45) {
+                            damageScore += 50;
+                        }
+                        if (damageScore > bestLabDamageScore) {
+                            bestLabDamageScore = damageScore;
+                            bestLab = robot.location;
+                        }
+                        if (robot.level == 1) {
+                            totalBuildingHealth += Math.min(10, robot.health);
+                        } else if (robot.level == 2) {
+                            totalBuildingHealth += Math.min(18, robot.health);
+                        } else {
+                            totalBuildingHealth += Math.min(32, robot.health);
+                        }
+                    }
                 default:
                     break;
             }
@@ -460,7 +482,10 @@ public class Sage extends Robot{
             predictedDamage = totalHealth;
             averageAttackingEnemyLocation = new MapLocation(overallAttackingEnemyDx / numAttackingEnemies, overallAttackingEnemyDy / numAttackingEnemies);
         }
-        if (bestSageDamageScore > totalHealth) {
+        if (bestLabDamageScore > totalHealth) {
+            predictedDamage = bestLabDamageScore;
+            attackTarget = bestLab;
+        } else if (bestSageDamageScore > totalHealth) {
             predictedDamage = bestSageDamageScore;
             attackTarget = bestSage;
         } else if (bestSoldierDamageScore > totalHealth) {
@@ -473,7 +498,7 @@ public class Sage extends Robot{
     }    
 
     public boolean tryAttack() throws GameActionException {
-        if (watchtowerDamage >= 45 && watchtowerDamage > predictedDamage
+        if (totalBuildingHealth >= 45 && totalBuildingHealth > predictedDamage
             && rc.canEnvision(AnomalyType.FURY)) {
             Debug.printString("Envisioning Fury");
             rc.envision(AnomalyType.FURY);
