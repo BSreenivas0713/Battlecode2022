@@ -417,4 +417,30 @@ public class Util {
     public static int cooldownTurnsRemaining(int rubble, int baseCooldown) {
         return (int) (Math.floor((1 + (rubble / 10)) * baseCooldown) / 10);
     }
+
+    // Breaks rubble ties based on dist to loc
+    public static MapLocation getBestRubbleSquareWithinDistOfLocation(MapLocation center, int radiusSquared) throws GameActionException {
+        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(center, radiusSquared);
+        MapLocation currLoc = rc.getLocation();
+        
+        int minRubble = Integer.MAX_VALUE;
+        int minDist = Integer.MAX_VALUE;
+        MapLocation bestLoc = null;
+        MapLocation loc;
+        int rubble;
+        for(int i = locs.length; --i >= 0;) {
+            loc = locs[i];
+            if(rc.canSenseLocation(loc) && !rc.canSenseRobotAtLocation(loc)) {
+                rubble = rc.senseRubble(loc);
+                if(rubble < minRubble ||
+                    (rubble == minRubble && loc.isWithinDistanceSquared(currLoc, minDist))) {
+                    minRubble = rubble;
+                    bestLoc = loc;
+                    minDist = currLoc.distanceSquaredTo(bestLoc);
+                }
+            }
+        }
+
+        return bestLoc;
+    }
 }

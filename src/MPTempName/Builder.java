@@ -83,8 +83,8 @@ public class Builder extends Robot{
                 rc.buildRobot(RobotType.LABORATORY, bestDir);
                 maybePrototype = rc.senseRobotAtLocation(rc.getLocation().add(bestDir));
                 Comms.incrementAliveLabs();
+                return true;
             }
-            return true;
         }
         return false;
     }
@@ -217,12 +217,11 @@ public class Builder extends Robot{
         Comms.signalBuilderBuilt();
         loadArchonLocations();
         updateHome();
-        repairing = false;
-        making = false;
-        makeLabIfPossible();
-        boolean seenFriendly = makeWatchtowerIfPossible();
+        // boolean seenFriendly = makeWatchtowerIfPossible();
 
         trySwitchState();
+        repairing = false;
+        making = false;
         doStateAction();
     }
 
@@ -357,19 +356,30 @@ public class Builder extends Robot{
         switch(currState) {
             case NORMAL:
                 Debug.printString("Normal");
+                makeLabIfPossible();
                 doNormalAction();
                 break;
             case REPAIRING:
                 Debug.printString("Repairing");
                 repairTarget = rc.senseRobot(repairTarget.ID);
-                MapLocation target = Nav.getBestRubbleSquareAdjacentTo(repairTarget.getLocation());
-                Nav.move(target);
+
+                if(repairTarget.type == RobotType.ARCHON && makeLabIfPossible()) {
+                    // Don't repair in this case, we're going to exit after buliding a lab
+                    break;
+                }
+
+                MapLocation target = Util.getBestRubbleSquareWithinDistOfLocation(repairTarget.location, actionRadiusSquared);
+                if(!currLoc.isWithinDistanceSquared(repairTarget.location, actionRadiusSquared) ||
+                    rc.senseRubble(target) < rc.senseRubble(currLoc)) {
+                    Nav.move(target);
+                }
                 if(rc.canRepair(repairTarget.getLocation())) {
                     rc.repair(repairTarget.getLocation());
                 }
                 break;
             case GOING_TO_HEAL:
                 Debug.printString("Going to repair");
+                makeLabIfPossible();
                 Nav.move(healTarget);
                 break;
         }
