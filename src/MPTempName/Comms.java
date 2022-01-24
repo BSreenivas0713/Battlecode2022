@@ -272,9 +272,10 @@ public class Comms {
     public static void signaljustBuiltBuilder()  throws GameActionException {
         builderLabSignal(6);
     }
-    public static boolean haveBuiltLab() throws GameActionException {
-        return checkBuilderLabBit(1);
-    }
+    // Deprecated
+    // public static boolean haveBuiltLab() throws GameActionException {
+    //     return checkBuilderLabBit(1);
+    // }
     public static boolean haveBuiltBuilderForFinalLab() throws GameActionException {
         return checkBuilderLabBit(0);
     }

@@ -23,6 +23,7 @@ public class Builder extends Robot{
     static RobotInfo maybePrototype;
     static RobotInfo repairTarget;
     static MapLocation healTarget;
+    static int repairingTurncount;
 
     public Builder(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
@@ -67,7 +68,7 @@ public class Builder extends Robot{
                     bestLoc = loc;
                 }
             }
-            Debug.printString("bestLoc: " + bestLoc);
+            // Debug.printString("bestLoc: " + bestLoc);
             labLoc = bestLoc;
             Direction bestDir = null;
             for(Direction Dir: Util.getFullInOrderDirections(currLoc.directionTo(home).opposite())) {
@@ -225,25 +226,32 @@ public class Builder extends Robot{
     public void trySwitchState() throws GameActionException {
         switch(currState) {
             case NORMAL:
-                if(making && maybePrototype != null) {
+                if((making && maybePrototype != null) || checkForPrototype()) {
                     currState = BuilderState.REPAIRING;
                     repairTarget = maybePrototype;
-                } else if(Comms.haveBuiltLab() && checkNeedHelp()) {
+                    repairingTurncount = -1;
+                } else if(!Comms.checkIfArchonBuildingLab() && checkNeedHelp()) {
                     currState = BuilderState.GOING_TO_HEAL;
                 }
                 break;
             case REPAIRING:
-                if(repairTarget == null || !rc.canSenseRobot(repairTarget.ID)) {
+                if(repairTarget == null || !rc.canSenseRobot(repairTarget.ID) ||
+                    (repairingTurncount != -1 && rc.getRoundNum() > repairingTurncount + Util.MAX_REPAIRING_TURNS)) {
                     currState = BuilderState.NORMAL;
                 } else {
                     RobotInfo robot = rc.senseRobot(repairTarget.ID);
-                    if(robot.health >= robot.type.getMaxHealth(robot.level)) {
+                    if(robot.health >= robot.type.getMaxHealth(robot.level) &&
+                        !checkForPrototype()) {
                         currState = BuilderState.NORMAL;
                     }
                 }
                 break;
             case GOING_TO_HEAL:
-                if(!checkNeedHelp()) {
+                if((making && maybePrototype != null) || checkForPrototype()) {
+                    currState = BuilderState.REPAIRING;
+                    repairTarget = maybePrototype;
+                    repairingTurncount = -1;
+                } else if(!checkNeedHelp()) {
                     currState = BuilderState.NORMAL;
                 } else if(currLoc.isWithinDistanceSquared(healTarget, RobotType.BUILDER.actionRadiusSquared)) {
                     currState = BuilderState.REPAIRING;
@@ -256,6 +264,7 @@ public class Builder extends Robot{
                                     repairTarget = robot;
                                     healTarget = null;
                                     home = robot.location;
+                                    repairingTurncount = rc.getRoundNum();
                                 }
                         }
                     }
@@ -267,11 +276,31 @@ public class Builder extends Robot{
                         } else {
                             currState = BuilderState.REPAIRING;
                             home = repairTarget.location;
+                            repairingTurncount = rc.getRoundNum();
                         }
                     }
                 }
                 break;
         }
+    }
+
+    public RobotInfo[] getRestrictedFriendlies() throws GameActionException {
+        RobotInfo[] friendlies = rc.senseNearbyRobots(10, rc.getTeam());
+        if(friendlies.length > 15) friendlies = rc.senseNearbyRobots(5, team);
+        return friendlies;
+    }
+
+    public boolean checkForPrototype() throws GameActionException {
+        RobotInfo[] friendlies = getRestrictedFriendlies();
+        for(RobotInfo friend : friendlies) {
+            if(friend.mode == RobotMode.PROTOTYPE) {
+                maybePrototype = friend;
+                repairTarget = friend;
+                repairingTurncount = -1;
+                return true;
+            }
+        }
+        return false;
     }
 
     // This should really only ever load an archon
@@ -302,13 +331,13 @@ public class Builder extends Robot{
         MapLocation archonLoc;
         int minDist = Integer.MAX_VALUE;
         healTarget = null;
-        Debug.printString("Checking for help");
+        Debug.printString("Checking");
 
         for(int i = 0; i < numArchons; i++) {
             archonLoc = archonLocations[i];
             if(archonLoc == null) continue;
             if(Comms.getArchonNeedsHeal(i) && archonLoc.isWithinDistanceSquared(currLoc, minDist)) {
-                Debug.printString("" + archonLoc);
+                // Debug.printString("" + archonLoc);
                 healTarget = archonLoc;
                 minDist = archonLoc.distanceSquaredTo(currLoc);
             }

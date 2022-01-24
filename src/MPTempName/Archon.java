@@ -615,7 +615,7 @@ public class Archon extends Robot {
                 Debug.printString("Obesity");
                 int leadForBuilders = rc.getTeamLeadAmount(rc.getTeam()) - maxLeadUsedByArchons;
                 int watchtowersPossible = leadForBuilders / 180;
-                if((rc.getRoundNum() < Util.MIN_ROUND_FOR_LAB || Comms.haveBuiltLab())) {
+                if((rc.getRoundNum() < Util.MIN_ROUND_FOR_LAB || labCount >= 1)) {
                     if (/*watchtowersPossible > builderCount &&*/ builderCount <= MIN_NUM_MINERS) {
                         obesityCounter = SoldierBuilderRatio(11, obesityCounter);
                     } else {
@@ -680,7 +680,7 @@ public class Archon extends Robot {
             }
             return counter;
         }
-        else if (Comms.haveBuiltLab()) {
+        else if (labCount >= 1) {
             // Debug.printString("Correct location");
             if (counter != mod - 1) {
                 currentBuild = Buildable.MINER;
