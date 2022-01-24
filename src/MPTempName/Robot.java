@@ -92,7 +92,10 @@ public class Robot {
         return (float)leadAmount - Math.sqrt((double) radiusSquared) * 5;
     }
 
-
+    public boolean isSmallMap() {
+        return Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT;
+    }
+    
     public void reportEnemies() throws GameActionException {
         int count = 0;
         int totalX = 0;

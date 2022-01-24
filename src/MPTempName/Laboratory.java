@@ -16,25 +16,23 @@ public class Laboratory extends Robot{
         super(r);
         startRound = rc.getRoundNum();
         homeFlagIdx = homeFlagIndex;
+//         MAX_NUM_MINERS = Math.min(Util.MAX_MINERS,
+//         rc.getMapWidth() * rc.getMapHeight() /
+//         Util.MAX_MAP_SIZE_TO_MINER_RATIO);
+// MIN_NUM_MINERS = MAX_NUM_MINERS / 5;
     }
     
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         Comms.incrementAliveLabs();
+        
         int soldierCount = Comms.getSteadySoldierIdx();
         int sageCount = Comms.readSageCount();
-        Debug.printString("soldCount: " + soldierCount + "sageCount: " + sageCount);
-        if(rc.canTransmute()) {
-            if (Comms.checkIfArchonBuildingLab()) {
-                if (rc.getRoundNum() % 2 == 1) {
-                    rc.transmute();
-                    Debug.printString("Transmuting");
-                }
-            }
-            else {
-                rc.transmute();
-                Debug.printString("Transmuting");
-            }
+        int minerCount = Comms.getSteadyMinerIdx();
+        Debug.printString("mineCount: " + minerCount + "sageCount: " + sageCount);
+        if(rc.canTransmute() && (minerCount >= (5 * sageCount)/6)) {
+            Debug.printString("transmuting");
+            rc.transmute();
         }
     }
     

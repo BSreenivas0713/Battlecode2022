@@ -38,6 +38,8 @@ public class Archon extends Robot {
     static boolean labCountIncreased;
     static int roundsSinceLastLabBuilt;
 
+    static int numINITminers;
+
     static int numMinersBuilt;
     static int minerDirOffset;
 
@@ -79,6 +81,12 @@ public class Archon extends Robot {
 
     public Archon(RobotController r) throws GameActionException {
         super(r);
+        if(Util.MAP_AREA >= Util.MIN_AREA_FOR_MORE_MINERS) {
+            numINITminers = (int) Math.ceil((double)(10 / rc.getArchonCount()));
+        }
+        else {
+            numINITminers = (int) Math.ceil((double)(4 / rc.getArchonCount()));
+        }
         //writing all Archon locations immediately on round 0
         stateStack = new ArrayDeque<State>();
         
@@ -152,9 +160,7 @@ public class Archon extends Robot {
         BUILD_DIRECTIONS = new Direction[numDirections];
         System.arraycopy(dirs, 0, BUILD_DIRECTIONS, 0, numDirections);
     }
-    public boolean isSmallMap() {
-        return Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT;
-    }
+
 
     void pruneExploreDirections() throws GameActionException {
         Direction[] validExploreDirs = new Direction[8];
@@ -581,10 +587,23 @@ public class Archon extends Robot {
                     currentBuild = Buildable.BUILDER;
                     nextBuild = Buildable.SOLDIER;
                 }
+                else {
+                    int goldAmount = rc.getTeamGoldAmount(team);
+                    if ((goldAmount >= RobotType.SAGE.buildCostGold && isPrioritizedArchon) ||
+                        (goldAmount >= 2 * RobotType.SAGE.buildCostGold)) {
+                        buildRobot(RobotType.SAGE);
+                    }
+                    else if(rc.getTeamLeadAmount(rc.getTeam()) >= 375) {
+                        int a = 0;
+                        currentBuild = Buildable.SOLDIER;
+                        nextBuild = Buildable.EMPTY;
+                        buildSoldier(a);
+                    }
+                }
                 tryToRepairLastBot();
                 break;
             case CHILLING:
-                Debug.printString("Chilling");
+                Debug.printString("Chilling, " + MIN_NUM_MINERS);
                 // writeLocation();
                 int goldAmount = rc.getTeamGoldAmount(team);
                 if ((goldAmount >= RobotType.SAGE.buildCostGold && isPrioritizedArchon) ||
@@ -594,7 +613,7 @@ public class Archon extends Robot {
                     buildRobot(RobotType.SAGE);
                     break;
                 }
-                else if (minerCount <= Math.max(MIN_NUM_MINERS, (5/6) * sageCount)) {
+                else if (minerCount <= (5 *sageCount) / 6) {
                     chillingCounter = buildMiner(chillingCounter);
                 }
                 // else if(soldierCount <= minerCount - 1) {
@@ -705,7 +724,7 @@ public class Archon extends Robot {
         else {
             Debug.printString("Incorrect location");
             currentBuild = Buildable.MINER;
-            if(counter != 3) {
+            if(minerCount != numINITminers) {
                 nextBuild = Buildable.MINER;
             }
             else {
@@ -781,7 +800,7 @@ public class Archon extends Robot {
                     rc.transform();
                     Comms.setArchonMoving();
                 }
-                else if (!isSmallMap() && (initCounter == 3 || Comms.checkMakingINITBuilder())) {
+                else if (!isSmallMap() && (initCounter == numINITminers || Comms.checkMakingINITBuilder())) {
                     changedOutOfINIT = true;
                     Comms.signalMakingINITBuilder();
                     stateStack.push(State.CHILLING);
@@ -796,11 +815,11 @@ public class Archon extends Robot {
                 break;
             case CHILLING:
                 Debug.printString("uA: " + roundsSinceUnderAttack + " " + rc.getRoundNum() + " " + roundsSinceLastLabBuilt);
-                if (underAttack) {
+                if (underAttack && isSmallMap()) {
                     Comms.signalUnderAttack();
                     stateStack.push(currentState);
                     changeState(State.UNDER_ATTACK);
-                } else if (isObese) {
+                } else if (isObese && isSmallMap()) {
                     stateStack.push(currentState);
                     changeState(State.OBESITY);
                 } else if (shouldMoveToBetterRubble() && 
@@ -827,8 +846,8 @@ public class Archon extends Robot {
                     turnsBeingClosest = 0;
                     rc.transform();
                     Comms.setArchonMoving();
-                } else if(rc.getRoundNum() > roundsSinceLastLabBuilt + 12 && enoughLeadForLab() &&
-                    !isSmallMap() && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1)) {
+                } else if(enoughLeadForLab() &&
+                    !isSmallMap() && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1 || rc.getTeamLeadAmount(rc.getTeam()) > 75)) {
                     stateStack.push(currentState);
                     changeState(State.BUILDING_LAB);
                 }

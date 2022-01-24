@@ -90,43 +90,46 @@ public class Builder extends Robot{
     }
 
     public boolean makeWatchtowerIfPossible() throws GameActionException{
-        boolean seenFriendly = false;
-        RobotInfo robot;
-        int archonTowerCount = 0;
-        for (RobotInfo Friend: FriendlySensable) {
-            if(Friend.type == RobotType.ARCHON || Friend.type == RobotType.WATCHTOWER) {
-                archonTowerCount++;
+        if(isSmallMap()) {
+            boolean seenFriendly = false;
+            RobotInfo robot;
+            int archonTowerCount = 0;
+            for (RobotInfo Friend: FriendlySensable) {
+                if(Friend.type == RobotType.ARCHON || Friend.type == RobotType.WATCHTOWER) {
+                    archonTowerCount++;
+                }
             }
-        }
-        int[] ArchonOrder = Comms.getArchonOrderGivenClusters();
-        int numImportantArchons = ArchonOrder[4];
-        for (int i = FriendlySensable.length - 1; i >= 0; i--) {
-            robot = FriendlySensable[i];
-            switch(robot.type) {
-                case ARCHON:
-                case WATCHTOWER:
-                    if(currLoc.distanceSquaredTo(robot.location) <= 8) {
-                        seenFriendly = true;
-                    }
-                    MapLocation robotLoc = robot.location;
-                    for(MapLocation newLoc: Util.makePattern(robotLoc)) {
-                        if( robot.mode == RobotMode.TURRET &&
-                            archonTowerCount < 13 &&
-                            currLoc.distanceSquaredTo(newLoc) <= 2 &&
-                            rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc)) &&
-                            rc.getTeamLeadAmount(team) >= 75 * numImportantArchons + 150) {
-                            Debug.printString("Building a Watchtower");
-                            making = true;
-                            rc.buildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc));
-                            maybePrototype = rc.senseRobotAtLocation(newLoc);
+            int[] ArchonOrder = Comms.getArchonOrderGivenClusters();
+            int numImportantArchons = ArchonOrder[4];
+            for (int i = FriendlySensable.length - 1; i >= 0; i--) {
+                robot = FriendlySensable[i];
+                switch(robot.type) {
+                    case ARCHON:
+                    case WATCHTOWER:
+                        if(currLoc.distanceSquaredTo(robot.location) <= 8) {
+                            seenFriendly = true;
                         }
-                    }
-                    break;
-                default:
-                    break;
+                        MapLocation robotLoc = robot.location;
+                        for(MapLocation newLoc: Util.makePattern(robotLoc)) {
+                            if( robot.mode == RobotMode.TURRET &&
+                                archonTowerCount < 13 &&
+                                currLoc.distanceSquaredTo(newLoc) <= 2 &&
+                                rc.canBuildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc)) &&
+                                rc.getTeamLeadAmount(team) >= 75 * numImportantArchons + 150) {
+                                Debug.printString("Building a Watchtower");
+                                making = true;
+                                rc.buildRobot(RobotType.WATCHTOWER, currLoc.directionTo(newLoc));
+                                maybePrototype = rc.senseRobotAtLocation(newLoc);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
             }
-        }
-        return seenFriendly;
+            return seenFriendly;
+            }
+        return false;
     }
 
     public void repairIfPossible() throws GameActionException{
