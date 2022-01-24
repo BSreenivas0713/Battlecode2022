@@ -161,7 +161,7 @@ public class Comms {
         int oldFlag = rc.readSharedArray(LAB_COUNT_IDX);
         int tempFlag = oldFlag & 0xFF0F;
         int numLabs = tempFlag & LAB_COUNT_MASK;
-        int newFlag = (tempFlag & 0xFFF0) | (numLabs << 2); // putting old num labs in top 2 bits 
+        int newFlag = (tempFlag & 0xFFF0) | (numLabs << 4); // putting old num labs in top 2 bits 
         writeIfChanged(LAB_COUNT_IDX, newFlag);
     }
 
