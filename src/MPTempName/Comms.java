@@ -154,7 +154,6 @@ public class Comms {
 
     public static void signalMakingINITBuilder() throws GameActionException {
         builderLabSignal(5);
-        Debug.printString("signaling");
     }
 
     public static boolean checkMakingINITBuilder() throws GameActionException {
@@ -198,11 +197,23 @@ public class Comms {
     public static void signalBuilderBuilt()  throws GameActionException {
         builderLabSignal(0);      
     }
+    public static void signalBuilderNotBuilt() throws GameActionException {
+        removeBuilderLabSignal(0);      
+    }
     public static void signalLabNotBuilt() throws GameActionException {
         removeBuilderLabSignal(1);
     }
     public static void signalLabBuilt()  throws GameActionException {
         builderLabSignal(1);
+    }
+    public static boolean haveJustBuiltBuilder() throws GameActionException {
+        return checkBuilderLabBit(6);
+    }
+    public static void signalNotjustBuiltBuilder() throws GameActionException {
+        removeBuilderLabSignal(6);
+    }
+    public static void signaljustBuiltBuilder()  throws GameActionException {
+        builderLabSignal(6);
     }
     public static boolean haveBuiltLab() throws GameActionException {
         return checkBuilderLabBit(1);
@@ -967,9 +978,13 @@ public class Comms {
     }
     public static void incrementBuilderCount() throws GameActionException {
         int builderFlag = rc.readSharedArray(BUILDER_COUNTER_IDX);
+        int lastCount = (builderFlag >> MINER_COUNTER_OFFSET) & MINER_MASK;
         int currCount = builderFlag & MINER_MASK;
-
-        rc.writeSharedArray(BUILDER_COUNTER_IDX, currCount + 1);
+        if(lastCount != 0) {
+            rc.writeSharedArray(BUILDER_COUNTER_IDX,1);
+        } else if (currCount < 255) {
+            rc.writeSharedArray(BUILDER_COUNTER_IDX, currCount + 1);
+        }
     }
 
     public static void incrementBuiltRobots(int archonTurnNum, int robotCounter) throws GameActionException {

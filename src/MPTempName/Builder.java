@@ -54,7 +54,8 @@ public class Builder extends Robot{
                 int currDist = loc.distanceSquaredTo(enemyLoc);
                 int distToHome = loc.distanceSquaredTo(home);
                 boolean OnSquare = currLoc.add(currLoc.directionTo(loc)).equals(loc);
-                if(!OnSquare && (currRubble < bestRubble || (currRubble == bestRubble && currDist > bestDistance && distToHome <= RobotType.ARCHON.visionRadiusSquared))) {
+                if(!OnSquare && (currRubble < bestRubble || (currRubble == bestRubble && currDist > bestDistance && 
+                (distToHome <= RobotType.ARCHON.visionRadiusSquared || currLoc.distanceSquaredTo(home) >= RobotType.ARCHON.visionRadiusSquared)))) {
                     bestRubble = currRubble;
                     bestDistance = currDist;
                     bestLoc = loc;
@@ -190,9 +191,11 @@ public class Builder extends Robot{
         int minDist = Integer.MAX_VALUE;
         for(MapLocation archonLoc : archonLocations) {
             if(archonLoc == null) continue;
-            if(archonLoc.isWithinDistanceSquared(home, minDist)) {
-                closestArchonToHome = archonLoc;
-                minDist = archonLoc.distanceSquaredTo(home);
+            if(home != null) {
+                if(archonLoc.isWithinDistanceSquared(home, minDist)) {
+                    closestArchonToHome = archonLoc;
+                    minDist = archonLoc.distanceSquaredTo(home);
+                }
             }
         }
         home = closestArchonToHome;
@@ -201,6 +204,7 @@ public class Builder extends Robot{
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         Comms.incrementBuilderCount();
+        Comms.signalBuilderBuilt();
         loadArchonLocations();
         updateHome();
         repairing = false;
@@ -337,6 +341,7 @@ public class Builder extends Robot{
         repairIfPossible();
         if(!repairing && !making) {
             if(!Comms.haveBuiltLab()) {
+                Debug.printString("no built lab");
                 if(currLoc.distanceSquaredTo(home) <= robotType.ARCHON.visionRadiusSquared) {
                     Direction bestDir = null;
                     if(labLoc != null) {
