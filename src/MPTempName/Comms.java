@@ -81,7 +81,7 @@ public class Comms {
     static final int NONZERO_DX_DY_OFFSET = 2;
     static final int SOLDIER_NEAR_CLUSTER_BUT_NO_ENEMIES_OFFSET = 1;
     static final int CLUSTER_SET_BY_SYMMETRY_OFFSET = 0;
-    static final int LAB_COUNT_MASK = 3;
+    static final int LAB_COUNT_MASK = 0xF;
 
     static final int MAX_TROOPS_HEALING = 0x7;
     static final int TROOPS_HEALING_MASK = 0xF;
@@ -145,7 +145,7 @@ public class Comms {
 
     public static int getAliveLabs() throws GameActionException {
         int oldFlag = rc.readSharedArray(LAB_COUNT_IDX);
-        int numLabs = (oldFlag >> 2) & LAB_COUNT_MASK;
+        int numLabs = (oldFlag >> 4) & LAB_COUNT_MASK;
         return numLabs;
     }
 
@@ -153,15 +153,15 @@ public class Comms {
     public static void incrementAliveLabs() throws GameActionException {
         int oldFlag = rc.readSharedArray(LAB_COUNT_IDX);
         int numLabs = oldFlag & LAB_COUNT_MASK;
-        int newFlag = ((oldFlag & 0xFFFC) | (numLabs + 1));
+        int newFlag = ((oldFlag & 0xFFF0) | (numLabs + 1));
         rc.writeSharedArray(LAB_COUNT_IDX, newFlag);
     }
 
     public static void resetAliveLabs() throws GameActionException {
         int oldFlag = rc.readSharedArray(LAB_COUNT_IDX);
-        int tempFlag = oldFlag & 0xFFF3;
+        int tempFlag = oldFlag & 0xFF0F;
         int numLabs = tempFlag & LAB_COUNT_MASK;
-        int newFlag = (tempFlag & 0xFFFC) | (numLabs << 2); // putting old num labs in top 2 bits 
+        int newFlag = (tempFlag & 0xFFF0) | (numLabs << 2); // putting old num labs in top 2 bits 
         writeIfChanged(LAB_COUNT_IDX, newFlag);
     }
 
