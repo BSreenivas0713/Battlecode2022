@@ -70,6 +70,8 @@ public class Archon extends Robot {
     static int roundsSinceUnderAttack;
     static int TimeToStartFarming;
 
+    static int turnsBeingClosest;
+
     static int builderRound;
 
     public Archon(RobotController r) throws GameActionException {
@@ -492,27 +494,12 @@ public class Archon extends Robot {
         return counter;
     }
 
-    public int minerSoldier31(int counter) throws GameActionException {
-        switch(counter % 5) {
+    public int minerSoldier(int counter) throws GameActionException {
+        switch(counter % 2) {
             case 0: 
                 currentBuild = Buildable.SOLDIER;
-                nextBuild = Buildable.SOLDIER;
-                counter = buildSoldier(counter);
-                break;
-            case 1:
-                currentBuild = Buildable.SOLDIER;
                 nextBuild = Buildable.MINER;
                 counter = buildSoldier(counter);
-                break;
-            case 2:
-                currentBuild = Buildable.SOLDIER;
-                nextBuild = Buildable.MINER;
-                counter = buildSoldier(counter);
-                break;
-            case 3:
-                currentBuild = Buildable.MINER;
-                nextBuild = Buildable.MINER;
-                counter = buildMiner(counter);
                 break;
             default:
                 currentBuild = Buildable.MINER;
@@ -592,8 +579,11 @@ public class Archon extends Robot {
                     buildRobot(RobotType.SAGE);
                     break;
                 }
-                if(minerCount <= MIN_NUM_MINERS && soldierCount >= (1/3) * minerCount) {
-                    chillingCounter = minerSoldier31(chillingCounter);
+                else if(soldierCount <= minerCount - 1) {
+                    chillingCounter = buildSoldier(chillingCounter);
+                }
+                else if(minerCount <= MIN_NUM_MINERS) {
+                    chillingCounter = minerSoldier(chillingCounter);
                 }
                 else {
                     chillingCounter = minerSoldierRatio(7, chillingCounter);
@@ -640,7 +630,7 @@ public class Archon extends Robot {
                 Debug.setIndicatorLine(Debug.INDICATORS, currLoc, moveTarget, 204, 0, 255);
                 break;
             case FINDING_GOOD_SPOT:
-                Debug.printString("Going to low rubble spot");
+                Debug.printString("Finding spot");
                 findGoodSpot();
                 Nav.move(moveTarget);
                 Debug.setIndicatorLine(Debug.INDICATORS, currLoc, moveTarget, 204, 0, 255);
@@ -764,7 +754,7 @@ public class Archon extends Robot {
                 else if (!isSmallMap() && !changedOutOfINIT && (initCounter == 3 || Comms.checkMakingINITBuilder())) {
                     changedOutOfINIT = true;
                     Comms.signalMakingINITBuilder();
-                    stateStack.push(State.INIT);
+                    stateStack.push(State.CHILLING);
                     changeState(State.BUILDING_LAB);                    
                 }
                 break;
@@ -803,6 +793,7 @@ public class Archon extends Robot {
                     rc.writeSharedArray(archonNumber, Comms.DEAD_ARCHON_FLAG);
                     stateStack.push(currentState);
                     changeState(State.MOVING);
+                    turnsBeingClosest = 0;
                     rc.transform();
                     Comms.setArchonMoving();
                 } else if(!labStillAlive && !isSmallMap() && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1) && rc.getRoundNum() > TimeToStartFarming) {
@@ -846,10 +837,6 @@ public class Archon extends Robot {
                     Comms.signalUnderAttack();
                     stateStack.push(currentState);
                     changeState(State.UNDER_ATTACK);
-                }
-                else if (Comms.foundEnemy && stateStack.peek() == State.INIT) {
-                    stateStack.pop();
-                    changeState(State.CHILLING);
                 }
                 if(Comms.haveBuiltLab()) {
                     changeState(stateStack.pop());
@@ -1007,8 +994,8 @@ public class Archon extends Robot {
     public boolean isOldArchonDead() throws GameActionException {
         for(MapLocation archonLoc : archonLocations) {
             if(archonLoc == null) continue;
-            Debug.printString("" + lastClosestArchonToCluster + " ");
-            Debug.printString("" + archonLoc + " ");
+            // Debug.printString("" + lastClosestArchonToCluster + " ");
+            // Debug.printString("" + archonLoc + " ");
             if(archonLoc.equals(lastClosestArchonToCluster)) return false;
         }
         return !isCharging;
@@ -1095,8 +1082,10 @@ public class Archon extends Robot {
 
         if(lastClosestArchonToCluster.isWithinDistanceSquared(cluster, Util.MIN_DIST_SQUARED_FROM_CLUSTER)) {
             // Small map? Just go to the closest archon
+            Debug.printString("archon");
             moveTarget = lastClosestArchonToCluster;
         } else {
+            Debug.printString("cluster: " + cluster);
             // Otherwise, pick a location on the line from the cluster to the archon,
             // which is the correct distance away from the cluster
             double vX = lastClosestArchonToCluster.x - cluster.x;
@@ -1180,7 +1169,7 @@ public class Archon extends Robot {
             double x = cluster.x + Math.sqrt(Util.MIN_DIST_SQUARED_FROM_CLUSTER) * vX;
             double y = cluster.y + Math.sqrt(Util.MIN_DIST_SQUARED_FROM_CLUSTER) * vY;
             moveTarget = new MapLocation((int)x, (int)y);
-            Debug.printString("Move target far: " + moveTarget);
+            // Debug.printString("Move target far: " + moveTarget);
         }
 
         return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
