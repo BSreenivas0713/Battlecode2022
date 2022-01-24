@@ -322,6 +322,8 @@ public class Sage extends Robot{
         int bestSoldierDamageScore = 0;
         MapLocation bestSage = null;
         int bestSageDamageScore = 0;
+        MapLocation bestMiner = null;
+        int bestMinerDamageScore = 0;
         overallAttackingEnemyDx = 0;
         overallAttackingEnemyDy = 0;
         numAttackingEnemies = 0;
@@ -427,10 +429,19 @@ public class Sage extends Robot{
                     break;
                 case MINER:
                     if (dist <= RobotType.SAGE.actionRadiusSquared) {
+                        int damageScore = Math.min(45, robot.health);
+                        if (robot.health <= 45) {
+                            damageScore += 5;
+                        }
+                        if (damageScore > bestMinerDamageScore) {
+                            bestMinerDamageScore = damageScore;
+                            bestMiner = robot.location;
+                        }
                         totalHealth += Math.min(8, robot.health);
                         if (robot.health <= 8) {
                             totalHealth += 5;
                         }
+                        numVictims++;
                     }
                     break;
                 case BUILDER:
@@ -449,12 +460,15 @@ public class Sage extends Robot{
             predictedDamage = totalHealth;
             averageAttackingEnemyLocation = new MapLocation(overallAttackingEnemyDx / numAttackingEnemies, overallAttackingEnemyDy / numAttackingEnemies);
         }
-        if (bestSageDamageScore >= totalHealth) {
+        if (bestSageDamageScore > totalHealth) {
             predictedDamage = bestSageDamageScore;
             attackTarget = bestSage;
-        } else if (bestSoldierDamageScore >= totalHealth) {
+        } else if (bestSoldierDamageScore > totalHealth) {
             predictedDamage = bestSoldierDamageScore;
             attackTarget = bestSoldier;
+        } else if (bestMinerDamageScore > totalHealth) {
+            predictedDamage = bestMinerDamageScore;
+            attackTarget = bestMiner;
         }
     }    
 
