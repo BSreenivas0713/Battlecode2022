@@ -84,8 +84,8 @@ public class Sage extends Robot{
         if (isRunning) {
             runSemaphore--;
         }
-        tryAttackArchon();
         scanEnemies();
+        tryAttackArchon();
         boolean almostReady = rc.getActionCooldownTurns() < GameConstants.COOLDOWN_LIMIT + GameConstants.COOLDOWNS_PER_TURN;
         trySwitchState();
         doSageAction(almostReady);
@@ -99,6 +99,11 @@ public class Sage extends Robot{
             Debug.printString("Envisioning Fury");
             rc.envision(AnomalyType.FURY);
             return;
+        } else if (inRangeArchon != null && 45 > predictedDamage) {
+            if (rc.canAttack(inRangeArchon.location)) {
+                Debug.printString("Attacking Archon");
+                rc.attack(inRangeArchon.location);
+            }
         } else if (sensedArchon != null) {
             Nav.move(sensedArchon.location);
             if (isTurret && rc.canAttack(sensedArchon.location)) {
