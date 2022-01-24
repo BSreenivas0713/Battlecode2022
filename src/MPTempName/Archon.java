@@ -781,10 +781,8 @@ public class Archon extends Robot {
         switch (labCount) {
             case 0:
                 return true;
-            case 1:
-                return currLead > 300;
             default:
-                return currLead > 500;
+                return currLead > 300;
         }
     }
 
