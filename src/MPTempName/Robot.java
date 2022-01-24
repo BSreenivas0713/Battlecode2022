@@ -106,13 +106,13 @@ public class Robot {
                 case WATCHTOWER:
                 case ARCHON:
                 case SAGE:
+                case LABORATORY:
                     totalX += bot.location.x;
                     totalY += bot.location.y;
                     count++;
                     break;
                 case MINER:
                 case BUILDER:
-                case LABORATORY:
                     if(!Comms.foundEnemySoldier) {
                         totalX += bot.location.x;
                         totalY += bot.location.y;
