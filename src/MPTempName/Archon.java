@@ -594,11 +594,11 @@ public class Archon extends Robot {
                     buildRobot(RobotType.SAGE);
                     break;
                 }
-                else if(minerCount <= MIN_NUM_MINERS) {
-                    chillingCounter = minerSoldier(chillingCounter);
-                }
                 else if(soldierCount <= minerCount - 1) {
                     chillingCounter = buildSoldier(chillingCounter);
+                }
+                else if(minerCount <= MIN_NUM_MINERS) {
+                    chillingCounter = minerSoldier(chillingCounter);
                 }
                 else {
                     chillingCounter = minerSoldierRatio(7, chillingCounter);
