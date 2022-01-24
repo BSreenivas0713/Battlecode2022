@@ -468,7 +468,7 @@ public class Sage extends Robot{
                     }
                     break;
                 case LABORATORY:
-                    if (dist <= RobotType.SAGE.actionRadiusSquared) {
+                    if (robot.mode == RobotMode.TURRET && dist <= RobotType.SAGE.actionRadiusSquared) {
                         int damageScore = Math.min(45, robot.health);
                         if (robot.health <= 45) {
                             damageScore += 50;
