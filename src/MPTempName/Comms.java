@@ -435,6 +435,10 @@ public class Comms {
         return ((rc.readSharedArray(LAST_CHOSEN_IDX) >> PRIORITY_ARCHON_OFFSET) & 3) + 1;
     }
 
+    public static int getCurrentPrioritizedArchon() throws GameActionException {
+        return (rc.readSharedArray(LAST_CHOSEN_IDX) & 3) + 1;
+    }
+
     public static boolean canBuildPrioritized(int archonNum, boolean isInit) throws GameActionException {
         if (isInit) {
             return canBuildPrioritizedEven(archonNum);
@@ -466,7 +470,6 @@ public class Comms {
         for (int i = 0; i < numImportant; i++) {
             int currArchon = order[i];
             Buildable bot = getBuildGuess(currArchon);
-            // printRounds("Guessing " + bot, 300, 400);
             int cost = buildableCost(bot);
             leadNeeded += cost;
         }
@@ -482,6 +485,7 @@ public class Comms {
                 newOrder[i] = order[i];
             }
 
+            // printRounds("order 0: " + order[0], 210, 220);
             if (numImportant == 1) {
                 newOrder[0] = order[0];
             } else if (numImportant == 2) {
@@ -588,12 +592,16 @@ public class Comms {
             }
             if (getTurn() == rc.getArchonCount()) {
                 if (getCanBuild(newOrder[0]) && ourLead >= buildableCost(getBuildGuess(newOrder[0]))) {
-                    // printRounds("Updating most recent.", 300, 400);
+                    // printRounds("Updating most recent if: " + newOrder[0], 0, 400);
                     updateMostRecentArchons(newOrder[0]);
                 }
             }
         } else {
             newOrder = order;
+            if (getTurn() == rc.getArchonCount() && getCanBuild(newOrder[0])) {
+                // printRounds("Updating most recent else: " + newOrder[0], 0, 400);
+                updateMostRecentArchons(newOrder[0]);
+            }
         }
         if (getTurn() == rc.getArchonCount()) {
             setPrioritizedArchon(newOrder[0]);

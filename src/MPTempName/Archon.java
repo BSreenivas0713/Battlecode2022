@@ -54,6 +54,7 @@ public class Archon extends Robot {
     static Buildable currentBuild = Buildable.MINER;
     static Buildable nextBuild = Buildable.MINER;
 
+    static boolean canBuildPrioritized;
     static boolean isPrioritizedArchon;
     static int lastRoundPrioritized;
 
@@ -185,7 +186,7 @@ public class Archon extends Robot {
 
     public boolean buildRobot(RobotType toBuild, Direction[] orderedDirs) throws GameActionException {
         Comms.encodeBuildGuess(archonNumber, currentBuild);
-        if (!isPrioritizedArchon) {
+        if (!canBuildPrioritized) {
             Debug.printString("Not my turn.");
             return false;
         } else {
@@ -233,7 +234,8 @@ public class Archon extends Robot {
         Comms.resetAvgEnemyLoc();
         Comms.drawClusterDots();
         confirmLabAlive();
-        isPrioritizedArchon = Comms.canBuildPrioritized(archonNumber, currentState == State.INIT);
+        canBuildPrioritized = Comms.canBuildPrioritized(archonNumber, currentState == State.INIT);
+        isPrioritizedArchon = Comms.getCurrentPrioritizedArchon() == archonNumber;
         if(isPrioritizedArchon) lastRoundPrioritized = rc.getRoundNum();
         reportEnemies();
         tryUpdateSymmetry();
@@ -573,7 +575,8 @@ public class Archon extends Robot {
             case CHILLING:
                 Debug.printString("Chilling");
                 // writeLocation();
-                if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold) {
+                if (rc.getTeamGoldAmount(rc.getTeam()) >= RobotType.SAGE.buildCostGold &&
+                    isPrioritizedArchon) {
                     currentBuild = Buildable.EMPTY;
                     nextBuild = Buildable.SOLDIER;
                     buildRobot(RobotType.SAGE);
@@ -666,7 +669,7 @@ public class Archon extends Robot {
             return counter;
         }
         else if (Comms.haveBuiltLab()) {
-            Debug.printString("Correct location");
+            // Debug.printString("Correct location");
             if (counter != mod - 1) {
                 currentBuild = Buildable.MINER;
                 counter = buildMiner(counter);
@@ -787,8 +790,7 @@ public class Archon extends Robot {
                             rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_TO_MOVE_AGAIN &&
                             rc.isTransformReady() &&
                             !Comms.existsArchonMoving() &&
-                            chooseInitialMoveTarget() &&
-                            rc.getArchonCount() != 1) {
+                            chooseInitialMoveTarget()) {
                     // Just mark yourself as dead in archon locations so units don't come to get healed
                     rc.writeSharedArray(archonNumber, Comms.DEAD_ARCHON_FLAG);
                     stateStack.push(currentState);
@@ -879,8 +881,15 @@ public class Archon extends Robot {
         }
     }
 
-    public RobotInfo getLowestHealthRobotToRepair() throws GameActionException {
+    public RobotInfo[] getRestrictedFriendlies() throws GameActionException {
         RobotInfo[] friendlies = rc.senseNearbyRobots(actionRadiusSquared, rc.getTeam());
+        if(friendlies.length > 15) friendlies = rc.senseNearbyRobots(13, team);
+        if(friendlies.length > 15) friendlies = rc.senseNearbyRobots(10, team);
+        return friendlies;
+    }
+
+    public RobotInfo getLowestHealthRobotToRepair() throws GameActionException {
+        RobotInfo[] friendlies = getRestrictedFriendlies();
         RobotInfo maybeSage = null;
         RobotInfo maybeSoldier = null;
         RobotInfo maybeBuilder = null;
@@ -888,6 +897,7 @@ public class Archon extends Robot {
         RobotInfo friendly = null;
         for (int i = friendlies.length; --i >= 0;) {
             friendly = friendlies[i];
+            if(Clock.getBytecodeNum() >= 15000) break;
             switch(friendly.type) {
                 case SAGE:
                     if((maybeSage == null || maybeSage.health > friendly.health)
@@ -1055,7 +1065,7 @@ public class Archon extends Robot {
     }
 
     public void reloadMoveTarget() throws GameActionException {
-        MapLocation cluster = getClusterClosestTo(moveTarget);
+        MapLocation cluster = getClusterClosestTo(currLoc);
         lastClosestArchonToCluster = currLoc;
         int minDist = Integer.MAX_VALUE;
         int dist;
@@ -1068,12 +1078,12 @@ public class Archon extends Robot {
             }
         }
 
-        if(!cluster.isWithinDistanceSquared(moveTarget, Util.MAX_CLUSTER_DIST_CHANGE)) {
-            // This can happen if a cluster disappears for a turn.
-            // In this case, we don't want to move towards the other one
-            // so just keep the same target
-            return;
-        }
+        // if(!cluster.isWithinDistanceSquared(moveTarget, Util.MAX_CLUSTER_DIST_CHANGE)) {
+        //     // This can happen if a cluster disappears for a turn.
+        //     // In this case, we don't want to move towards the other one
+        //     // so just keep the same target
+        //     return;
+        // }
 
         if(isCharging) {
             moveTarget = cluster;
@@ -1100,46 +1110,92 @@ public class Archon extends Robot {
         }
     }
 
-    // ~3k bytecode
-    public boolean chooseInitialMoveTarget() throws GameActionException {
-        MapLocation cluster = getClusterClosestToArchons();
-        lastClosestArchonToCluster = currLoc;
-        MapLocation farthestArchon = currLoc;
-        int maxDist = Integer.MIN_VALUE;
-        int minDist = Integer.MAX_VALUE;
+    public MapLocation[][] divideArchonsByCluster() throws GameActionException {
+        MapLocation[] clusters = Comms.getClusters();
+        MapLocation cluster = null;
+        int closestClusterIdx;
+        int minDist;
         int dist;
+        MapLocation[][] clusterGroups = new MapLocation[clusters.length][4];
+        int[] clusterSizes = new int[clusters.length];
         for(MapLocation archonLoc : archonLocations) {
             if(archonLoc == null) continue;
-            // Debug.printString(archonLoc.toString());
-            dist = archonLoc.distanceSquaredTo(cluster);
-            if(dist < minDist) {
-                lastClosestArchonToCluster = archonLoc;
-                minDist = dist;
+            minDist = Integer.MAX_VALUE;
+            closestClusterIdx = -1;
+            for(int i = clusters.length; --i >= 0;) {
+                cluster = clusters[i];
+                dist = cluster.distanceSquaredTo(archonLoc);
+                if(dist < minDist) {
+                    closestClusterIdx = i;
+                    minDist = dist;
+                }
             }
-            if(dist > maxDist) {
-                farthestArchon = archonLoc;
-                maxDist = dist;
+            clusterGroups[closestClusterIdx][clusterSizes[closestClusterIdx]++] = archonLoc;
+        }
+
+        MapLocation[][] res = new MapLocation[clusters.length][];
+        for(int i = res.length; --i >= 0;) {
+            MapLocation[] arcs = new MapLocation[clusterSizes[i]];
+            System.arraycopy(clusterGroups[i], 0, arcs, 0, arcs.length);
+            res[i] = arcs;
+        }
+
+        return res;
+    }
+
+    // ~3k bytecode
+    public boolean chooseInitialMoveTarget() throws GameActionException {
+        MapLocation[] clusters = Comms.getClusters();
+        MapLocation[][] archonGroups = divideArchonsByCluster();
+
+        MapLocation cluster = null;
+        MapLocation farthestArchon = null;
+        int maxDist = Integer.MIN_VALUE;
+        int dist;
+        int clusterIdx = -1;
+        for(int i = 0; i < archonGroups.length; i++) {
+            for(int j = 0; j < archonGroups[i].length; j++) {
+                dist = archonGroups[i][j].distanceSquaredTo(clusters[i]);
+                if(dist > maxDist) {
+                    maxDist = dist;
+                    farthestArchon = archonGroups[i][j];
+                    cluster = clusters[i];
+                    clusterIdx = i;
+                }
+            }
+        }
+
+        // Debug.printString(cluster.toString());
+        // Debug.printString(farthestArchon.toString());
+        // Only have the farthest one from the cluster group move
+        if(cluster == null || farthestArchon == null || !farthestArchon.equals(currLoc)) {
+            // Not the correct archon to move
+            return false;
+        }
+
+        // Find the closest archon to your cluster
+        lastClosestArchonToCluster = currLoc;
+        int minDist = Integer.MAX_VALUE;
+        for(int i = 0; i < archonGroups[clusterIdx].length; i++) {
+            dist = archonGroups[clusterIdx][i].distanceSquaredTo(cluster);
+            if(dist < minDist) {
+                minDist = dist;
+                lastClosestArchonToCluster = archonGroups[clusterIdx][i];
             }
         }
 
         if(lastClosestArchonToCluster.equals(currLoc)) {
             // Let's move closer and extend our advantage
             if(rc.getRoundNum() > lastRoundPrioritized + Util.PRIORITIZED_ARCHON_TURNS_NOT_PRIORITIZED_TO_MOVE &&
-            rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_PRIORITIZED_TO_MOVE_AGAIN) {
-            moveTarget = cluster;
-            isCharging = true;
-            Debug.printString("Charging target: " + moveTarget);
-            return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
+                rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_PRIORITIZED_TO_MOVE_AGAIN) {
+                moveTarget = cluster;
+                isCharging = true;
+                Debug.println("Charging target: " + moveTarget);
+                return !currLoc.isWithinDistanceSquared(moveTarget, Util.MIN_DIST_TO_MOVE);
             }
             else {
                 return false;
             }
-        }
-
-        // Only have the farthest one move
-        if(!farthestArchon.equals(currLoc)) {
-            // Debug.printString("Not farthest");
-            return false;
         }
 
         // Min dist to move

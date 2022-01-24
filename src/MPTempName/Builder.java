@@ -198,7 +198,9 @@ public class Builder extends Robot{
                 }
             }
         }
-        home = closestArchonToHome;
+        if(closestArchonToHome != null) {
+            home = closestArchonToHome;
+        }
     }
 
     public void takeTurn() throws GameActionException {
