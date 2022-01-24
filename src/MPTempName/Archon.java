@@ -594,15 +594,18 @@ public class Archon extends Robot {
                     buildRobot(RobotType.SAGE);
                     break;
                 }
-                else if(soldierCount <= minerCount - 1) {
-                    chillingCounter = buildSoldier(chillingCounter);
+                else if (minerCount <= Math.max(MIN_NUM_MINERS, (5/6) * sageCount)) {
+                    chillingCounter = buildMiner(chillingCounter);
                 }
-                else if(minerCount <= MIN_NUM_MINERS) {
-                    chillingCounter = minerSoldier(chillingCounter);
-                }
-                else {
-                    chillingCounter = minerSoldierRatio(7, chillingCounter);
-                }
+                // else if(soldierCount <= minerCount - 1) {
+                //     chillingCounter = buildSoldier(chillingCounter);
+                // }
+                // else if(minerCount <= MIN_NUM_MINERS) {
+                //     chillingCounter = minerSoldier(chillingCounter);
+                // }
+                // else {
+                //     chillingCounter = minerSoldierRatio(7, chillingCounter);
+                // }
                 tryToRepairLastBot();
                 break;
             case UNDER_ATTACK:
@@ -741,6 +744,18 @@ public class Archon extends Robot {
         return false;
     }
 
+    public boolean enoughLeadForLab() throws GameActionException {
+        int currLead = rc.getTeamLeadAmount(rc.getTeam());
+        switch (labCount) {
+            case 0:
+                return true;
+            case 1:
+                return currLead > 300;
+            default:
+                return currLead > 500;
+        }
+    }
+
     public void toggleState(boolean underAttack, boolean isObese) throws GameActionException {
         switch (currentState) { 
             case INIT:
@@ -812,9 +827,7 @@ public class Archon extends Robot {
                     turnsBeingClosest = 0;
                     rc.transform();
                     Comms.setArchonMoving();
-                } else if(rc.getRoundNum() > roundsSinceLastLabBuilt + 12 &&
-                    (soldierCount >= Util.SOLDIER_LAB_MULT * labCount) &&
-                    (labCount < Util.MAX_NUM_LABS) &&
+                } else if(rc.getRoundNum() > roundsSinceLastLabBuilt + 12 && enoughLeadForLab() &&
                     !isSmallMap() && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1)) {
                     stateStack.push(currentState);
                     changeState(State.BUILDING_LAB);
