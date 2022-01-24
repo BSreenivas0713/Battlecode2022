@@ -48,7 +48,7 @@ public class Util {
     static final int MinerDomain = 8;
     static final int WatchTowerDomain = 15;
     static final int MAX_MINERS = 128;
-    static final int MIN_AREA_FOR_MORE_MINERS = 2000;
+    static final int MIN_AREA_FOR_MORE_MINERS = 1200;
     static final int MIN_ROUND_FOR_LAB = 1800;
     static final int MAX_AREA_FOR_FAST_INIT = 625;
     static final int MAX_MAP_SIZE_TO_MINER_RATIO = 16;
