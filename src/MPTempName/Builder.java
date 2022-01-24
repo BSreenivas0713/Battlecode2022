@@ -228,7 +228,7 @@ public class Builder extends Robot{
                 if(making && maybePrototype != null) {
                     currState = BuilderState.REPAIRING;
                     repairTarget = maybePrototype;
-                } else if(Comms.haveBuiltLab() && checkNeedHelp()) {
+                } else if(!Comms.checkIfArchonBuildingLab() && checkNeedHelp()) {
                     currState = BuilderState.GOING_TO_HEAL;
                 }
                 break;
