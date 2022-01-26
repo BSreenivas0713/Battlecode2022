@@ -244,6 +244,7 @@ public class Builder extends Robot{
             making = false;
             doStateAction();
         }
+        shouldCommunicate = true;
     }
 
     public void trySwitchState() throws GameActionException {
