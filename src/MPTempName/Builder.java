@@ -62,15 +62,15 @@ public class Builder extends Robot{
                 int currRubble = rc.senseRubble(loc);
                 int currDist = loc.distanceSquaredTo(enemyLoc);
                 int distToHome = loc.distanceSquaredTo(home);
-                boolean OnSquare = currLoc.add(currLoc.directionTo(loc)).equals(loc);
-                if(!OnSquare && (currRubble < bestRubble || (currRubble == bestRubble && currDist > bestDistance && 
+                boolean noOneOnSquare = rc.senseRobotAtLocation(loc)== null;
+                if(noOneOnSquare && (currRubble < bestRubble || (currRubble == bestRubble && currDist > bestDistance && 
                 (distToHome <= RobotType.ARCHON.visionRadiusSquared || currLoc.distanceSquaredTo(home) >= RobotType.ARCHON.visionRadiusSquared)))) {
                     bestRubble = currRubble;
                     bestDistance = currDist;
                     bestLoc = loc;
                 }
             }
-            // Debug.printString("bestLoc: " + bestLoc);
+            Debug.printString("bestLoc: " + bestLoc);
             labLoc = bestLoc;
             Direction bestDir = null;
             for(Direction Dir: Util.getFullInOrderDirections(currLoc.directionTo(home).opposite())) {
@@ -415,6 +415,7 @@ public class Builder extends Robot{
                 Debug.printString("no built lab");
                 Direction bestDir = null;
                 if(labLoc != null) {
+                    Debug.printString("" + labLoc);
                     bestDir = currLoc.directionTo(labLoc);
                     if(!currLoc.add(bestDir).equals(labLoc)) {
                         Nav.move(labLoc);
