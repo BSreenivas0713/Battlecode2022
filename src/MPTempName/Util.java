@@ -91,6 +91,8 @@ public class Util {
 
     static final int MAX_REPAIRING_TURNS = 50;
 
+    static final int MIN_RUBBLE_DIFF_TO_MOVE = 20;
+
     // Spiral path going through all locations within radius 13
     // Note: iterate through this backwards
     static final Direction[] DIR_PATH_13 = new Direction[] {
