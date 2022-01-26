@@ -367,6 +367,10 @@ public class Util {
         return Math.min(Math.max(n, lo), hi);
     }
 
+    static double clip(double n, double lo, double hi) {
+        return Math.min(Math.max(n, lo), hi);
+    }
+
     static MapLocation clipToWithinMap(MapLocation loc) {
         return new MapLocation(clip(loc.x, 0, MAP_WIDTH), clip(loc.y, 0, MAP_HEIGHT));
     }
