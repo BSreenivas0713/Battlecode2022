@@ -668,9 +668,11 @@ public class Sage extends Robot{
     }
 
     public boolean checkForOurArchon() throws GameActionException {
-        for (int i = Comms.firstArchon; i < Comms.firstArchon + Comms.friendlyArchonCount(); i++) {
-            MapLocation loc = Comms.locationFromFlag(rc.readSharedArray(i));
-            if (loc.distanceSquaredTo(currLoc) <= actionRadiusSquared) {
+        loadArchonLocations();
+        for (int i = 0; i < Comms.friendlyArchonCount(); i++) {
+            MapLocation archonLoc = archonLocations[i];
+            if (archonLoc == null) continue;
+            if (archonLoc.distanceSquaredTo(currLoc) <= actionRadiusSquared) {
                 return true;
             }
         }
