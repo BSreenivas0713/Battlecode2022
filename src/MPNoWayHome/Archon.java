@@ -1,13 +1,13 @@
-package MPTempName;
+package MPNoWayHome;
 
 import battlecode.common.*;
 
-import MPTempName.Debug.*;
-import MPTempName.Util.*;
-import MPTempName.Comms.*;
+import MPNoWayHome.Debug.*;
+import MPNoWayHome.Util.*;
+import MPNoWayHome.Comms.*;
 import java.util.ArrayDeque;
-import MPTempName.fast.FastIterableLocSet;
-import MPTempName.fast.FastMath;
+import MPNoWayHome.fast.FastIterableLocSet;
+import MPNoWayHome.fast.FastMath;
 
 public class Archon extends Robot {
     static enum State {
