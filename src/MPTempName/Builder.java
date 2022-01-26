@@ -19,6 +19,7 @@ public class Builder extends Robot{
     static boolean making;
     static int startRound;
     static MapLocation labLoc;
+    static boolean shouldCommunicate = true;
 
     static RobotInfo maybePrototype;
     static RobotInfo repairTarget;
@@ -211,19 +212,38 @@ public class Builder extends Robot{
             home = closestArchonToHome;
         }
     }
+    public void tryExcommunicateSelf() throws GameActionException{
+        for(Direction dir: Util.directions) {
+            MapLocation nextLoc = currLoc.add(dir);
+            if(rc.onTheMap(nextLoc)) {
+                RobotInfo robot = rc.senseRobotAtLocation(nextLoc);
+                    if(robot == null) {
+                        return;
+                    }
+                    if(robot.getType() == RobotType.LABORATORY && robot.getHealth() != RobotType.LABORATORY.getMaxHealth(robot.getLevel())) {
+                        return;
+                    }
+                }
+            }
+        shouldCommunicate = false;
+        return;
+    }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        Comms.incrementBuilderCount();
-        Comms.signalBuilderBuilt();
-        loadArchonLocations();
-        updateHome();
-        // boolean seenFriendly = makeWatchtowerIfPossible();
+        tryExcommunicateSelf();
+        if (shouldCommunicate) {
+            Comms.incrementBuilderCount();
+            Comms.signalBuilderBuilt();
+            loadArchonLocations();
+            updateHome();
+            // boolean seenFriendly = makeWatchtowerIfPossible();
 
-        trySwitchState();
-        repairing = false;
-        making = false;
-        doStateAction();
+            trySwitchState();
+            repairing = false;
+            making = false;
+            doStateAction();
+        }
     }
 
     public void trySwitchState() throws GameActionException {

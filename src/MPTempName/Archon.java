@@ -626,6 +626,7 @@ public class Archon extends Robot {
                     break;
                 }
                 if(isSmallMap() && labCount == 0 && soldierCount <= 5) {
+                    Debug.printString("0 labs");
                     if(soldierCount <= minerCount - 1) {
                         chillingCounter = buildSoldier(chillingCounter);
                     }
