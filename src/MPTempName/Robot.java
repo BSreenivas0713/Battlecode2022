@@ -92,6 +92,11 @@ public class Robot {
         return (float)leadAmount - Math.sqrt((double) radiusSquared) * 5;
     }
 
+    public double getGoldDistTradeoffScore(int radiusSquared, int goldAmount) {
+        if(radiusSquared == 0 && goldAmount > 0) return Integer.MAX_VALUE;
+        return 3 * goldAmount - Math.sqrt(radiusSquared) * 5;
+    }
+
     public boolean isSmallMap() {
         return Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT;
     }
@@ -312,24 +317,32 @@ public class Robot {
     }
 
     public RobotInfo[] getEnemyAttackable() throws GameActionException {
+        return getAttackableRobots(EnemySensable);
+    }
+
+    public RobotInfo[] getFriendlyAttackable() throws GameActionException {
+        return getAttackableRobots(FriendlySensable);
+    }
+
+    public RobotInfo[] getAttackableRobots(RobotInfo[] robots) throws GameActionException {
         int size = 0;
-        RobotInfo[] maxEnemyAttackable = new RobotInfo[EnemySensable.length];
-        RobotInfo enemyRobot;
-        for (int i = EnemySensable.length; --i >= 0;) {
-            enemyRobot = EnemySensable[i];
-            switch(enemyRobot.getType()) {
+        RobotInfo[] maxAttackable = new RobotInfo[robots.length];
+        RobotInfo robot;
+        for (int i = robots.length; --i >= 0;) {
+            robot = robots[i];
+            switch(robot.getType()) {
                 case SOLDIER:
                 case WATCHTOWER:
                 case SAGE:
-                    maxEnemyAttackable[size++] = enemyRobot;
+                    maxAttackable[size++] = robot;
                     break;
                 default: 
                     break;
             }
         }
-        RobotInfo[] enemyAttackable = new RobotInfo[size];
-        System.arraycopy(maxEnemyAttackable, 0, enemyAttackable, 0, size);
-        return enemyAttackable;
+        RobotInfo[] attackable = new RobotInfo[size];
+        System.arraycopy(maxAttackable, 0, attackable, 0, size);
+        return attackable;
     }
 
     public RobotInfo getBestEnemy(RobotInfo[] sensable) throws GameActionException {
@@ -339,12 +352,12 @@ public class Robot {
 
         // Prioritize these the least
         if(maybeLab != null) res = maybeLab;
-        if(maybeSage != null) res = maybeSage;
 
         if(maybeMiner != null) res = maybeMiner;
         if(maybeBuilder != null) res = maybeBuilder;
         if(maybeArchon != null) res = maybeArchon;
         if(maybeWatchtower != null) res = maybeWatchtower;
+        if(maybeSage != null) res = maybeSage;
         if(maybeSoldier != null) res = maybeSoldier;
 
         return res;
