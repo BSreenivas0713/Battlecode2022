@@ -94,6 +94,8 @@ public class Util {
 
     static final int MIN_RUBBLE_DIFF_TO_MOVE = 20;
 
+    static final int MIN_LEAD_DIST_FROM_CLUSTER = RobotType.SAGE.visionRadiusSquared * 2;
+
     // Spiral path going through all locations within radius 13
     // Note: iterate through this backwards
     static final Direction[] DIR_PATH_13 = new Direction[] {

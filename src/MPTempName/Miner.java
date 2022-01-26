@@ -17,6 +17,10 @@ public class Miner extends Robot {
     static float overallDX;
     static float overallDY;
 
+    MapLocation closestCluster;
+    RobotInfo[] enemyAttackable;
+    RobotInfo[] friendlyAttackable;
+
     public Miner(RobotController r) throws GameActionException {
         super(r);
         roundNumBorn = r.getRoundNum();
@@ -48,6 +52,7 @@ public class Miner extends Robot {
         minerCount = 0;
         for(int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
+            if(!shouldConsiderResourceLoc(loc)) continue;
             int leadAmount = rc.senseLead(loc);
             if (leadAmount > 1){
                 int currDist = currLoc.distanceSquaredTo(loc);
@@ -67,6 +72,7 @@ public class Miner extends Robot {
         locs = rc.senseNearbyLocationsWithGold(-1);
         for(int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
+            if(!shouldConsiderResourceLoc(loc)) continue;
             int goldAmount = rc.senseGold(loc);
             int currDist = currLoc.distanceSquaredTo(loc);
             double currScore = getGoldDistTradeoffScore(currDist, goldAmount);
@@ -94,10 +100,23 @@ public class Miner extends Robot {
             !currLoc.isWithinDistanceSquared(home, Util.MIN_DIST_TO_DEPLETE_UNIT_LEAD);
     }
 
+    public boolean shouldConsiderResourceLoc(MapLocation loc) throws GameActionException {
+        if(closestCluster != null &&
+            closestCluster.isWithinDistanceSquared(loc, Util.MIN_LEAD_DIST_FROM_CLUSTER)) {
+            // Work around miners reporting the cluster
+            return currLoc.isWithinDistanceSquared(currLoc, RobotType.MINER.visionRadiusSquared) &&
+                enemyAttackable.length == 0;
+        }
+        return true;
+    }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         Comms.incrementMinerCounter();
+        closestCluster = Comms.getClosestCluster(currLoc);
+        enemyAttackable = getEnemyAttackable();
+        friendlyAttackable = getFriendlyAttackable();
+
         // Try to mine on squares around us.
         boolean amMining = false;
         int[] actionRadiusArr = findLeadAndGold();
@@ -147,8 +166,9 @@ public class Miner extends Robot {
 
         MapLocation target = null;
         String str = "";
-        boolean canMine = rc.senseNearbyLocationsWithLead(2, 2).length > 0 ||
-                            rc.senseNearbyLocationsWithGold(2, 2).length > 0;
+        boolean canMine = (bestLead != null || bestGold != null) &&
+                            (rc.senseNearbyLocationsWithLead(2, 2).length > 0 ||
+                            rc.senseNearbyLocationsWithGold(2, 1).length > 0);
         if (!amMining && !canMine) {
             // target = Explore.getExploreTarget();
             target = Explore.explorePathfinding();
@@ -194,8 +214,6 @@ public class Miner extends Robot {
             str = "To Au";
         }
 
-        RobotInfo[] enemyAttackable = getEnemyAttackable();
-        RobotInfo[] friendlyAttackable = getFriendlyAttackable();
         RobotInfo closestEnemy = getClosestRobot(enemyAttackable);
         RobotInfo closestFriendly = getClosestRobot(enemyAttackable);
         // Run away if either

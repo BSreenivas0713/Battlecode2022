@@ -212,38 +212,39 @@ public class Builder extends Robot{
             home = closestArchonToHome;
         }
     }
+
     public void tryExcommunicateSelf() throws GameActionException{
         for(Direction dir: Util.directions) {
             MapLocation nextLoc = currLoc.add(dir);
             if(rc.onTheMap(nextLoc)) {
                 RobotInfo robot = rc.senseRobotAtLocation(nextLoc);
-                    if(robot == null) {
-                        return;
-                    }
-                    if(robot.getType() == RobotType.LABORATORY && robot.getHealth() != RobotType.LABORATORY.getMaxHealth(robot.getLevel())) {
-                        return;
-                    }
+                if(robot == null ||
+                    robot.getType() != RobotType.LABORATORY) {
+                    return;
+                }
+                if(robot.getHealth() != RobotType.LABORATORY.getMaxHealth(robot.getLevel())) {
+                    return;
                 }
             }
+        }
         shouldCommunicate = false;
-        return;
     }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         tryExcommunicateSelf();
         if (shouldCommunicate) {
-            Comms.incrementBuilderCount();
             Comms.signalBuilderBuilt();
-            loadArchonLocations();
-            updateHome();
-            // boolean seenFriendly = makeWatchtowerIfPossible();
-
-            trySwitchState();
-            repairing = false;
-            making = false;
-            doStateAction();
+            Comms.incrementBuilderCount();
         }
+        loadArchonLocations();
+        updateHome();
+        // boolean seenFriendly = makeWatchtowerIfPossible();
+
+        trySwitchState();
+        repairing = false;
+        making = false;
+        doStateAction();
         shouldCommunicate = true;
     }
 
