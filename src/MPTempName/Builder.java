@@ -48,6 +48,7 @@ public class Builder extends Robot{
 
     public boolean makeLabIfPossible() throws GameActionException {
         if(Comms.checkIfArchonBuildingLab()) {
+            Debug.printString("should build");
             MapLocation[] allLocs = rc.getAllLocationsWithinRadiusSquared(currLoc, visionRadiusSquared);
             int bestRubble = Integer.MAX_VALUE;
             MapLocation bestLoc = null;

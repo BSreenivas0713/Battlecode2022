@@ -617,33 +617,53 @@ public class Archon extends Robot {
                 break;
             case CHILLING:
                 Debug.printString("Chilling, " + MIN_NUM_MINERS);
-                // writeLocation();
                 int goldAmount = rc.getTeamGoldAmount(team);
                 if ((goldAmount >= RobotType.SAGE.buildCostGold && isPrioritizedArchon) ||
-                    (goldAmount >= 2 * RobotType.SAGE.buildCostGold)) {
+                (goldAmount >= 2 * RobotType.SAGE.buildCostGold)) {
                     currentBuild = Buildable.EMPTY;
                     nextBuild = Buildable.SOLDIER;
                     buildRobot(RobotType.SAGE);
                     break;
                 }
-                else if (minerCount <= (sageCount) / 2 && minerCount <= MIN_NUM_MINERS) {
-                    chillingCounter = buildMiner(chillingCounter);
+                if(isSmallMap() && sageCount == 0 && soldierCount <= 5) {
+                    if(soldierCount <= minerCount - 1) {
+                        chillingCounter = buildSoldier(chillingCounter);
+                    }
+                    else if(minerCount <= MIN_NUM_MINERS) {
+                        chillingCounter = minerSoldier(chillingCounter);
+                    }
+                    else {
+                        chillingCounter = minerSoldierRatio(7, chillingCounter);
+                    }                    
                 }
-                // else if(soldierCount <= minerCount - 1) {
-                //     chillingCounter = buildSoldier(chillingCounter);
-                // }
-                // else if(minerCount <= MIN_NUM_MINERS) {
-                //     chillingCounter = minerSoldier(chillingCounter);
-                // }
-                // else {
-                //     chillingCounter = minerSoldierRatio(7, chillingCounter);
-                // }
+                else {
+                    if (minerCount <= (sageCount) / 2 && minerCount <= MIN_NUM_MINERS) {
+                        chillingCounter = buildMiner(chillingCounter);
+                    }
+                }
                 tryToRepairLastBot();
                 break;
             case UNDER_ATTACK:
-                Debug.printString("Under Attack");
                 roundsSinceUnderAttack = 0;
-                chillingCounter = buildSoldier(chillingCounter);
+                int goldAmountUA = rc.getTeamGoldAmount(team);
+                if ((goldAmountUA >= RobotType.SAGE.buildCostGold && isPrioritizedArchon) ||
+                    (goldAmountUA >= 2 * RobotType.SAGE.buildCostGold)) {
+                    currentBuild = Buildable.EMPTY;
+                    nextBuild = Buildable.SOLDIER;
+                    buildRobot(RobotType.SAGE);
+                    break;
+                }
+                //If we have any labs, just do the normal chilling thing
+                if(labCount > 0) {
+                    if (minerCount <= (sageCount) / 2 && minerCount <= MIN_NUM_MINERS) {
+                        chillingCounter = buildMiner(chillingCounter);
+                    }
+                }
+                //if no labs, build a soldier
+                else {
+                    chillingCounter = buildSoldier(chillingCounter);
+                }
+                Debug.printString("Under Attack");
                 tryToRepairLowestHealth();
                 break;
             case OBESITY:
@@ -780,7 +800,7 @@ public class Archon extends Robot {
         int currLead = rc.getTeamLeadAmount(rc.getTeam());
         switch (labCount) {
             case 0:
-                return true;
+                return !isSmallMap() || soldierCount >= 5;
             default:
                 return currLead > 300;
         }
@@ -797,10 +817,6 @@ public class Archon extends Robot {
                 }
                 else if((robotCounter >= 1 && Comms.foundEnemy) || minerCount >= MIN_NUM_MINERS) {
                     changeState(State.CHILLING);
-                }
-                else if(rc.getTeamLeadAmount(rc.getTeam()) > leadObesity) {
-                    stateStack.push(State.CHILLING);
-                    changeState(State.OBESITY);
                 }
                 else if (robotCounter >= 3 && shouldMoveToBetterRubble() &&
                         rc.isTransformReady() && !Comms.existsArchonMoving()) {
@@ -826,13 +842,10 @@ public class Archon extends Robot {
                 break;
             case CHILLING:
                 Debug.printString("uA: " + roundsSinceUnderAttack + " " + rc.getRoundNum() + " " + roundsSinceLastLabBuilt);
-                if (underAttack && isSmallMap()) {
+                if (underAttack && labCount == 0) {
                     Comms.signalUnderAttack();
                     stateStack.push(currentState);
                     changeState(State.UNDER_ATTACK);
-                } else if (isObese && isSmallMap()) {
-                    stateStack.push(currentState);
-                    changeState(State.OBESITY);
                 } else if (shouldMoveToBetterRubble() && 
                             (rc.getRoundNum() > lastRoundPrioritized + Util.TURNS_NOT_PRIORITIZED_TO_MOVE || isFarFromCluster()) &&
                             rc.getRoundNum() > lastRoundMoved + Util.MIN_TURNS_TO_MOVE_AGAIN && 
@@ -857,8 +870,7 @@ public class Archon extends Robot {
                     turnsBeingClosest = 0;
                     rc.transform();
                     Comms.setArchonMoving();
-                } else if(enoughLeadForLab() &&
-                    !isSmallMap() && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1 || rc.getTeamLeadAmount(rc.getTeam()) > 75)) {
+                } else if(enoughLeadForLab() && (roundsSinceUnderAttack > 100 || roundsSinceUnderAttack == -1)) {
                     stateStack.push(currentState);
                     changeState(State.BUILDING_LAB);
                 }
@@ -904,7 +916,7 @@ public class Archon extends Robot {
                     Comms.stopSignalingArchonBuildingLab();
                     changeState(State.UNDER_ATTACK);
                 }
-                if(labCountIncreased) {
+                if(labCountIncreased || (roundsSinceUnderAttack <= 100 && roundsSinceUnderAttack != -1)) {
                     builderRound = 0;
                     roundsSinceLastLabBuilt = 0;
                     Comms.stopSignalingArchonBuildingLab();
@@ -927,6 +939,7 @@ public class Archon extends Robot {
                 ic = InformationCategory.UNDER_ATTACK;
                 break;
             case BUILDING_LAB:
+                Debug.printString("signaling building lab");
                 Comms.signalArchonBuildingLab();
                 //purposeful fallthrough
             default: // CHILLING, OBESITY, INIT
