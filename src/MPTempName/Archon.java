@@ -637,7 +637,7 @@ public class Archon extends Robot {
                     }                    
                 }
                 else {
-                    if (minerCount <= (sageCount) / 2 && minerCount <= MIN_NUM_MINERS) {
+                    if (minerCount <= ((sageCount) / 2) + 2 && minerCount <= MIN_NUM_MINERS) {
                         chillingCounter = buildMiner(chillingCounter);
                     }
                 }
