@@ -1127,6 +1127,7 @@ public class Archon extends Robot {
     // Tries to avoid a Sandwich case where you run through the cluster
     public boolean checkWontRunThroughCluster() throws GameActionException {
         MapLocation cluster = getClusterClosestTo(moveTarget);
+        if(cluster == null) return false;
         MapLocation closestArchon = currLoc;
         int minDist = Integer.MAX_VALUE;
         int dist;
@@ -1161,6 +1162,7 @@ public class Archon extends Robot {
 
     public void reloadMoveTarget() throws GameActionException {
         MapLocation cluster = getClusterClosestTo(currLoc);
+        if(cluster == null) return;
         lastClosestArchonToCluster = currLoc;
         int minDist = Integer.MAX_VALUE;
         int dist;

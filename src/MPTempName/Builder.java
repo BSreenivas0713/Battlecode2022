@@ -148,7 +148,8 @@ public class Builder extends Robot{
                             repairing = true;
                             Debug.printString("Repairing " + robot.location.toString() + ", Health " + robot.health + "/" + robot.getType().getMaxHealth(robot.level));
                         }
-                        // if(rc.canMutate(robot.location)) {
+                        // if(rc.canMutate(robot.location) && !Comms.checkIfArchonBuildingLab()) {
+                        //     Debug.println("Mutating");
                         //     rc.mutate(robot.location);
                         // }
                         if(robot.mode == RobotMode.PROTOTYPE) {
