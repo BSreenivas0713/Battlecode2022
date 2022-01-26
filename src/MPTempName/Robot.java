@@ -339,12 +339,12 @@ public class Robot {
 
         // Prioritize these the least
         if(maybeLab != null) res = maybeLab;
-        if(maybeSage != null) res = maybeSage;
 
         if(maybeMiner != null) res = maybeMiner;
         if(maybeBuilder != null) res = maybeBuilder;
         if(maybeArchon != null) res = maybeArchon;
         if(maybeWatchtower != null) res = maybeWatchtower;
+        if(maybeSage != null) res = maybeSage;
         if(maybeSoldier != null) res = maybeSoldier;
 
         return res;
