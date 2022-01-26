@@ -26,6 +26,7 @@ public class Sage extends Robot{
     static Direction runDirection;
     static RobotInfo sensedArchon;
     static RobotInfo inRangeArchon;
+    static boolean nearOurArchon;
     static boolean isTurret;
     static MapLocation attackTarget;
     static MapLocation closestSoldier;
@@ -85,6 +86,7 @@ public class Sage extends Robot{
             runSemaphore--;
         }
         scanEnemies();
+        nearOurArchon = checkForOurArchon();
         tryAttackArchon();
         boolean almostReady = rc.getActionCooldownTurns() < GameConstants.COOLDOWN_LIMIT + GameConstants.COOLDOWNS_PER_TURN;
         trySwitchState();
@@ -95,7 +97,7 @@ public class Sage extends Robot{
         if (!rc.isActionReady()) {
             return;
         }
-        if (inRangeArchon != null && isTurret) {
+        if (!nearOurArchon && inRangeArchon != null && isTurret) {
             Debug.printString("Envisioning Fury");
             rc.envision(AnomalyType.FURY);
             return;
@@ -106,7 +108,7 @@ public class Sage extends Robot{
             }
         } else if (sensedArchon != null) {
             Nav.move(sensedArchon.location);
-            if (isTurret && rc.canAttack(sensedArchon.location)) {
+            if (!nearOurArchon && isTurret && rc.canAttack(sensedArchon.location)) {
                 Debug.printString("Envisioning Fury");
                 rc.envision(AnomalyType.FURY);
                 return;
@@ -518,7 +520,7 @@ public class Sage extends Robot{
     }    
 
     public boolean tryAttack() throws GameActionException {
-        if (totalBuildingHealth > predictedDamage
+        if (!nearOurArchon && totalBuildingHealth > predictedDamage
             && rc.canEnvision(AnomalyType.FURY)) {
             Debug.printString("Envisioning Fury");
             rc.envision(AnomalyType.FURY);
@@ -663,5 +665,15 @@ public class Sage extends Robot{
 
     public boolean canMoveRubble(Direction dir) throws GameActionException {
         return Util.getRubble(currLoc.add(dir)) < Util.getRubble(currLoc) + 10;
+    }
+
+    public boolean checkForOurArchon() throws GameActionException {
+        for (int i = Comms.firstArchon; i < Comms.firstArchon + Comms.friendlyArchonCount(); i++) {
+            MapLocation loc = Comms.locationFromFlag(rc.readSharedArray(i));
+            if (loc.distanceSquaredTo(currLoc) <= actionRadiusSquared) {
+                return true;
+            }
+        }
+        return false;
     }
 }
