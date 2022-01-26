@@ -625,7 +625,7 @@ public class Archon extends Robot {
                     buildRobot(RobotType.SAGE);
                     break;
                 }
-                if(isSmallMap() && sageCount == 0 && soldierCount <= 5) {
+                if(isSmallMap() && labCount == 0 && soldierCount <= 5) {
                     if(soldierCount <= minerCount - 1) {
                         chillingCounter = buildSoldier(chillingCounter);
                     }
