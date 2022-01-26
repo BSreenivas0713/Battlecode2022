@@ -73,7 +73,7 @@ public class Archon extends Robot {
     static int numEnemies;
     static MapLocation closestEnemy;
     static int roundsSinceUnderAttack;
-    static int TimeToStartFarming;
+    static int numSoldiersToBuild;
 
     static int turnsBeingClosest;
 
@@ -112,11 +112,11 @@ public class Archon extends Robot {
         if (Comms.getTurn() == rc.getArchonCount()) {
             archonSymmetryLocs = guessAndSortSymmetryLocs();
         }
-        if(!isSmallMap()) {
-            TimeToStartFarming = 100;
-        }
-        else {
-            TimeToStartFarming = 250;
+        if(isSemiSmallMap()) {
+            numSoldiersToBuild = 5;
+            if(Util.MAP_AREA <= Util.MAX_AREA_FOR_SEMI_FAST_INIT) {
+                numSoldiersToBuild = Math.min(5, rc.getArchonCount() * 2);
+            }
         }
         lastRoundMoved = Util.MIN_TURN_TO_MOVE - Util.MIN_TURNS_TO_MOVE_AGAIN;
     }
@@ -713,8 +713,14 @@ public class Archon extends Robot {
     }
 
     public int firstRounds(int mod, int counter) throws GameActionException {
-        if (isSmallMap()) {
-            if (counter != mod - 1 && counter != mod - 2) {
+        if (isSmallMap() || (isSemiSmallMap() && soldierCount <= numSoldiersToBuild)) {
+            Debug.printString("small or semi small");
+            if(!isSmallMap() && initCounter == numINITminers || Comms.checkMakingINITBuilder()) {
+                currentBuild = Buildable.SOLDIER;
+                nextBuild = Buildable.SOLDIER;
+                counter = buildSoldier(counter);
+            }
+            else if (counter != mod - 1 && counter != mod - 2) {
                 currentBuild = Buildable.MINER;
                 counter = buildMiner(counter);
                 if(counter == mod - 3) {
@@ -801,9 +807,14 @@ public class Archon extends Robot {
         int currLead = rc.getTeamLeadAmount(rc.getTeam());
         switch (labCount) {
             case 0:
-                return !isSmallMap() || soldierCount >= 5;
+                return !isSmallMap() || soldierCount >= numSoldiersToBuild;
             default:
-                return currLead > 300;
+                if(Comms.haveBuiltBuilderForFinalLab()) {
+                    return currLead > 200;
+                }
+                else {
+                    return currLead > 300;
+                }
         }
     }
 
@@ -828,7 +839,7 @@ public class Archon extends Robot {
                     rc.transform();
                     Comms.setArchonMoving();
                 }
-                else if (!isSmallMap() && (initCounter == numINITminers || Comms.checkMakingINITBuilder())) {
+                else if (!isSmallMap() && soldierCount >= numSoldiersToBuild && (initCounter == numINITminers || Comms.checkMakingINITBuilder())) {
                     changedOutOfINIT = true;
                     Comms.signalMakingINITBuilder();
                     stateStack.push(State.CHILLING);
