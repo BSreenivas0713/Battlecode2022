@@ -47,6 +47,13 @@ public class Sage extends Robot{
     static int[] chargeRounds;
     static int nextCharge;
 
+    static int numFriendlies;
+    static int numFriendlySages;
+    static int numEnemySages;
+    static int numEnemySagesAttackingUs;
+
+    RobotInfo[] enemyAttackable;
+
     static MapLocation avgEnemyLoc;
 
     public Sage(RobotController r) throws GameActionException {
@@ -88,6 +95,7 @@ public class Sage extends Robot{
             runSemaphore--;
         }
         avgEnemyLoc = Comms.getClosestCluster(currLoc);
+        enemyAttackable = getEnemyAttackable();
         scanEnemies();
         nearOurArchon = checkForOurArchon();
         tryAttackArchon();
@@ -159,35 +167,102 @@ public class Sage extends Robot{
         }
     }
 
+    public boolean shouldRunAway(boolean almostReady) {
+        //Not only should there be no soldiers attacking us, but if we see 2 soldiers between our action radius and our vision radius, we should not go forward
+        //Consider changing the numFriendlies < numEnemies to <= and retesting
+        // Debug.printString("enemyAction: " + numEnemySoldiersAttackingUs + "enemy: " + numEnemies + "friends: " + numFriendlies);
+        boolean tooManyEnemies = numFriendlies + 1 < numAttackingEnemies;
+        // boolean healthTooLowForEqualFight = numFriendlies + 1 == numAttackingEnemies && healthLow;
+        // boolean healthReallyLow = rc.getHealth() <= 6;
+        return !almostReady || numEnemySagesAttackingUs > 0 || tooManyEnemies || numFriendlySages < numEnemySages;
+    }
+
+    public Direction chooseForwardDirection(MapLocation loc) throws GameActionException {
+        Direction Dir = currLoc.directionTo(loc);
+        Direction[] dirsToConsider = Util.getInOrderDirections(Dir);
+        Direction bestDirSoFar = null;
+        int bestRubble = rc.senseRubble(loc) + 2;
+        int bestEnemiesSeen = Integer.MAX_VALUE;
+        RobotInfo enemy;
+        for(Direction newDir: dirsToConsider) {
+            if (rc.canMove(newDir)) {
+                MapLocation targetLoc = currLoc.add(newDir);
+                int locRubble = rc.senseRubble(currLoc);
+                int newDirRubble = rc.senseRubble(targetLoc);
+                boolean notTooMuchRubble = newDirRubble < (10 + locRubble) && newDirRubble <= bestRubble;
+                int currEnemiesSeen = 0;
+                for(int i = enemyAttackable.length; --i >= 0;) {
+                    enemy = enemyAttackable[i];
+                    MapLocation enemyLoc = enemy.getLocation();
+                    if(enemyLoc.distanceSquaredTo(targetLoc) <= actionRadiusSquared) {
+                        currEnemiesSeen++;
+                    }
+                }
+                if(notTooMuchRubble && (currEnemiesSeen <= bestEnemiesSeen ||  bestEnemiesSeen == 0)) {
+                    if (currEnemiesSeen != 0) {
+                        if (currEnemiesSeen < bestEnemiesSeen || bestEnemiesSeen == 0) {
+                            bestDirSoFar = newDir;
+                            bestRubble = newDirRubble;
+                            bestEnemiesSeen = currEnemiesSeen;
+                        }
+                        else if (currEnemiesSeen == bestEnemiesSeen && newDirRubble < bestRubble) {
+                            bestDirSoFar = newDir;
+                            bestRubble = newDirRubble;
+                            bestEnemiesSeen = currEnemiesSeen;                    
+                        }
+                    }
+                    else {
+                        if(bestEnemiesSeen == Integer.MAX_VALUE) {
+                            if (newDirRubble < bestRubble) {
+                                bestDirSoFar = newDir;
+                                bestRubble = newDirRubble;
+                                bestEnemiesSeen = currEnemiesSeen;                                 
+                            }
+                        }
+                    }
+                }                
+            }
+        }
+        return bestDirSoFar;
+    }
+
     public void tryMoveTowardsEnemy(boolean almostReady) throws GameActionException {
         if (numAttackingEnemies > 0) {
-            if (almostReady) {
+            if (!shouldRunAway(almostReady)) {
                 Debug.printString("Fighting!");
                 isRunning = false;
                 if (closestSageDist <= RobotType.SAGE.actionRadiusSquared) {
-                    tryAttack();
                     Direction dir = closestSage.directionTo(currLoc);
-                    Direction newDir = makeDirBetter(dir);
-                    if (canMoveRubble(newDir)) {
-                        Direction[] dirs = Util.getInOrderDirections(newDir);
-                        tryMoveDest(dirs);
+                    dir = chooseBackupDirection(dir);
+                    if(dir == null) {
+                        Debug.printString("RA bad; ");
+                        tryAttack();
+                        return;
                     }
-                } else if (closestSoldierDist <= RobotType.SOLDIER.actionRadiusSquared) {
                     tryAttack();
+                    Direction[] dirs = Util.getInOrderDirections(dir);
+                    tryMoveDest(dirs);
+                } else if (closestSoldierDist <= RobotType.SOLDIER.actionRadiusSquared) {
                     Direction dir = closestSoldier.directionTo(currLoc);
-                    Direction newDir = makeDirBetter(dir);
-                    if (canMoveRubble(newDir)) {
-                        Direction[] dirs = Util.getInOrderDirections(newDir);
-                        tryMoveDest(dirs);
+                    dir = chooseBackupDirection(dir);
+                    if(dir == null) {
+                        Debug.printString("RA bad; ");
+                        tryAttack();
+                        return;
                     }
+                    tryAttack();
+                    Direction[] dirs = Util.getInOrderDirections(dir);
+                    tryMoveDest(dirs);
                 } else if (closestSoldierDist <= RobotType.SOLDIER.visionRadiusSquared) {
                     if (tryAttack()) {
                         Direction dir = closestSoldier.directionTo(currLoc);
-                        Direction newDir = makeDirBetter(dir);
-                        if (canMoveRubble(newDir)) {
-                            Direction[] dirs = Util.getInOrderDirections(newDir);
-                            tryMoveDest(dirs);
+                        dir = chooseBackupDirection(dir);
+                        if(dir == null) {
+                            Debug.printString("RA bad; ");
+                            return;
                         }
+                        Direction[] dirs = Util.getInOrderDirections(dir);
+                        tryMoveDest(dirs);
                     } else {
                         Direction moveDir = makeDirBetter(currLoc.directionTo(averageAttackingEnemyLocation));
                         if (canMoveRubble(moveDir)) {
@@ -222,6 +297,7 @@ public class Sage extends Robot{
                     dir = closestWatchtower.directionTo(currLoc);
                 }
                 Direction newDir = chooseBackupDirection(dir);
+                tryAttack();
                 if (canMoveRubble(newDir)) {
                     Direction[] dirs = Util.getInOrderDirections(newDir);
                     tryMoveDest(dirs);
@@ -366,6 +442,10 @@ public class Sage extends Robot{
         MapLocation loc;
         int dist;
         numVictims = 0;
+        numFriendlies = 0;
+        numFriendlySages = 0;
+        numEnemySages = 0;
+        numEnemySagesAttackingUs = 0;
 
         for (int i = EnemySensable.length; --i >= 0;) {
             robot = EnemySensable[i];
@@ -414,6 +494,7 @@ public class Sage extends Robot{
                             totalHealth += 30;
                         }
                         numVictims++;
+                        numEnemySagesAttackingUs++;
                     }
                     if (dist < closestSageDist) {
                         closestSage = robot.location;
@@ -532,6 +613,26 @@ public class Sage extends Robot{
             predictedDamage = bestBuilderDamageScore;
             attackTarget = bestBuilder;
         }
+
+        MapLocation closestEnemyLocation = currLoc;
+        if(closestSage != null) {
+            closestEnemyLocation = closestSage;
+        }
+
+        for (RobotInfo Fbot : FriendlySensable) {
+            RobotType FbotType = Fbot.getType();
+            if (FbotType == RobotType.SOLDIER || FbotType == RobotType.WATCHTOWER || FbotType == RobotType.SAGE) {
+                MapLocation FbotLocation = Fbot.getLocation();
+                // Debug.printString(" " + FbotLocation + " ");
+                if((FbotLocation).distanceSquaredTo(closestEnemyLocation) <= FbotType.visionRadiusSquared) {
+                    numFriendlies++;
+                    if(FbotType == RobotType.SAGE) {
+                        numFriendlySages++;
+                    }
+                }
+                
+            }
+        }
     }    
 
     public boolean tryAttack() throws GameActionException {
@@ -586,7 +687,6 @@ public class Sage extends Robot{
         Direction bestDirSoFar = null;
         int bestRubble = 101;
         int bestEnemiesStillSeen = Integer.MAX_VALUE;
-        RobotInfo[] enemyAttackable = getEnemyAttackable();
         RobotInfo enemy;
         for(Direction newDir: dirsToConsider) {
             if (rc.canMove(newDir)) {
