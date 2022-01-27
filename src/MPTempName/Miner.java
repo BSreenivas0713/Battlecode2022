@@ -52,7 +52,7 @@ public class Miner extends Robot {
         minerCount = 0;
         for(int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
-            if(!shouldConsiderResourceLoc(loc)) continue;
+            // if(!shouldConsiderResourceLoc(loc)) continue;
             int leadAmount = rc.senseLead(loc);
             if (leadAmount > 1){
                 int currDist = currLoc.distanceSquaredTo(loc);
@@ -72,7 +72,7 @@ public class Miner extends Robot {
         locs = rc.senseNearbyLocationsWithGold(-1);
         for(int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
-            if(!shouldConsiderResourceLoc(loc)) continue;
+            // if(!shouldConsiderResourceLoc(loc)) continue;
             int goldAmount = rc.senseGold(loc);
             int currDist = currLoc.distanceSquaredTo(loc);
             double currScore = getGoldDistTradeoffScore(currDist, goldAmount);
