@@ -27,4 +27,5 @@ csvFile = "records.csv"
 with open(csvFile, 'w') as f:
     csvwriter = csv.writer(f) 
     csvwriter.writerow(records)
+print("Wins " + str(wins) + "; Losses " + str(total - wins))
 print(wins / total)
