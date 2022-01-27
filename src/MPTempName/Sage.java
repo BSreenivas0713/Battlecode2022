@@ -274,12 +274,16 @@ public class Sage extends Robot{
                 } else if (closestSoldierDist <= RobotType.SAGE.actionRadiusSquared) {
                     tryAttack();
                 } else {
-                    Direction moveDir = makeDirBetter(currLoc.directionTo(averageAttackingEnemyLocation));
-                    if (canMoveRubble(moveDir)) {
-                        Direction[] dirs = Util.getInOrderDirections(moveDir);
-                        tryMoveDest(dirs);
+                    Direction moveDir = chooseForwardDirection(averageAttackingEnemyLocation);
+                    if(moveDir == null) {
+                        Debug.printString("Fw bad; ");
+                        tryAttack();
+                        return;
                     }
-                    tryAttack();
+                    Debug.printString("Fw, Dest: " + moveDir);
+                    Direction[] dirs = Util.getInOrderDirections(moveDir);
+                    tryMoveDest(dirs);
+
                 }
             } else {
                 if (closestSoldierDist > RobotType.SOLDIER.visionRadiusSquared
@@ -308,10 +312,12 @@ public class Sage extends Robot{
             }
         } else {
             if (!isRunning || runSemaphore <= 0) {
-                tryAttack();
                 checkAvoidCharge();
                 isRunning = false;
                 moveTowardsCluster();
+
+                rescanEnemies();
+                tryAttack();
             } else {
                 tryAttack();
                 Debug.printString("Running!");
@@ -634,6 +640,199 @@ public class Sage extends Robot{
             }
         }
     }    
+
+    public void rescanEnemies() throws GameActionException {
+        averageAttackingEnemyLocation = null;
+        sensedArchon = null;
+        inRangeArchon = null;
+        isTurret = false;
+        attackTarget = null;
+        int totalHealth = 0;
+        totalBuildingHealth = 0;
+        MapLocation bestSoldier = null;
+        int bestSoldierDamageScore = 0;
+        MapLocation bestSage = null;
+        int bestSageDamageScore = 0;
+        MapLocation bestMiner = null;
+        int bestMinerDamageScore = 0;
+        MapLocation bestLab = null;
+        int bestLabDamageScore = 0;
+        MapLocation bestBuilder = null;
+        int bestBuilderDamageScore = 0;
+        overallAttackingEnemyDx = 0;
+        overallAttackingEnemyDy = 0;
+        numAttackingEnemies = 0;
+        closestSoldier = null;
+        closestSoldierDist = Util.MAP_MAX_DIST_SQUARED;
+        closestSage = null;
+        closestSageDist = Util.MAP_MAX_DIST_SQUARED;
+        closestWatchtower = null;
+        closestWatchtowerDist = Util.MAP_MAX_DIST_SQUARED;
+        bestOverallSoldierHealth = 0;
+        predictedDamage = 0;
+        RobotInfo robot;
+        MapLocation loc;
+        int dist;
+        numVictims = 0;
+        numFriendlies = 0;
+        numFriendlySages = 0;
+        numEnemySages = 0;
+        numEnemySagesAttackingUs = 0;
+
+        int damageScore;
+        RobotInfo[] enemies = rc.senseNearbyRobots(actionRadiusSquared, opponent);
+        for (int i = enemies.length; --i >= 0;) {
+            robot = enemies[i];
+            dist = robot.location.distanceSquaredTo(currLoc);
+            switch(robot.type) {
+                case SOLDIER:
+                    damageScore = Math.min(45, robot.health);
+                    if (robot.health <= 45) {
+                        damageScore += 20;
+                    }
+                    if (damageScore > bestSoldierDamageScore) {
+                        bestSoldierDamageScore = damageScore;
+                        bestSoldier = robot.location;
+                    }
+                    totalHealth += Math.min(11, robot.health);
+                    if (robot.health <= 11) {
+                        totalHealth += 20;
+                    }
+                    numVictims++;
+                    if (robot.health > bestOverallSoldierHealth) {
+                        bestOverallSoldierHealth = robot.health;
+                    }
+                    if (dist < closestSoldierDist) {
+                        closestSoldier = robot.location;
+                        closestSoldierDist = dist;
+                    }
+                    loc = robot.location;
+                    overallAttackingEnemyDx += loc.x;
+                    overallAttackingEnemyDy += loc.y;
+                    numAttackingEnemies++;
+                    break;
+                case SAGE:
+                    damageScore = Math.min(45, robot.health);
+                    if (robot.health <= 45) {
+                        damageScore += 30;
+                    }
+                    if (damageScore > bestSageDamageScore) {
+                        bestSageDamageScore = damageScore;
+                        bestSage = robot.location;
+                    }
+                    totalHealth += Math.min(22, robot.health);
+                    if (robot.health <= 22) {
+                        totalHealth += 30;
+                    }
+                    numVictims++;
+                    numEnemySagesAttackingUs++;
+                    if (dist < closestSageDist) {
+                        closestSage = robot.location;
+                        closestSageDist = dist;
+                    }
+                    loc = robot.location;
+                    overallAttackingEnemyDx += loc.x;
+                    overallAttackingEnemyDy += loc.y;
+                    numAttackingEnemies++;
+                    break;
+                case WATCHTOWER:
+                    if (robot.mode != RobotMode.TURRET) {
+                        break;
+                    }
+                    if (robot.level == 1) {
+                        totalBuildingHealth += Math.min(15, robot.health);
+                    } else if (robot.level == 2) {
+                        totalBuildingHealth += Math.min(27, robot.health);
+                    } else {
+                        totalBuildingHealth += Math.min(48, robot.health);
+                    }
+                    if (dist < closestWatchtowerDist) {
+                        closestWatchtower = robot.location;
+                        closestWatchtowerDist = dist;
+                    }
+                    loc = robot.location;
+                    overallAttackingEnemyDx += loc.x;
+                    overallAttackingEnemyDy += loc.y;
+                    numAttackingEnemies++;
+                    break;
+                case ARCHON:
+                    inRangeArchon = robot;
+                    isTurret = robot.mode == RobotMode.TURRET;
+                    sensedArchon = robot;
+                    break;
+                case MINER:
+                    damageScore = Math.min(45, robot.health);
+                    if (robot.health <= 45) {
+                        damageScore += 5;
+                    }
+                    if (damageScore > bestMinerDamageScore) {
+                        bestMinerDamageScore = damageScore;
+                        bestMiner = robot.location;
+                    }
+                    totalHealth += Math.min(8, robot.health);
+                    if (robot.health <= 8) {
+                        totalHealth += 5;
+                    }
+                    numVictims++;
+                    break;
+                case BUILDER:
+                    damageScore = Math.min(45, robot.health);
+                    if (robot.health <= 45) {
+                        damageScore += 5;
+                    }
+                    if (damageScore > bestBuilderDamageScore) {
+                        bestBuilderDamageScore = damageScore;
+                        bestBuilder = robot.location;
+                    }
+                    totalHealth += Math.min(6, robot.health);
+                    if (robot.health <= 6) {
+                        totalHealth += 5;
+                    }
+                    numVictims++;
+                    break;
+                case LABORATORY:
+                    damageScore = Math.min(45, robot.health);
+                    if (robot.health <= 45) {
+                        damageScore += 50;
+                    }
+                    if (damageScore > bestLabDamageScore) {
+                        bestLabDamageScore = damageScore;
+                        bestLab = robot.location;
+                    }
+                    numVictims++;
+                    if (robot.mode != RobotMode.TURRET) break;
+                    if (robot.level == 1) {
+                        totalBuildingHealth += Math.min(10, robot.health);
+                    } else if (robot.level == 2) {
+                        totalBuildingHealth += Math.min(18, robot.health);
+                    } else {
+                        totalBuildingHealth += Math.min(32, robot.health);
+                    }
+                default:
+                    break;
+            }
+        }
+        if (numAttackingEnemies != 0) {
+            predictedDamage = totalHealth;
+            averageAttackingEnemyLocation = new MapLocation(overallAttackingEnemyDx / numAttackingEnemies, overallAttackingEnemyDy / numAttackingEnemies);
+        }
+        if (bestLabDamageScore > totalHealth) {
+            predictedDamage = bestLabDamageScore;
+            attackTarget = bestLab;
+        } else if (bestSageDamageScore > totalHealth) {
+            predictedDamage = bestSageDamageScore;
+            attackTarget = bestSage;
+        } else if (bestSoldierDamageScore > totalHealth) {
+            predictedDamage = bestSoldierDamageScore;
+            attackTarget = bestSoldier;
+        } else if (bestMinerDamageScore > totalHealth) {
+            predictedDamage = bestMinerDamageScore;
+            attackTarget = bestMiner;
+        } else if (bestBuilderDamageScore > totalHealth) {
+            predictedDamage = bestBuilderDamageScore;
+            attackTarget = bestBuilder;
+        }
+    }
 
     public boolean tryAttack() throws GameActionException {
         if (!nearOurArchon && totalBuildingHealth > predictedDamage

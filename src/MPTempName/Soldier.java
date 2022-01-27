@@ -94,7 +94,7 @@ public class Soldier extends Robot {
                 if (healCounter == Util.HealTimeout) {
                     currState = SoldierState.EXPLORING;
                     canHeal = false;
-                } else if(rc.getHealth() == RobotType.SOLDIER.health) {
+                } else if(rc.getHealth() >= 46) {
                     currState = SoldierState.EXPLORING;
                 } else if(needToReloadTarget()) {
                     if(!reloadTarget()) {
@@ -428,7 +428,6 @@ public class Soldier extends Robot {
                     dir = chooseForwardDirection(dest);
                     attackFirst = false;
                     if (dir == null) {
-                        Debug.printString("Fw bad; ");
                         tryAttackBestEnemy();
                         return true;
                     }
