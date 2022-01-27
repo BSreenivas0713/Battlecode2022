@@ -123,7 +123,7 @@ public class Sage extends Robot{
         switch(currState) {
             case EXPLORING:
                 // Run away if 1/2 health left
-                if(rc.getHealth() <= robotType.health / 2) {
+                if(rc.getHealth() <= 45) {
                     if(canHeal && loadHealTarget()) {
                         currState = SageState.GOING_TO_HEAL;
                     }
