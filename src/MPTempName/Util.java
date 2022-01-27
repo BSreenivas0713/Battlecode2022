@@ -100,6 +100,8 @@ public class Util {
     static final int MAX_TURN_TO_LEAD_CACHE = 300;
     static final int TURNS_TO_CLEAR_LEAD_CACHE = 50;
 
+    static final int MIN_ENEMY_DIST_FROM_EXPLORE_LINE = 13;
+
     // Spiral path going through all locations within radius 13
     // Note: iterate through this backwards
     static final Direction[] DIR_PATH_13 = new Direction[] {

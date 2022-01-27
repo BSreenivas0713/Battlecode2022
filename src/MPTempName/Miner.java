@@ -4,6 +4,7 @@ import battlecode.common.*;
 import MPTempName.Debug.*;
 import MPTempName.Util.*;
 import MPTempName.fast.FastIterableLocSet;
+import MPTempName.fast.FastMath;
 
 public class Miner extends Robot {
     static int roundNumBorn;
@@ -194,9 +195,9 @@ public class Miner extends Robot {
                             rc.senseNearbyLocationsWithGold(2, 1).length > 0);
         if (!amMining && !canMine) {
             // target = Explore.getExploreTarget();
-            target = Explore.explorePathfinding();
+            target = Explore.getExploreTarget();
             str = "Exploring: " + target.toString();
-            // Debug.setIndicatorDot(Debug.INDICATORS, target, 255, 204, 102);
+            // Debug.setIndicatorLine(Debug.INDICATORS, currLoc, target, 255, 204, 102);
         }
 
         if(rc.getRoundNum() == roundNumBorn + 1) {
@@ -246,6 +247,7 @@ public class Miner extends Robot {
             if(enemyAttackable.length + 5 >= friendlyAttackable.length) {
                 target = Nav.getGreedyTargetAway(closestEnemy.getLocation());
                 str = "Enemies++ " + closestEnemy.type;
+                repickExploreIfTooClose(closestEnemy.getLocation());
             }
 
             if(closestFriendly != null &&
@@ -253,10 +255,28 @@ public class Miner extends Robot {
                 currLoc.distanceSquaredTo(closestFriendly.location)) {
                 target = Nav.getGreedyTargetAway(closestEnemy.getLocation());
                 str = "Close enemy " + closestEnemy.type;
+                repickExploreIfTooClose(closestEnemy.getLocation());
             }
         }
 
         Debug.printString(str);
         Nav.move(target);
+    }
+
+    public void repickExploreIfTooClose(MapLocation enemyLoc) throws GameActionException {
+        int dist = 0;
+        MapLocation exploreTarget = Explore.getExploreTarget();
+        MapLocation proj = FastMath.getProjection(currLoc, exploreTarget, enemyLoc);
+        dist = proj.distanceSquaredTo(enemyLoc);
+        while(!proj.equals(currLoc) &&
+                dist <= Util.MIN_ENEMY_DIST_FROM_EXPLORE_LINE &&
+                Explore.initialized) {
+            if(Clock.getBytecodesLeft() < 3000) break;
+            Explore.visited[exploreTarget.x][exploreTarget.y] = true;
+            exploreTarget = Explore.getExploreTarget();
+            proj = FastMath.getProjection(currLoc, exploreTarget, enemyLoc);
+            dist = proj.distanceSquaredTo(enemyLoc);
+            // Debug.setIndicatorLine(Debug.INDICATORS, currLoc, exploreTarget, 255, 204, 102);
+        }
     }
 }
