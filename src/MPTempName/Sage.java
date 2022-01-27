@@ -933,7 +933,7 @@ public class Sage extends Robot{
             if (round > chargeRounds[i]) {
                 nextCharge++;
                 continue;
-            } else if (chargeRounds[i] - round <= 50) {
+            } else if (chargeRounds[i] - round <= 20) {
                 Debug.printString("Preparing for Charge");
                 RobotInfo[] friendlies = rc.senseNearbyRobots(-1, rc.getTeam());
                 int totalFriendlyDx = 0;
