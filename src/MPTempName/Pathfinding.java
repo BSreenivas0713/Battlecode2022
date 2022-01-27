@@ -25,7 +25,7 @@ public class Pathfinding {
 
     public static void init(RobotController r) {
         rc = r;
-        BugNav.rotateRight = Math.random() > 0.5;
+        // BugNav.rotateRight = Math.random() > 0.5;
     }
 
     static void setImpassable(boolean[] imp){
