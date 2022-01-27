@@ -73,7 +73,8 @@ public class Laboratory extends Robot{
                 if(rc.canTransmute() &&
                     ((minerCount >= (sageCount)/2) ||
                         minerCount >= MIN_NUM_MINERS ||
-                        rc.getTeamLeadAmount(team) >= 75)) {
+                        (rc.getTeamLeadAmount(team) >= 75 && !Comms.checkIfArchonBuildingLab())
+                        || rc.getTeamLeadAmount(team) >= 250)) { // if we are building a lab, don't trasmute or else we will be stuck building lab forever
                     Debug.printString("transmuting");
                     rc.transmute();
                 }
