@@ -475,7 +475,7 @@ public class Sage extends Robot{
                     }
                     break;
                 case LABORATORY:
-                    if (robot.mode == RobotMode.TURRET && dist <= RobotType.SAGE.actionRadiusSquared) {
+                    if (dist <= RobotType.SAGE.actionRadiusSquared) {
                         int damageScore = Math.min(45, robot.health);
                         if (robot.health <= 45) {
                             damageScore += 50;
@@ -484,6 +484,8 @@ public class Sage extends Robot{
                             bestLabDamageScore = damageScore;
                             bestLab = robot.location;
                         }
+                        numVictims++;
+                        if (robot.mode != RobotMode.TURRET) break;
                         if (robot.level == 1) {
                             totalBuildingHealth += Math.min(10, robot.health);
                         } else if (robot.level == 2) {
@@ -491,7 +493,6 @@ public class Sage extends Robot{
                         } else {
                             totalBuildingHealth += Math.min(32, robot.health);
                         }
-                        numVictims++;
                     }
                 default:
                     break;
