@@ -146,7 +146,7 @@ public class Sage extends Robot{
                 if (healCounter == Util.HealTimeout) {
                     currState = SageState.EXPLORING;
                     canHeal = false;
-                } else if(rc.getHealth() > 90) {
+                } else if(rc.getHealth() > 93) {
                     currState = SageState.EXPLORING;
                 } else if(needToReloadTarget()) {
                     if(!reloadTarget()) {
