@@ -1133,7 +1133,8 @@ public class Archon extends Robot {
         if(!rc.isActionReady()) return;
 
         MapLocation cluster = Comms.getClosestCluster(currLoc);
-        if(cluster.isWithinDistanceSquared(currLoc, visionRadiusSquared * 4)) {
+        if(cluster != null &&
+            cluster.isWithinDistanceSquared(currLoc, visionRadiusSquared * 4)) {
             tryRepairBelowThreshold();
         }
 
