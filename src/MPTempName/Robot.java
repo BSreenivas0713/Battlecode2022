@@ -88,12 +88,16 @@ public class Robot {
     }
 
     public double getLeadDistTradeoffScore(int radiusSquared, int leadAmount) {
-        if(radiusSquared == 0 && leadAmount > 1){return Integer.MAX_VALUE;}
+        if(radiusSquared <= 2 && leadAmount > 1) {
+            return Integer.MAX_VALUE / 2 + leadAmount;
+        }
         return (float)leadAmount - Math.sqrt((double) radiusSquared) * 5;
     }
 
     public double getGoldDistTradeoffScore(int radiusSquared, int goldAmount) {
-        if(radiusSquared == 0 && goldAmount > 0) return Integer.MAX_VALUE;
+        if(radiusSquared <= 2 && goldAmount > 1) {
+            return Integer.MAX_VALUE / 2 + 3 * goldAmount;
+        }
         return 3 * goldAmount - Math.sqrt(radiusSquared) * 5;
     }
 

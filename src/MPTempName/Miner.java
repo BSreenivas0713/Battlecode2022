@@ -3,9 +3,11 @@ package MPTempName;
 import battlecode.common.*;
 import MPTempName.Debug.*;
 import MPTempName.Util.*;
+import MPTempName.fast.FastIterableLocSet;
 
 public class Miner extends Robot {
     static int roundNumBorn;
+    static int roundNumBornModClear;
     static int minerCount;
     static boolean explorer;
     static MapLocation[] unitLeadLocs;
@@ -21,9 +23,12 @@ public class Miner extends Robot {
     RobotInfo[] enemyAttackable;
     RobotInfo[] friendlyAttackable;
 
+    FastIterableLocSet leadCache;
+
     public Miner(RobotController r) throws GameActionException {
         super(r);
         roundNumBorn = r.getRoundNum();
+        roundNumBornModClear = roundNumBorn % Util.TURNS_TO_CLEAR_LEAD_CACHE;
         unitLeadLocs = new MapLocation[5];
         if(Util.rng.nextInt(6) == 0) {
             explorer = true;
@@ -31,6 +36,8 @@ public class Miner extends Robot {
         else {
             explorer = false;
         }
+
+        leadCache = new FastIterableLocSet();
     }
 
     //Update the location of the closest lead ore, return a list of all lead ores within action radius of Miner
@@ -52,7 +59,7 @@ public class Miner extends Robot {
         minerCount = 0;
         for(int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
-            // if(!shouldConsiderResourceLoc(loc)) continue;
+            if(!shouldConsiderResourceLoc(loc)) continue;
             int leadAmount = rc.senseLead(loc);
             if (leadAmount > 1){
                 int currDist = currLoc.distanceSquaredTo(loc);
@@ -72,7 +79,7 @@ public class Miner extends Robot {
         locs = rc.senseNearbyLocationsWithGold(-1);
         for(int i = locs.length - 1; i >= 0; i--) {
             loc = locs[i];
-            // if(!shouldConsiderResourceLoc(loc)) continue;
+            if(!shouldConsiderResourceLoc(loc)) continue;
             int goldAmount = rc.senseGold(loc);
             int currDist = currLoc.distanceSquaredTo(loc);
             double currScore = getGoldDistTradeoffScore(currDist, goldAmount);
@@ -100,14 +107,18 @@ public class Miner extends Robot {
             !currLoc.isWithinDistanceSquared(home, Util.MIN_DIST_TO_DEPLETE_UNIT_LEAD);
     }
 
+    // Don't consider locations that you mined out recently
     public boolean shouldConsiderResourceLoc(MapLocation loc) throws GameActionException {
-        if(closestCluster != null &&
-            closestCluster.isWithinDistanceSquared(loc, Util.MIN_LEAD_DIST_FROM_CLUSTER)) {
-            // Work around miners reporting the cluster
-            return currLoc.isWithinDistanceSquared(currLoc, RobotType.MINER.visionRadiusSquared) &&
-                enemyAttackable.length == 0;
-        }
-        return true;
+        // if(closestCluster != null &&
+        //     closestCluster.isWithinDistanceSquared(loc, Util.MIN_LEAD_DIST_FROM_CLUSTER)) {
+        //     // Work around miners reporting the cluster
+        //     return currLoc.isWithinDistanceSquared(currLoc, RobotType.MINER.visionRadiusSquared) &&
+        //         enemyAttackable.length == 0;
+        // }
+        // return true;
+        return !(rc.getRoundNum() < Util.MAX_TURN_TO_LEAD_CACHE &&
+                    leadCache.contains(loc) &&
+                    !currLoc.isAdjacentTo(loc));
     }
 
     public void takeTurn() throws GameActionException {
@@ -116,6 +127,10 @@ public class Miner extends Robot {
         closestCluster = Comms.getClosestCluster(currLoc);
         enemyAttackable = getEnemyAttackable();
         friendlyAttackable = getFriendlyAttackable();
+
+        if(rc.getRoundNum() % Util.TURNS_TO_CLEAR_LEAD_CACHE == roundNumBornModClear) {
+            leadCache.clear();
+        }
 
         // Try to mine on squares around us.
         boolean amMining = false;
@@ -152,6 +167,14 @@ public class Miner extends Robot {
                             actionRadiusArr[3 * x + y]--;
                             amMining = true;
                         }
+                    }
+
+                    // If mined out the source, add it to the cache
+                    if(rc.getRoundNum() < Util.MAX_TURN_TO_LEAD_CACHE &&
+                        rc.canSenseLocation(source) &&
+                        rc.senseLead(source) == 1 && !leadCache.contains(source)) {
+                        Debug.printString("caching: " + source);
+                        leadCache.add(source);
                     }
                 }
             }
