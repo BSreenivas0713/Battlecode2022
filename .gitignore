@@ -21,6 +21,8 @@ build/*
 *.iws
 /.idea/
 *.zip
+records.csv
+results.txt
 
 
 # User-specific stuff:
