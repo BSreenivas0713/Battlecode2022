@@ -47,6 +47,8 @@ public class Sage extends Robot{
     static int[] chargeRounds;
     static int nextCharge;
 
+    static MapLocation avgEnemyLoc;
+
     public Sage(RobotController r) throws GameActionException {
         this(r, Comms.firstArchonFlag);
     }
@@ -85,6 +87,7 @@ public class Sage extends Robot{
         if (isRunning) {
             runSemaphore--;
         }
+        avgEnemyLoc = Comms.getClosestCluster(currLoc);
         scanEnemies();
         nearOurArchon = checkForOurArchon();
         tryAttackArchon();
@@ -143,7 +146,7 @@ public class Sage extends Robot{
                 if (healCounter == Util.HealTimeout) {
                     currState = SageState.EXPLORING;
                     canHeal = false;
-                } else if(rc.getHealth() == robotType.health) {
+                } else if(rc.getHealth() > 90) {
                     currState = SageState.EXPLORING;
                 } else if(needToReloadTarget()) {
                     if(!reloadTarget()) {
@@ -156,95 +159,99 @@ public class Sage extends Robot{
         }
     }
 
+    public void tryMoveTowardsEnemy(boolean almostReady) throws GameActionException {
+        if (numAttackingEnemies > 0) {
+            if (almostReady) {
+                Debug.printString("Fighting!");
+                isRunning = false;
+                if (closestSageDist <= RobotType.SAGE.actionRadiusSquared) {
+                    tryAttack();
+                    Direction dir = closestSage.directionTo(currLoc);
+                    Direction newDir = makeDirBetter(dir);
+                    if (canMoveRubble(newDir)) {
+                        Direction[] dirs = Util.getInOrderDirections(newDir);
+                        tryMoveDest(dirs);
+                    }
+                } else if (closestSoldierDist <= RobotType.SOLDIER.actionRadiusSquared) {
+                    tryAttack();
+                    Direction dir = closestSoldier.directionTo(currLoc);
+                    Direction newDir = makeDirBetter(dir);
+                    if (canMoveRubble(newDir)) {
+                        Direction[] dirs = Util.getInOrderDirections(newDir);
+                        tryMoveDest(dirs);
+                    }
+                } else if (closestSoldierDist <= RobotType.SOLDIER.visionRadiusSquared) {
+                    if (tryAttack()) {
+                        Direction dir = closestSoldier.directionTo(currLoc);
+                        Direction newDir = makeDirBetter(dir);
+                        if (canMoveRubble(newDir)) {
+                            Direction[] dirs = Util.getInOrderDirections(newDir);
+                            tryMoveDest(dirs);
+                        }
+                    } else {
+                        Direction moveDir = makeDirBetter(currLoc.directionTo(averageAttackingEnemyLocation));
+                        if (canMoveRubble(moveDir)) {
+                            Direction[] dirs = Util.getInOrderDirections(moveDir);
+                            tryMoveDest(dirs);
+                        }
+                        tryAttack();
+                    }
+                } else if (closestSoldierDist <= RobotType.SAGE.actionRadiusSquared) {
+                    tryAttack();
+                } else {
+                    Direction moveDir = makeDirBetter(currLoc.directionTo(averageAttackingEnemyLocation));
+                    if (canMoveRubble(moveDir)) {
+                        Direction[] dirs = Util.getInOrderDirections(moveDir);
+                        tryMoveDest(dirs);
+                    }
+                    tryAttack();
+                }
+            } else {
+                if (closestSoldierDist > RobotType.SOLDIER.visionRadiusSquared
+                    && closestSageDist > RobotType.SAGE.visionRadiusSquared
+                    && closestWatchtowerDist > RobotType.WATCHTOWER.visionRadiusSquared) {
+                    return;
+                }
+                Debug.printString("Running!");
+                Direction dir = averageAttackingEnemyLocation.directionTo(currLoc);
+                if (closestSageDist <= RobotType.SAGE.visionRadiusSquared) {
+                    dir = closestSage.directionTo(currLoc);
+                } else if (closestSoldierDist <= RobotType.SOLDIER.visionRadiusSquared) {
+                    dir = closestSoldier.directionTo(currLoc);
+                } else if (closestWatchtowerDist <= RobotType.WATCHTOWER.actionRadiusSquared) {
+                    dir = closestWatchtower.directionTo(currLoc);
+                }
+                Direction newDir = chooseBackupDirection(dir);
+                if (canMoveRubble(newDir)) {
+                    Direction[] dirs = Util.getInOrderDirections(newDir);
+                    tryMoveDest(dirs);
+                }
+                runSemaphore = 5;
+                isRunning = true;
+                runDirection = dir;
+            }
+        } else {
+            if (!isRunning || runSemaphore <= 0) {
+                tryAttack();
+                checkAvoidCharge();
+                isRunning = false;
+                moveTowardsCluster();
+            } else {
+                tryAttack();
+                Debug.printString("Running!");
+                Direction newDir = chooseBackupDirection(runDirection);
+                if (canMoveRubble(newDir)) {
+                    Direction[] dirs = Util.getInOrderDirections(newDir);
+                    tryMoveDest(dirs);
+                }
+            }
+        }
+    }
+
     public void doSageAction(boolean almostReady) throws GameActionException {
         switch(currState) {
             case EXPLORING:
-                if (numAttackingEnemies > 0) {
-                    if (almostReady) {
-                        Debug.printString("Fighting!");
-                        isRunning = false;
-                        if (closestSageDist <= RobotType.SAGE.actionRadiusSquared) {
-                            tryAttack();
-                            Direction dir = closestSage.directionTo(currLoc);
-                            Direction newDir = makeDirBetter(dir);
-                            if (canMoveRubble(newDir)) {
-                                Direction[] dirs = Util.getInOrderDirections(newDir);
-                                tryMoveDest(dirs);
-                            }
-                        } else if (closestSoldierDist <= RobotType.SOLDIER.actionRadiusSquared) {
-                            tryAttack();
-                            Direction dir = closestSoldier.directionTo(currLoc);
-                            Direction newDir = makeDirBetter(dir);
-                            if (canMoveRubble(newDir)) {
-                                Direction[] dirs = Util.getInOrderDirections(newDir);
-                                tryMoveDest(dirs);
-                            }
-                        } else if (closestSoldierDist <= RobotType.SOLDIER.visionRadiusSquared) {
-                            if (tryAttack()) {
-                                Direction dir = closestSoldier.directionTo(currLoc);
-                                Direction newDir = makeDirBetter(dir);
-                                if (canMoveRubble(newDir)) {
-                                    Direction[] dirs = Util.getInOrderDirections(newDir);
-                                    tryMoveDest(dirs);
-                                }
-                            } else {
-                                Direction moveDir = makeDirBetter(currLoc.directionTo(averageAttackingEnemyLocation));
-                                if (canMoveRubble(moveDir)) {
-                                    Direction[] dirs = Util.getInOrderDirections(moveDir);
-                                    tryMoveDest(dirs);
-                                }
-                                tryAttack();
-                            }
-                        } else if (closestSoldierDist <= RobotType.SAGE.actionRadiusSquared) {
-                            tryAttack();
-                        } else {
-                            Direction moveDir = makeDirBetter(currLoc.directionTo(averageAttackingEnemyLocation));
-                            if (canMoveRubble(moveDir)) {
-                                Direction[] dirs = Util.getInOrderDirections(moveDir);
-                                tryMoveDest(dirs);
-                            }
-                            tryAttack();
-                        }
-                    } else {
-                        if (closestSoldierDist > RobotType.SOLDIER.visionRadiusSquared
-                            && closestSageDist > RobotType.SAGE.visionRadiusSquared
-                            && closestWatchtowerDist > RobotType.WATCHTOWER.visionRadiusSquared) {
-                            return;
-                        }
-                        Debug.printString("Running!");
-                        Direction dir = averageAttackingEnemyLocation.directionTo(currLoc);
-                        if (closestSageDist <= RobotType.SAGE.visionRadiusSquared) {
-                            dir = closestSage.directionTo(currLoc);
-                        } else if (closestSoldierDist <= RobotType.SOLDIER.visionRadiusSquared) {
-                            dir = closestSoldier.directionTo(currLoc);
-                        } else if (closestWatchtowerDist <= RobotType.WATCHTOWER.actionRadiusSquared) {
-                            dir = closestWatchtower.directionTo(currLoc);
-                        }
-                        Direction newDir = chooseBackupDirection(dir);
-                        if (canMoveRubble(newDir)) {
-                            Direction[] dirs = Util.getInOrderDirections(newDir);
-                            tryMoveDest(dirs);
-                        }
-                        runSemaphore = 5;
-                        isRunning = true;
-                        runDirection = dir;
-                    }
-                } else {
-                    if (!isRunning || runSemaphore <= 0) {
-                        tryAttack();
-                        checkAvoidCharge();
-                        isRunning = false;
-                        moveTowardsCluster();
-                    } else {
-                        tryAttack();
-                        Debug.printString("Running!");
-                        Direction newDir = chooseBackupDirection(runDirection);
-                        if (canMoveRubble(newDir)) {
-                            Direction[] dirs = Util.getInOrderDirections(newDir);
-                            tryMoveDest(dirs);
-                        }
-                    }
-                }
+                tryMoveTowardsEnemy(almostReady);
                 break;
             case GOING_TO_HEAL:
                 Comms.incrementNumTroopsHealingAt(healTargetIdx);
@@ -261,8 +268,15 @@ public class Sage extends Robot{
                 Comms.incrementNumTroopsHealingAt(healTargetIdx);
                 Debug.setIndicatorDot(Debug.INDICATORS, healTarget, 0, 255, 0);
                 Debug.printString("Healing");
-                tryAttack();
-                moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
+                if(numAttackingEnemies > 0) {
+                    tryMoveTowardsEnemy(almostReady);
+                } else if(avgEnemyLoc != null && healTarget != null && avgEnemyLoc.distanceSquaredTo(healTarget) <= RobotType.ARCHON.visionRadiusSquared) {
+                    Debug.printString("oter sid");
+                    moveTowardsCluster();
+                } else {
+                    tryAttack();
+                    moveMoreSafely(healTarget, Util.HEAL_DIST_TO_HOME);
+                }
                 break;
 
         }
@@ -544,9 +558,8 @@ public class Sage extends Robot{
     }
 
     public void moveTowardsCluster() throws GameActionException {
-        Debug.printString("Following clusters");
-        MapLocation clusterLoc = Comms.getClosestCluster(currLoc);
-        if (currLoc.distanceSquaredTo(clusterLoc) <= visionRadiusSquared) {
+        if(avgEnemyLoc == null) return;
+        if (currLoc.distanceSquaredTo(avgEnemyLoc) <= visionRadiusSquared) {
             boolean seeArchonInSensable = false;
             for (RobotInfo bot : EnemySensable) {
                 if (bot.getType() == RobotType.ARCHON) {
@@ -557,7 +570,14 @@ public class Sage extends Robot{
                 Comms.broadcastSoldierNearClusterButNothingFound();
             }
         }
-        Nav.move(clusterLoc);
+
+        if (currLoc.distanceSquaredTo(avgEnemyLoc) <= Util.JUST_OUTSIDE_SAGE_VISION_RADIUS) {
+            Nav.tryMoveSafely(avgEnemyLoc);
+            Debug.printString("saf mov");
+        } else {
+            Nav.move(avgEnemyLoc);
+            Debug.printString("reg mov");
+        }
     }
 
     // Copied from Soldier code

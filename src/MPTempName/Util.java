@@ -54,6 +54,7 @@ public class Util {
     static final int MAX_AREA_FOR_SEMI_FAST_INIT = 1000;
     static final int MAX_MAP_SIZE_TO_MINER_RATIO = 16;
     static final int JUST_OUTSIDE_OF_VISION_RADIUS = 34;
+    static final int JUST_OUTSIDE_SAGE_VISION_RADIUS = 53;
     static final int[] WatchTowerHealths = new int[]{150,270,486};
     static final int HealTimeout = 200;
     
@@ -74,7 +75,7 @@ public class Util {
 
     static final int HEAL_DIST_TO_HOME = 5;
     static final int AVERAGE_HEALTH_TO_HEAL = 2 * RobotType.SOLDIER.health / 3;
-    static final int MIN_HEALTH_TO_MAINTAIN = 9;
+    static final int MIN_HEALTH_TO_MAINTAIN = 46;
 
     static final int TURNS_NOT_PRIORITIZED_TO_MOVE = 40;
     static final int PRIORITIZED_ARCHON_TURNS_NOT_PRIORITIZED_TO_MOVE = 40;

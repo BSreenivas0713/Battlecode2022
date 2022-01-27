@@ -585,7 +585,7 @@ public class Archon extends Robot {
             case INIT:
                 Debug.printString("Init");
                 initCounter = firstRounds(4, initCounter);
-                tryToRepairLastBot();
+                tryRepair();
                 break;
             case BUILDING_LAB:
                 Debug.printString("Building Lab");
@@ -610,7 +610,7 @@ public class Archon extends Robot {
                         buildSoldier(a);
                     }
                 }
-                tryToRepairLastBot();
+                tryRepair();
                 break;
             case CHILLING:
                 Debug.printString("Chilling, " + MIN_NUM_MINERS);
@@ -639,7 +639,7 @@ public class Archon extends Robot {
                         chillingCounter = buildMiner(chillingCounter);
                     }
                 }
-                tryToRepairLastBot();
+                tryRepair();
                 break;
             case UNDER_ATTACK:
                 roundsSinceUnderAttack = 0;
@@ -662,7 +662,7 @@ public class Archon extends Robot {
                     chillingCounter = buildSoldier(chillingCounter);
                 }
                 Debug.printString("Under Attack");
-                tryToRepairLowestHealth();
+                tryRepair();
                 break;
             case OBESITY:
                 Debug.printString("Obesity");
@@ -684,7 +684,7 @@ public class Archon extends Robot {
                         buildRobot(RobotType.BUILDER);
                     }                   
                 }
-                tryToRepairLastBot();
+                tryRepair();
                 break;
             case MOVING:
                 Debug.printString("Moving");
@@ -1030,6 +1030,137 @@ public class Archon extends Robot {
         if(maybeSoldier != null && rc.canRepair(maybeSoldier.location)) robotToHeal = maybeSoldier;
         if(maybeSage != null && rc.canRepair(maybeSage.location)) robotToHeal = maybeSage;
         return robotToHeal;
+    }
+
+    public RobotInfo getMaxHealthRobotToRepair() throws GameActionException {
+        RobotInfo[] friendlies = getRestrictedFriendlies();
+        RobotInfo maybeSage = null;
+        RobotInfo maybeSoldier = null;
+        RobotInfo maybeBuilder = null;
+        RobotInfo maybeMiner = null;
+        RobotInfo friendly = null;
+        for (int i = friendlies.length; --i >= 0;) {
+            friendly = friendlies[i];
+            if(Clock.getBytecodeNum() >= 15000) break;
+            switch(friendly.type) {
+                case SAGE:
+                    if((maybeSage == null || maybeSage.health < friendly.health)
+                        && friendly.health != RobotType.SAGE.health) {
+                        maybeSage = friendly;
+                    }
+                    break;
+                case SOLDIER:
+                    if((maybeSoldier == null || maybeSoldier.health < friendly.health)
+                        && friendly.health != RobotType.SOLDIER.health) {
+                        maybeSoldier = friendly;
+                    }
+                    break;
+                case BUILDER:
+                    if((maybeBuilder == null || maybeBuilder.health < friendly.health)
+                        && friendly.health != RobotType.BUILDER.health) {
+                        maybeBuilder = friendly;
+                    }
+                    break;
+                case MINER:
+                    if((maybeMiner == null || maybeMiner.health < friendly.health)
+                        && friendly.health != RobotType.MINER.health) {
+                        maybeMiner = friendly;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        RobotInfo robotToHeal = null;
+        if(maybeMiner != null && rc.canRepair(maybeMiner.location)) robotToHeal = maybeMiner;
+        if(maybeBuilder != null && rc.canRepair(maybeBuilder.location)) robotToHeal = maybeBuilder;
+        if(maybeSoldier != null && rc.canRepair(maybeSoldier.location)) robotToHeal = maybeSoldier;
+        if(maybeSage != null && rc.canRepair(maybeSage.location)) robotToHeal = maybeSage;
+        return robotToHeal;
+    }
+
+    public RobotInfo getMaxHealthRobotBelowThreshold() throws GameActionException {
+        RobotInfo[] friendlies = getRestrictedFriendlies();
+        RobotInfo maybeSage = null;
+        RobotInfo maybeSoldier = null;
+        RobotInfo maybeBuilder = null;
+        RobotInfo maybeMiner = null;
+        RobotInfo friendly = null;
+        for (int i = friendlies.length; --i >= 0;) {
+            friendly = friendlies[i];
+            if(Clock.getBytecodeNum() >= 15000) break;
+            if(friendly.health >= Util.MIN_HEALTH_TO_MAINTAIN) continue;
+            switch(friendly.type) {
+                case SAGE:
+                    if((maybeSage == null || maybeSage.health < friendly.health)
+                        && friendly.health != RobotType.SAGE.health) {
+                        maybeSage = friendly;
+                    }
+                    break;
+                case SOLDIER:
+                    if((maybeSoldier == null || maybeSoldier.health < friendly.health)
+                        && friendly.health != RobotType.SOLDIER.health) {
+                        maybeSoldier = friendly;
+                    }
+                    break;
+                case BUILDER:
+                    if((maybeBuilder == null || maybeBuilder.health < friendly.health)
+                        && friendly.health != RobotType.BUILDER.health) {
+                        maybeBuilder = friendly;
+                    }
+                    break;
+                case MINER:
+                    if((maybeMiner == null || maybeMiner.health < friendly.health)
+                        && friendly.health != RobotType.MINER.health) {
+                        maybeMiner = friendly;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        RobotInfo robotToHeal = null;
+        if(maybeMiner != null && rc.canRepair(maybeMiner.location)) robotToHeal = maybeMiner;
+        if(maybeBuilder != null && rc.canRepair(maybeBuilder.location)) robotToHeal = maybeBuilder;
+        if(maybeSoldier != null && rc.canRepair(maybeSoldier.location)) robotToHeal = maybeSoldier;
+        if(maybeSage != null && rc.canRepair(maybeSage.location)) robotToHeal = maybeSage;
+        return robotToHeal;
+    }
+
+    public void tryRepair() throws GameActionException {
+        if(!rc.isActionReady()) return;
+
+        MapLocation cluster = Comms.getClosestCluster(currLoc);
+        if(cluster.isWithinDistanceSquared(currLoc, visionRadiusSquared * 4)) {
+            tryRepairBelowThreshold();
+        }
+
+        tryRepairMaxHealth();
+    }
+
+    public void tryRepairBelowThreshold() throws GameActionException {
+        if(!rc.isActionReady()) return;
+
+        RobotInfo newRobot = getMaxHealthRobotBelowThreshold();
+        if(newRobot != null && rc.canRepair(newRobot.location) &&
+            newRobot.health < Util.MIN_HEALTH_TO_MAINTAIN) {
+            Debug.printString("Healing");
+            lastRobotHealed = newRobot;
+            rc.repair(newRobot.location);
+        }
+    }
+
+    public void tryRepairMaxHealth() throws GameActionException {
+        if(!rc.isActionReady()) return;
+
+        RobotInfo newRobot = getMaxHealthRobotToRepair();
+        if(newRobot != null && rc.canRepair(newRobot.location)) {
+            Debug.printString("Healing");
+            lastRobotHealed = newRobot;
+            rc.repair(newRobot.location);
+        }
     }
 
     // Remembers the last bot it healed and heals that one first
